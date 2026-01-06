@@ -20,7 +20,7 @@ export default async function Home() {
                 <Link2 strokeWidth={3} size={22} />
             </div>
             {/* Nama Brand */}
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut<span className="text-[#0193ff]">.id</span></span>
+            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut-nine<span className="text-[#0193ff]">.vercel.app</span></span>
         </div>
         <div className="flex items-center gap-4">
             <SignInButton mode="modal">
@@ -100,7 +100,7 @@ export default async function Home() {
                     </div>
                     <h3 className="text-xl font-bold text-[#2d3748] mb-3">Custom Slug</h3>
                     <p className="text-[#718096] leading-relaxed">
-                        Bikin link yang mudah diingat seperti <span className="text-[#0193ff] font-medium">taut.id/namamu</span>. Personal branding jadi lebih kuat.
+                        Bikin link yang mudah diingat seperti <span className="text-[#0193ff] font-medium">taut-nine.vercel.app/namamu</span>. Personal branding jadi lebih kuat.
                     </p>
                 </div>
 
@@ -134,7 +134,7 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2 text-[#0193ff]">
                 <Link2 strokeWidth={3} size={20} />
-                <span className="font-bold text-[#2d3748]">Taut<span className="text-[#0193ff]">.id</span></span>
+                <span className="font-bold text-[#2d3748]">Taut-nine<span className="text-[#0193ff]">.vercel.app</span></span>
             </div>
             <p className="text-sm text-[#718096]">
                 © 2024 Taut. Dibuat dengan cinta untuk kreator.
