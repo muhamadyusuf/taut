@@ -20,7 +20,7 @@ export default async function Home() {
                 <Link2 strokeWidth={3} size={22} />
             </div>
             {/* Nama Brand */}
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut-nine<span className="text-[#0193ff]">.vercel.app</span></span>
+            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
         </div>
         <div className="flex items-center gap-4">
             <SignInButton mode="modal">
@@ -134,7 +134,7 @@ export default async function Home() {
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2 text-[#0193ff]">
                 <Link2 strokeWidth={3} size={20} />
-                <span className="font-bold text-[#2d3748]">Taut-nine<span className="text-[#0193ff]">.vercel.app</span></span>
+                <span className="font-bold text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
             </div>
             <p className="text-sm text-[#718096]">
                 © 2025 Taut-nine. Dibuat dengan cinta untuk kreator.

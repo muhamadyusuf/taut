@@ -48,7 +48,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="bg-[#0193ff] p-2 rounded-xl text-white transform -rotate-6 shadow-md shadow-blue-200">
                 <Link2 strokeWidth={3} size={22} />
             </div>
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Tautnine<span className="text-[#0193ff]">.vercel.app</span></span>
+            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden ml-auto text-gray-400"><X size={24}/></button>
         </div>
