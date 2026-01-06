@@ -137,7 +137,7 @@ export default async function Home() {
                 <span className="font-bold text-[#2d3748]">Taut-nine<span className="text-[#0193ff]">.vercel.app</span></span>
             </div>
             <p className="text-sm text-[#718096]">
-                © 2024 Taut. Dibuat dengan cinta untuk kreator.
+                © 2025 Taut-nine. Dibuat dengan cinta untuk kreator.
             </p>
             <div className="flex gap-6 text-sm font-medium text-[#718096]">
                 <a href="#" className="hover:text-[#0193ff]">Privacy</a>
