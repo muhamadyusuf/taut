@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { 
   LayoutDashboard, Link as LinkIcon, BarChart3, Settings, 
-  Menu, X, QrCode, Plus, Link2 // Import Link2 untuk logo
+  Menu, X, QrCode, Plus, Link2, Layers // Import Link2 untuk logo
 } from "lucide-react";
 import CreateLinkModal from "./_components/CreateLinkModal"; 
 
@@ -31,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const menuItems = [
     { name: "Tautan Saya", href: "/dashboard/links", icon: LinkIcon },
+    { name: "Kategori", href: "/dashboard/categories", icon: Layers },
     { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
     { name: "Statistik", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },

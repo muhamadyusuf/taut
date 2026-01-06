@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as categories from "../categories.js";
 import type * as links from "../links.js";
 
 import type {
@@ -17,6 +18,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  categories: typeof categories;
   links: typeof links;
 }>;
 
