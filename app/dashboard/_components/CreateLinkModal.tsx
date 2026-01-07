@@ -72,7 +72,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
       const msg = err instanceof Error && err.message.includes("already taken") 
         ? "Link custom ini sudah dipakai orang lain." 
         : "Terjadi kesalahan sistem.";
-      setError(msg);
+      setError("Link custom ini sudah dipakai orang lain.");
     } finally {
       setLoading(false);
     }

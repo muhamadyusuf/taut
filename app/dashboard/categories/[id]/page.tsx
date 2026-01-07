@@ -1,12 +1,12 @@
 "use client";
 
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { Link as LinkIcon, ArrowLeft, Copy, BarChart2, Plus, Calendar, Tag } from "lucide-react";
+import { Link as LinkIcon, ArrowLeft, Copy, BarChart2, Plus, Calendar, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import CreateLinkModal from "../../_components/CreateLinkModal";
 import { Id } from "@/convex/_generated/dataModel";
@@ -14,6 +14,8 @@ import { Id } from "@/convex/_generated/dataModel";
 export default function CategoryDetailPage() {
   const params = useParams();
   const categoryId = params.id as Id<"categories">;
+
+  const deleteLink = useMutation(api.links.deleteLink);
 
   // Ambil semua kategori untuk mencari nama kategori saat ini (sebagai header)
   const categories = useQuery(api.categories.getMyCategories);
@@ -27,6 +29,12 @@ export default function CategoryDetailPage() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     alert("Disalin!");
+  };
+
+  const handleDeleteLink = async (id: any) => {
+    if (confirm("Hapus link ini selamanya?")) {
+        await deleteLink({ id });
+    }
   };
 
   if (!categories) return <div className="p-8 text-center text-gray-500">Memuat Kategori...</div>;
@@ -95,6 +103,13 @@ export default function CategoryDetailPage() {
                          <button onClick={() => copyToClipboard(`${window.location.origin}/${link.shortCode}`)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition">
                             <Copy size={14}/>
                          </button>
+                         <button 
+                          onClick={() => handleDeleteLink(link._id)}
+                          className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition"
+                          title="Hapus Link"
+                        >
+                          <Trash2 size={16} />
+                        </button>
                     </div>
                 </div>
             ))}

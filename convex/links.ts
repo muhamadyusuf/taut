@@ -47,17 +47,66 @@ export const createLink = mutation({
   },
 });
 
-// Update link (misal ganti judul atau slug)
 export const updateLink = mutation({
-    args: { id: v.id("links"), newShortCode: v.optional(v.string()), newTitle: v.optional(v.string()) },
-    handler: async (ctx, args) => {
-        // Logic validasi sama seperti sebelumnya...
-        // Kita persingkat di sini untuk fokus ke UI
-        const fields: { shortCode?: string; title?: string } = {};
-        if (args.newShortCode) fields.shortCode = args.newShortCode;
-        if (args.newTitle) fields.title = args.newTitle;
-        await ctx.db.patch(args.id, fields);
+  args: {
+    id: v.id("links"), // ID Link yang mau diedit
+    originalUrl: v.string(),
+    title: v.string(),
+    customSlug: v.string(),
+    categoryIds: v.array(v.id("categories")), // List kategori baru
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    // 1. Ambil data link lama
+    const existingLink = await ctx.db.get(args.id);
+    if (!existingLink || existingLink.userId !== identity.subject) {
+      throw new Error("Link tidak ditemukan atau bukan milik Anda.");
     }
+
+    // 2. Validasi Slug (Hanya jika slug berubah)
+    const newSlug = args.customSlug.trim();
+    
+    // Jika user mengosongkan slug, atau slug-nya sama dengan yang lama, aman.
+    // TAPI jika slug BEDA dari yang lama, kita harus cek ketersediaan.
+    if (newSlug !== existingLink.shortCode) {
+       const isTaken = await ctx.db
+          .query("links")
+          .withIndex("by_shortCode", (q) => q.eq("shortCode", newSlug))
+          .first();
+       
+       if (isTaken) {
+          throw new Error("Link custom ini sudah dipakai orang lain.");
+       }
+    }
+
+    // 3. Update Data Link Utama
+    await ctx.db.patch(args.id, {
+      originalUrl: args.originalUrl,
+      title: args.title,
+      shortCode: newSlug,
+    });
+
+    // 4. Update Kategori (Reset & Re-insert)
+    // Hapus semua kategori lama untuk link ini
+    const oldRelations = await ctx.db
+      .query("link_categories")
+      .withIndex("by_linkId", (q) => q.eq("linkId", args.id))
+      .collect();
+    
+    for (const rel of oldRelations) {
+      await ctx.db.delete(rel._id);
+    }
+
+    // Masukkan kategori baru
+    for (const catId of args.categoryIds) {
+      await ctx.db.insert("link_categories", {
+        linkId: args.id,
+        categoryId: catId,
+      });
+    }
+  },
 });
 
 export const getMyLinks = query({
@@ -121,5 +170,31 @@ export const getLinksByCategory = query({
 
     // Urutkan dari yang terbaru
     return results.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+export const deleteLink = mutation({
+  args: { id: v.id("links") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const link = await ctx.db.get(args.id);
+    if (!link || link.userId !== identity.subject) {
+      throw new Error("Tidak diizinkan");
+    }
+
+    // 1. Hapus dulu relasi kategorinya (Bersih-bersih)
+    const relations = await ctx.db
+      .query("link_categories")
+      .withIndex("by_linkId", (q) => q.eq("linkId", args.id))
+      .collect();
+    
+    for (const rel of relations) {
+      await ctx.db.delete(rel._id);
+    }
+
+    // 2. Baru hapus Link utamanya
+    await ctx.db.delete(args.id);
   },
 });
