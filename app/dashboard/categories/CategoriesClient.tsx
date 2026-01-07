@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { GenericId, Id } from "convex/values";
+import { GenericId } from "convex/values";
+import { Id } from "@/convex/_generated/dataModel";
 import { FolderPlus, Trash2, Tag, Layers, ArrowRight, Pencil } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";

@@ -31,7 +31,7 @@ export default function CategoryDetailPage() {
     alert("Disalin!");
   };
 
-  const handleDeleteLink = async (id: any) => {
+  const handleDeleteLink = async (id: Id<"links">) => {
     if (confirm("Hapus link ini selamanya?")) {
         await deleteLink({ id });
     }
