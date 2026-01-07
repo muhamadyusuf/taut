@@ -6,11 +6,12 @@ import { usePathname } from "next/navigation";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { 
   LayoutDashboard, Link as LinkIcon, BarChart3, Settings, 
-  Menu, X, QrCode, Plus, Link2, Layers // Import Link2 untuk logo
+  Menu, X, QrCode, Plus, Layers
 } from "lucide-react";
-import CreateLinkModal from "./_components/CreateLinkModal"; 
+import Image from "next/image";
+import CreateLinkModal from "./_components/CreateLinkModal";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
@@ -23,7 +24,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="h-screen flex items-center justify-center flex-col gap-4 bg-[#f8faff]">
             <h2 className="text-xl font-bold text-[#2d3748]">Akses Ditolak</h2>
             <SignInButton mode="modal">
-                <button className="btn-saweria">Masuk ke Taut</button>
+                <button className="btn-saweria">Masuk ke singkat.in</button>
             </SignInButton>
         </div>
       );
@@ -44,12 +45,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* SIDEBAR TAUT STYLE */}
       <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-[2px_0_20px_rgba(0,0,0,0.03)] border-r border-gray-50/50 rounded-r-[30px] md:rounded-r-none`}>
         <div className="h-24 flex items-center px-8">
-          {/* Logo Taut */}
+          {/* Logo */}
           <div className="flex items-center gap-2.5 text-[#0193ff]">
-            <div className="bg-[#0193ff] p-2 rounded-xl text-white transform -rotate-6 shadow-md shadow-blue-200">
-                <Link2 strokeWidth={3} size={22} />
-            </div>
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
+            <Image src="/logo.svg" alt="singkat.in logo" width={44} height={44} />
+            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
           </div>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden ml-auto text-gray-400"><X size={24}/></button>
         </div>
@@ -75,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="bg-[#fffcf0] border border-yellow-100 p-4 rounded-2xl flex items-center gap-3">
                 <div className="bg-yellow-400 p-2 rounded-full text-white">⚡</div>
                 <div>
-                    <p className="text-sm font-bold text-yellow-800">Taut Pro</p>
+                    <p className="text-sm font-bold text-yellow-800">singkat.in Pro</p>
                     <p className="text-xs text-yellow-600">Fitur lebih lengkap.</p>
                 </div>
             </div>
@@ -114,4 +113,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
     </div>
   );
+}
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  return <DashboardLayoutContent>{children}</DashboardLayoutContent>;
 }

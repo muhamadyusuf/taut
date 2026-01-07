@@ -1,7 +1,8 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import { SignInButton } from "@clerk/nextjs";
-import { Link2, Zap, BarChart3, QrCode, ArrowRight, Link as LinkIcon } from "lucide-react";
+import { Zap, BarChart3, QrCode, ArrowRight, Link as LinkIcon } from "lucide-react";
+import Image from "next/image";
 
 export default async function Home() {
   const { userId } = await auth();
@@ -15,12 +16,10 @@ export default async function Home() {
       {/* --- NAVBAR --- */}
       <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
         <div className="flex items-center gap-2.5 text-[#0193ff]">
-            {/* Logo Icon Taut */}
-            <div className="bg-[#0193ff] p-2 rounded-xl text-white transform -rotate-6 shadow-lg shadow-blue-200">
-                <Link2 strokeWidth={3} size={22} />
-            </div>
+            {/* Logo */}
+            <Image src="/logo.svg" alt="singkat.in logo" width={40} height={40} />
             {/* Nama Brand */}
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
+            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
         </div>
         <div className="flex items-center gap-4">
             <SignInButton mode="modal">
@@ -55,13 +54,13 @@ export default async function Home() {
             </h1>
             
             <p className="text-lg md:text-xl text-[#718096] mb-10 max-w-2xl mx-auto leading-relaxed">
-                Platform shortlink andalan kreator Indonesia. Kelola tautan, pantau audiens, dan bagikan karyamu lewat <b>Taut</b>.
+                Platform shortlink andalan kampus Indonesia. Kelola tautan, pantau audiens, dan bagikan karyamu lewat <b>Taut</b>.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <SignInButton mode="modal">
                     <button className="btn-saweria text-lg px-10 py-4 shadow-[0_10px_30px_rgba(1,147,255,0.4)] flex items-center gap-2 group">
-                        Mulai Tautkan 
+                        Mulai singkat.in 
                         <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
                     </button>
                 </SignInButton>
@@ -88,7 +87,7 @@ export default async function Home() {
       <section className="py-20 bg-white relative">
         <div className="max-w-6xl mx-auto px-6">
             <div className="text-center mb-16">
-                <h2 className="text-3xl md:text-4xl font-bold text-[#2d3748] mb-4">Fitur Taut</h2>
+                <h2 className="text-3xl md:text-4xl font-bold text-[#2d3748] mb-4">Fitur singkat.in</h2>
                 <p className="text-[#718096]">Semua yang kamu butuhkan agar link lebih powerful.</p>
             </div>
 
@@ -133,11 +132,11 @@ export default async function Home() {
       <footer className="bg-[#f8faff] py-12 border-t border-blue-50">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center gap-2 text-[#0193ff]">
-                <Link2 strokeWidth={3} size={20} />
-                <span className="font-bold text-[#2d3748]">Taut<span className="text-[#0193ff]">-nine</span></span>
+                <Image src="/logo.svg" alt="singkat.in logo" width={32} height={32} />
+                <span className="font-bold text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
             </div>
             <p className="text-sm text-[#718096]">
-                © 2025 Taut-nine. Dibuat dengan cinta untuk kreator.
+                © 2025 singkat.in Dibuat dengan cinta untuk indonesia.
             </p>
             <div className="flex gap-6 text-sm font-medium text-[#718096]">
                 <a href="#" className="hover:text-[#0193ff]">Privacy</a>

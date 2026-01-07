@@ -2,22 +2,27 @@
 
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { QRCodeCanvas } from "qrcode.react";
+import { QRCode } from "react-qrcode-logo";
 import { Download } from "lucide-react";
+import { useRef } from "react";
 
 export default function QrCodesPage() {
   const links = useQuery(api.links.getMyLinks);
+  const qrRefs = useRef<{ [key: string]: HTMLDivElement }>({});
 
   const downloadQR = (id: string, shortCode: string) => {
-    const canvas = document.getElementById(`qr-${id}`) as HTMLCanvasElement;
-    if (canvas) {
-      const pngUrl = canvas.toDataURL("image/png");
-      const downloadLink = document.createElement("a");
-      downloadLink.href = pngUrl;
-      downloadLink.download = `qr-${shortCode}.png`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
-      document.body.removeChild(downloadLink);
+    const qrElement = qrRefs.current[id];
+    if (qrElement) {
+      const canvas = qrElement.querySelector("canvas");
+      if (canvas) {
+        const pngUrl = canvas.toDataURL("image/png");
+        const downloadLink = document.createElement("a");
+        downloadLink.href = pngUrl;
+        downloadLink.download = `qr-${shortCode}.png`;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+      }
     }
   };
 
@@ -29,13 +34,23 @@ export default function QrCodesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {links?.map((link) => (
                 <div key={link._id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition flex flex-col items-center text-center">
-                    <div className="bg-white p-2 rounded-lg border border-gray-100 mb-4">
-                        <QRCodeCanvas 
+                    <div 
+                      ref={(el) => {
+                        if (el) qrRefs.current[link._id] = el;
+                      }}
+                      className="bg-white p-2 rounded-lg border border-gray-100 mb-4"
+                    >
+                        <QRCode
                             id={`qr-${link._id}`}
-                            value={`${window.location.origin}/${link.shortCode}`} 
-                            size={150} 
-                            level={"H"}
-                            includeMargin={true}
+                            value={`${window.location.origin}/${link.shortCode}`}
+                            size={150}
+                            ecLevel={"H"}
+                            logoImage="/logo.svg"
+                            logoWidth={40}
+                            logoHeight={40}
+                            logoOpacity={1}
+                            quietZone={5}
+                            qrStyle="squares"
                         />
                     </div>
                     <h3 className="font-bold text-gray-800 truncate w-full mb-1">{link.title || link.shortCode}</h3>
