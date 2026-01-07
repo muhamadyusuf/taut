@@ -68,6 +68,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
       setUrl(""); setTitle(""); setSlug(""); setSelectedCats([]);
       onClose();
     } catch (err: unknown) {
+      console.log(err);
       const msg = err instanceof Error && err.message.includes("already taken") 
         ? "Link custom ini sudah dipakai orang lain." 
         : "Terjadi kesalahan sistem.";
