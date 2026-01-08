@@ -26,7 +26,12 @@ const RESERVED_SLUGS = [
   "static",
   "public",
   "about",
-  "contact"
+  "contact",
+  "privacy",
+  "terms",
+  "kebijakan",
+  "syarat",
+  "legal"
 ];
 
 export const createLink = mutation({
