@@ -127,7 +127,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
           <div>
             <label className="block text-xs font-bold text-[#718096] uppercase mb-2">Custom Link</label>
             <div className="flex items-center border border-gray-200 rounded-xl bg-[#f8faff] focus-within:border-[#0193ff] focus-within:ring-4 focus-within:ring-blue-500/10">
-              <span className="px-4 text-[#718096] text-sm font-medium">{typeof window !== 'undefined' ? window.location.host : '...'}/</span>
+              <span className="px-4 text-[#718096] text-sm font-medium">{process.env.NEXT_PUBLIC_APP_URL}/</span>
               <input type="text" value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-'))} 
                 className="w-full p-4 bg-transparent focus:outline-none text-sm font-bold text-[#0193ff]"
               />

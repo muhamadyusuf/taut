@@ -150,7 +150,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
             <label className="block text-xs font-bold text-[#718096] uppercase mb-2 tracking-wide">Custom Link (Opsional)</label>
             <div className="flex items-center border border-gray-200 rounded-xl bg-[#f8faff] focus-within:border-[#0193ff] focus-within:ring-4 focus-within:ring-blue-500/10 transition overflow-hidden">
               <span className="px-4 text-[#718096] text-sm border-r border-gray-200 h-full py-4 font-medium">
-                {typeof window !== 'undefined' ? window.location.host : '...'}/
+                {process.env.NEXT_PUBLIC_APP_URL}/
               </span>
               <input type="text" placeholder="nama-unik" value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-'))} 
                 className="w-full p-4 bg-transparent focus:outline-none text-sm font-bold text-[#0193ff]"
