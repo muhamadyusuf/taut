@@ -1,17 +1,24 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
-// DEFINISI RUTE RAHASIA (PROTECTED)
-// Kita hanya perlu memblokir akses ke Dashboard.
-// Semua rute lain (termasuk link pendek seperti /abc-123) otomatis jadi publik.
+// 1. Definisikan Rute yang WAJIB Login (Hanya Dashboard)
 const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)', // Semua yang diawali /dashboard wajib login
+  '/dashboard(.*)', 
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
-  // 2. Cek apakah user sedang membuka halaman rahasia (bukan public)
+  const url = req.nextUrl;
+  const hostname = req.headers.get("host") || "";
+
+  // Definisikan Environment
+  const isAppDomain = hostname === "app.singkat.in"; // Subdomain Production
+  const isMainDomain = hostname === "singkat.in";    // Domain Utama Production
+  // Localhost kita perlakukan seperti Main Domain (agar bisa lihat Landing Page)
+  const isLocalhost = hostname.includes("localhost"); 
+
+  // --- ATURAN 1: PROTEKSI ROUTE ---
+  // Jika user mengakses halaman /dashboard..., paksa Login dulu.
   if (isProtectedRoute(req)) {
-    
     // AMBIL DATA AUTH MANUAL
     // Kita tidak pakai .protect(), tapi kita cek sendiri userId-nya
     const { userId, redirectToSignIn } = await auth();
@@ -21,17 +28,33 @@ export default clerkMiddleware(async (auth, req) => {
       return redirectToSignIn();
     }
   }
+
+  // --- ATURAN 2: LOGIKA REDIRECT SUBDOMAIN ---
+
+  // A. Jika di "app.singkat.in" (Khusus Dashboard)
+  if (isAppDomain) {
+    // Jika buka root ("/") kosong, langsung masuk ke dashboard links
+    if (url.pathname === "/") {
+      return NextResponse.redirect(new URL("/dashboard/links", req.url));
+    }
+  }
+
+  // B. Jika di "singkat.in" (Marketing)
+  // Kita cegah user buka dashboard lewat sini (hanya berlaku di Production)
+  if (isMainDomain && isProtectedRoute(req)) {
+    const newUrl = new URL(url.pathname, "https://app.singkat.in");
+    return NextResponse.redirect(newUrl);
+  }
+
+  // Sisanya (Landing Page, Shortlink /promo, dll) lolos tanpa login
+  return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    // Regex standar Next.js untuk skip file statis (gambar, css, font, dll)
+    // Skip Next.js internals and all static files
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Selalu jalankan middleware untuk API routes
+    // Always run for API routes
     '/(api|trpc)(.*)',
   ],
 };
-
-function isPublicRoute(req: NextRequest): boolean {
-  return !isProtectedRoute(req);
-}

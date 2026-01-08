@@ -1,19 +1,16 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextRequest } from "next/server";
 
-// 1. Daftar halaman yang BOLEH diakses tanpa login
-const isPublicRoute = createRouteMatcher([
-  '/sign-in(.*)', 
-  '/sign-up(.*)',
-  '/', // Landing page
-  '/[\\w-]+', // Halaman redirect link pendek
+// DEFINISI RUTE RAHASIA (PROTECTED)
+// Kita hanya perlu memblokir akses ke Dashboard.
+// Semua rute lain (termasuk link pendek seperti /abc-123) otomatis jadi publik.
+const isProtectedRoute = createRouteMatcher([
+  '/dashboard(.*)', // Semua yang diawali /dashboard wajib login
 ]);
-
-// Allow the catch-all route for UserProfile component
-const isSettingsRoute = createRouteMatcher(['/dashboard/settings(.*)']);
 
 export default clerkMiddleware(async (auth, req) => {
   // 2. Cek apakah user sedang membuka halaman rahasia (bukan public)
-  if (!isPublicRoute(req)) {
+  if (isProtectedRoute(req)) {
     
     // AMBIL DATA AUTH MANUAL
     // Kita tidak pakai .protect(), tapi kita cek sendiri userId-nya
@@ -28,9 +25,13 @@ export default clerkMiddleware(async (auth, req) => {
 
 export const config = {
   matcher: [
-    // Regex standar Next.js agar middleware tidak memblokir file statis (gambar, css, dll)
+    // Regex standar Next.js untuk skip file statis (gambar, css, font, dll)
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Selalu jalankan untuk API routes
+    // Selalu jalankan middleware untuk API routes
     '/(api|trpc)(.*)',
   ],
 };
+
+function isPublicRoute(req: NextRequest): boolean {
+  return !isProtectedRoute(req);
+}

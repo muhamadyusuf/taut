@@ -1,14 +1,21 @@
 import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { SignInButton } from "@clerk/nextjs";
-import { Zap, BarChart3, QrCode, ArrowRight, Link as LinkIcon } from "lucide-react";
+import { SignedIn, SignedOut, SignInButton, UserButton } from "@clerk/nextjs";
+import { Zap, BarChart3, QrCode, ArrowRight, Link as LinkIcon, LayoutDashboard, ShieldAlert, Sparkles } from "lucide-react";
 import Image from "next/image";
+import { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Shortlink Gratis Terbaik dengan Analitik & QR Code",
+  description: "Ubah link panjang menjadi singkat.in/namamu. Platform perpendek link gratis dengan fitur statistik lengkap, kustomisasi slug, dan QR code otomatis.",
+  alternates: {
+    canonical: "https://singkat.in", // Mencegah duplikat konten
+  },
+};
 
 export default async function Home() {
   const { userId } = await auth();
-  if (userId) {
-    redirect("/dashboard/links");
-  }
 
   return (
     <main className="min-h-screen bg-[#f8faff] overflow-x-hidden selection:bg-[#0193ff] selection:text-white">
@@ -22,16 +29,33 @@ export default async function Home() {
             <span className="text-2xl font-bold tracking-tight text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
         </div>
         <div className="flex items-center gap-4">
-            <SignInButton mode="modal">
+            {/* 1. KONDISI BELUM LOGIN */}
+            <SignedOut>
+                <SignInButton mode="modal">
                 <button className="text-[#718096] font-medium hover:text-[#0193ff] transition px-4 py-2 hidden sm:block">
                     Masuk
                 </button>
-            </SignInButton>
-            <SignInButton mode="modal">
-                <button className="bg-white text-[#0193ff] border-2 border-[#0193ff] font-bold py-2 px-6 rounded-full hover:bg-blue-50 transition active:scale-95">
-                    Daftar
+                </SignInButton>
+                <SignInButton mode="modal">
+                <button className="bg-[#0193ff] hover:bg-[#007acc] text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-blue-500/30 transition hover:scale-105 active:scale-95">
+                    Daftar Gratis
                 </button>
-            </SignInButton>
+                </SignInButton>
+            </SignedOut>
+
+            {/* 2. KONDISI SUDAH LOGIN */}
+            <SignedIn>
+                <div className="flex items-center gap-4">
+                <Link href="/dashboard/links">
+                    <button className="bg-white border-2 border-[#0193ff] text-[#0193ff] hover:bg-[#0193ff] hover:text-white px-5 py-2 rounded-full font-bold transition flex items-center gap-2">
+                    <LayoutDashboard size={18}/>
+                    Dashboard
+                    </button>
+                </Link>
+                {/* Tampilkan Foto Profil User */}
+                <UserButton afterSignOutUrl="/" />
+                </div>
+            </SignedIn>
         </div>
       </nav>
 
@@ -53,17 +77,24 @@ export default async function Home() {
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#0193ff] to-[#00c6ff]">Lebih Terhubung.</span>
             </h1>
             
-            <p className="text-lg md:text-xl text-[#718096] mb-10 max-w-2xl mx-auto leading-relaxed">
-                Platform shortlink andalan kampus Indonesia. Kelola tautan, pantau audiens, dan bagikan karyamu lewat <b>singkat.in</b>.
-            </p>
-            
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                <SignInButton mode="modal">
+                <SignedOut>
+                    <SignInButton mode="modal">
                     <button className="btn-saweria text-lg px-10 py-4 shadow-[0_10px_30px_rgba(1,147,255,0.4)] flex items-center gap-2 group">
                         Mulai singkat.in 
                         <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
                     </button>
-                </SignInButton>
+                    </SignInButton>
+                </SignedOut>
+
+                <SignedIn>
+                    <Link href="/dashboard/links">
+                    <button className="btn-saweria text-lg px-10 py-4 shadow-[0_10px_30px_rgba(1,147,255,0.4)] flex items-center gap-2 group">
+                        Mulai singkat.in 
+                        <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform"/>
+                    </button>
+                    </Link>
+                </SignedIn>
             </div>
 
             {/* Mockup Preview / Stats */}
