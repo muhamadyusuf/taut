@@ -42,7 +42,7 @@ export default function QrCodesPage() {
                     >
                         <QRCode
                             id={`qr-${link._id}`}
-                            value={`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`}
+                            value={`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`}
                             size={150}
                             ecLevel={"H"}
                             logoImage="/logo.svg"

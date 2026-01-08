@@ -75,8 +75,8 @@ export default function LinksPage() {
                     
                     {/* Link Pendek (Hero) */}
                     <div className="mb-4">
-                         <a href={`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`} target="_blank" className="text-[#0193ff] font-bold text-2xl hover:underline flex items-center gap-2 truncate tracking-tight">
-                            <span className="text-[#718096] font-normal text-base opacity-60">{process.env.NEXT_PUBLIC_BASE_URL}/</span>
+                         <a href={`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`} target="_blank" className="text-[#0193ff] font-bold text-2xl hover:underline flex items-center gap-2 truncate tracking-tight">
+                            <span className="text-[#718096] font-normal text-base opacity-60">{process.env.NEXT_PUBLIC_APP_URL}/</span>
                             {link.shortCode}
                         </a>
                     </div>
@@ -123,7 +123,7 @@ export default function LinksPage() {
                         
                         {/* Tombol Copy */}
                         <button 
-                            onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`)} 
+                            onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`)} 
                             className="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#0193ff] text-[#0193ff] rounded-full text-sm font-bold hover:bg-[#0193ff] hover:text-white transition-all duration-300 shadow-sm hover:shadow-md active:scale-95"
                         >
                             <Copy size={16}/> Salin Link
