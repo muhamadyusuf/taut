@@ -10,6 +10,7 @@
 
 import type * as categories from "../categories.js";
 import type * as links from "../links.js";
+import type * as microsites from "../microsites.js";
 
 import type {
   ApiFromModules,
@@ -20,6 +21,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   categories: typeof categories;
   links: typeof links;
+  microsites: typeof microsites;
 }>;
 
 /**

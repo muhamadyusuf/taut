@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { 
   LayoutDashboard, Link as LinkIcon, BarChart3, Settings, 
-  Menu, X, QrCode, Plus, Layers
+  Menu, X, QrCode, Plus, Layers, Smartphone
 } from "lucide-react";
 import Image from "next/image";
 import CreateLinkModal from "./_components/CreateLinkModal";
@@ -36,6 +36,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
     { name: "Statistik", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },
+    { name: "Microsite", icon: Smartphone, href: "/dashboard/microsite", isNew: true},
   ];
 
   return (
@@ -58,20 +59,32 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
           <button onClick={() => setSidebarOpen(false)} className="md:hidden ml-auto text-gray-400"><X size={24}/></button>
         </div>
         
-        <nav className="flex-1 py-6 px-4 space-y-2 font-medium">
+        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
           {menuItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
+            const isActive = pathname === item.href || (item.href !== "/dashboard" && pathname.startsWith(item.href));
+            
             return (
               <Link 
                 key={item.href} 
                 href={item.href}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-4 w-full px-6 py-3.5 rounded-full transition-all duration-200 group ${isActive ? 'bg-[#0193ff] text-white shadow-lg shadow-blue-200/50' : 'text-[#718096] hover:bg-blue-50 hover:text-[#0193ff]'}`}
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                  isActive 
+                    ? "bg-[#f0f7ff] text-[#0193ff] font-bold" 
+                    : "text-gray-500 hover:bg-gray-50 hover:text-gray-900 font-medium"
+                }`}
               >
-                <item.icon size={20} className={isActive ? "text-white" : "text-[#718096] group-hover:text-[#0193ff]"} /> 
-                {item.name}
+                <item.icon size={20} className={isActive ? "text-[#0193ff]" : "text-gray-400 group-hover:text-gray-600"} />
+                
+                <span>{item.name}</span>
+
+                {/* Badge "NEW" untuk fitur Microsite */}
+                {item.isNew && (
+                  <span className="absolute right-3 bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    NEW
+                  </span>
+                )}
               </Link>
-            )
+            );
           })}
         </nav>
 
