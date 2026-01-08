@@ -90,7 +90,7 @@ export default function CategoryDetailPage() {
                     <div className="flex-1 min-w-0 w-full">
                         <h3 className="font-bold text-[#2d3748] truncate">{link.title || "Untitled"}</h3>
                         <div className="flex items-center gap-2 text-sm">
-                            <a href={`${window.location.origin}/${link.shortCode}`} target="_blank" className="text-[#0193ff] font-bold hover:underline truncate">
+                            <a href={`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`} target="_blank" className="text-[#0193ff] font-bold hover:underline truncate">
                                 /{link.shortCode}
                             </a>
                             <span className="text-gray-300">|</span>
@@ -100,7 +100,7 @@ export default function CategoryDetailPage() {
                     <div className="flex items-center gap-4 text-xs text-gray-400 w-full md:w-auto justify-between md:justify-end">
                          <span className="flex items-center gap-1"><BarChart2 size={14}/> {link.clicks}</span>
                          <span className="flex items-center gap-1"><Calendar size={14}/> {format(link.createdAt, 'd MMM', { locale: localeId })}</span>
-                         <button onClick={() => copyToClipboard(`${window.location.origin}/${link.shortCode}`)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition">
+                         <button onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_BASE_URL}/${link.shortCode}`)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition">
                             <Copy size={14}/>
                          </button>
                          <button 
