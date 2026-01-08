@@ -24,7 +24,9 @@ const RESERVED_SLUGS = [
   "app",
   "admin",
   "static",
-  "public"
+  "public",
+  "about",
+  "contact"
 ];
 
 export const createLink = mutation({

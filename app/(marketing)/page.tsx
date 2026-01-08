@@ -15,49 +15,9 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const { userId } = await auth();
-
+//   const { userId } = await auth();
   return (
-    <main className="min-h-screen bg-[#f8faff] overflow-x-hidden selection:bg-[#0193ff] selection:text-white">
-      
-      {/* --- NAVBAR --- */}
-      <nav className="max-w-7xl mx-auto px-6 py-6 flex justify-between items-center">
-        <div className="flex items-center gap-2.5 text-[#0193ff]">
-            {/* Logo */}
-            <Image src="/logo.svg" alt="singkat.in logo" width={40} height={40} />
-            {/* Nama Brand */}
-            <span className="text-2xl font-bold tracking-tight text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
-        </div>
-        <div className="flex items-center gap-4">
-            {/* 1. KONDISI BELUM LOGIN */}
-            <SignedOut>
-                <SignInButton mode="modal">
-                <button className="text-[#718096] font-medium hover:text-[#0193ff] transition px-4 py-2 hidden sm:block">
-                    Masuk
-                </button>
-                </SignInButton>
-                <SignInButton mode="modal">
-                <button className="bg-[#0193ff] hover:bg-[#007acc] text-white px-5 py-2.5 rounded-full font-bold shadow-lg shadow-blue-500/30 transition hover:scale-105 active:scale-95">
-                    Daftar Gratis
-                </button>
-                </SignInButton>
-            </SignedOut>
-
-            {/* 2. KONDISI SUDAH LOGIN */}
-            <SignedIn>
-                <div className="flex items-center gap-4">
-                <Link href="/dashboard/links">
-                    <button className="bg-white border-2 border-[#0193ff] text-[#0193ff] hover:bg-[#0193ff] hover:text-white px-5 py-2 rounded-full font-bold transition flex items-center gap-2">
-                    <LayoutDashboard size={18}/>
-                    Dashboard
-                    </button>
-                </Link>
-                {/* Tampilkan Foto Profil User */}
-                <UserButton afterSignOutUrl="/" />
-                </div>
-            </SignedIn>
-        </div>
-      </nav>
+    <div>
 
       {/* --- HERO SECTION --- */}
       <section className="relative pt-12 pb-20 lg:pt-24 lg:pb-32 px-6">
@@ -130,7 +90,7 @@ export default async function Home() {
                     </div>
                     <h3 className="text-xl font-bold text-[#2d3748] mb-3">Custom Slug</h3>
                     <p className="text-[#718096] leading-relaxed">
-                        Bikin link yang mudah diingat seperti <span className="text-[#0193ff] font-medium">taut-nine.vercel.app/namamu</span>. Personal branding jadi lebih kuat.
+                        Bikin link yang mudah diingat seperti <span className="text-[#0193ff] font-medium">singkat.in/namamu</span>. Personal branding jadi lebih kuat.
                     </p>
                 </div>
 
@@ -158,23 +118,6 @@ export default async function Home() {
             </div>
         </div>
       </section>
-
-      {/* --- FOOTER --- */}
-      <footer className="bg-[#f8faff] py-12 border-t border-blue-50">
-        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-            <div className="flex items-center gap-2 text-[#0193ff]">
-                <Image src="/logo.svg" alt="singkat.in logo" width={32} height={32} />
-                <span className="font-bold text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
-            </div>
-            <p className="text-sm text-[#718096]">
-                © 2025 singkat.in Dibuat dengan cinta untuk indonesia.
-            </p>
-            <div className="flex gap-6 text-sm font-medium text-[#718096]">
-                <a href="#" className="hover:text-[#0193ff]">Privacy</a>
-                <a href="#" className="hover:text-[#0193ff]">Terms</a>
-            </div>
-        </div>
-      </footer>
-    </main>
+    </div>
   );
 }
