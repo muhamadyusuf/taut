@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
+import { GoogleAnalytics } from '@next/third-parties/google';
 
 // 1. Definisikan URL Production Anda (Sangat Penting untuk SEO)
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
@@ -95,6 +96,7 @@ export default function RootLayout({
       <body>
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
     </html>
   );
 }

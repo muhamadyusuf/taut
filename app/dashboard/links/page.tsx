@@ -4,7 +4,6 @@ import LinksClient from "./LinksClient"; // Import komponen client yang tadi di-
 // DEFINISIKAN JUDUL DI SINI
 export const metadata: Metadata = {
   title: "Tautan Saya", 
-  // Hasilnya di browser akan jadi: "Tautan Saya | Taut.id"
 };
 
 export default function Page() {

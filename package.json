@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.5",
+    "@next/third-parties": "^16.1.1",
     "convex": "^1.31.2",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.562.0",
