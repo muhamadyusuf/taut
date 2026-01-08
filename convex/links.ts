@@ -1,6 +1,32 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 
+// 1. DAFTAR KATA TERLARANG (RESERVED KEYWORDS)
+// Tambahkan semua route sistem Anda di sini
+const RESERVED_SLUGS = [
+  "dashboard", 
+  "dashboard/links", 
+  "dashboard/categories", 
+  "dashboard/qr-codes", 
+  "dashboard/analytics", 
+  "dashboard/settings", 
+  "sign-in", 
+  "sign-up", 
+  "login", 
+  "register", 
+  "api", 
+  "about", 
+  "contact", 
+  "terms", 
+  "privacy", 
+  "404", 
+  "500",
+  "app",
+  "admin",
+  "static",
+  "public"
+];
+
 export const createLink = mutation({
   args: { 
     originalUrl: v.string(),
@@ -14,6 +40,12 @@ export const createLink = mutation({
     if (!identity) throw new Error("Unauthorized");
 
     let shortCode: string;
+
+    // 2. CEK APAKAH SLUG MASUK DAFTAR TERLARANG
+    if (args.customSlug && RESERVED_SLUGS.includes(args.customSlug.toLowerCase())) {
+        throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
+    }
+
     // ... (Logic generate shortCode sama seperti sebelumnya) ...
     if (args.customSlug && args.customSlug.trim() !== "") {
       shortCode = args.customSlug.trim();
@@ -59,6 +91,10 @@ export const updateLink = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
+    if (args.customSlug && RESERVED_SLUGS.includes(args.customSlug.toLowerCase())) {
+      throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
+    }
+    
     // 1. Ambil data link lama
     const existingLink = await ctx.db.get(args.id);
     if (!existingLink || existingLink.userId !== identity.subject) {
