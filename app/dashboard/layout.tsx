@@ -46,10 +46,15 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
       <aside className={`fixed inset-y-0 left-0 z-40 w-72 bg-white transform ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col shadow-[2px_0_20px_rgba(0,0,0,0.03)] border-r border-gray-50/50 rounded-r-[30px] md:rounded-r-none`}>
         <div className="h-24 flex items-center px-8">
           {/* Logo */}
+          <Link 
+              key={process.env.NEXT_PUBLIC_APP_URL || "/"} 
+              href={process.env.NEXT_PUBLIC_APP_URL || "/"}
+            >
           <div className="flex items-center gap-2.5 text-[#0193ff]">
             <Image src="/logo.svg" alt="singkat.in logo" width={44} height={44} />
             <span className="text-2xl font-bold tracking-tight text-[#2d3748]">singkat<span className="text-[#0193ff]">.in</span></span>
           </div>
+          </Link>
           <button onClick={() => setSidebarOpen(false)} className="md:hidden ml-auto text-gray-400"><X size={24}/></button>
         </div>
         
