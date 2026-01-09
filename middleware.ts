@@ -1,7 +1,7 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// 1. Definisikan Rute yang WAJIB Login (Hanya Dashboard)
+// 1. Definisikan Rute yang WAJIB Login
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)', 
 ]);
@@ -11,50 +11,47 @@ export default clerkMiddleware(async (auth, req) => {
   const hostname = req.headers.get("host") || "";
 
   // Definisikan Environment
-  const isAppDomain = hostname === "app.singkat.in"; // Subdomain Production
-  const isMainDomain = hostname === "singkat.in";    // Domain Utama Production
-  // Localhost kita perlakukan seperti Main Domain (agar bisa lihat Landing Page)
-  const isLocalhost = hostname.includes("localhost"); 
+  // Gunakan optional chaining untuk keamanan jika hostname null
+  const isAppDomain = hostname === "app.singkat.in"; 
+  const isMainDomain = hostname === "singkat.in";   
+  
+  // (Opsional) Deteksi Localhost untuk development
+  // const isLocalhost = hostname.includes("localhost"); 
 
-  // --- ATURAN 1: PROTEKSI ROUTE ---
-  // Jika user mengakses halaman /dashboard..., paksa Login dulu.
+  // --- ATURAN 1: PROTEKSI ROUTE (Dashboard Wajib Login) ---
   if (isProtectedRoute(req)) {
-    // AMBIL DATA AUTH MANUAL
-    // Kita tidak pakai .protect(), tapi kita cek sendiri userId-nya
     const { userId, redirectToSignIn } = await auth();
 
-    // 3. JIKA BELUM LOGIN (userId kosong), LEMPAR KE HALAMAN LOGIN
     if (!userId) {
-      return redirectToSignIn();
+      // Redirect ke halaman login Clerk, lalu balik ke URL semula setelah login
+      return redirectToSignIn({ returnBackUrl: req.url });
     }
   }
 
   // --- ATURAN 2: LOGIKA REDIRECT SUBDOMAIN ---
 
-  // A. Jika di "app.singkat.in" (Khusus Dashboard)
-  if (isAppDomain) {
-    // Jika buka root ("/") kosong, langsung masuk ke dashboard links
-    if (url.pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard/links", req.url));
-    }
+  // A. Jika akses "app.singkat.in" (Root) -> Lempar ke Dashboard Links
+  if (isAppDomain && url.pathname === "/") {
+    return NextResponse.redirect(new URL("/dashboard/links", req.url));
   }
 
-  // B. Jika di "singkat.in" (Marketing)
-  // Kita cegah user buka dashboard lewat sini (hanya berlaku di Production)
+  // B. Jika akses "singkat.in/dashboard..." (Main Domain) -> Lempar ke App Domain
+  // Ini mencegah user login dashboard di domain utama
   if (isMainDomain && isProtectedRoute(req)) {
+    // Pindahkan path yang diakses user ke domain app
     const newUrl = new URL(url.pathname, "https://app.singkat.in");
     return NextResponse.redirect(newUrl);
   }
 
-  // Sisanya (Landing Page, Shortlink /promo, dll) lolos tanpa login
+  // Sisanya lolos (Landing Page, Public Profile, Shortlink Redirection)
   return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files
+    // Regex standar Clerk terbaru untuk men-skip file statis
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
+    // Selalu jalankan middleware untuk API routes
     '/(api|trpc)(.*)',
   ],
 };
