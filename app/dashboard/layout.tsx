@@ -34,9 +34,9 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     { name: "Tautan Saya", href: "/dashboard/links", icon: LinkIcon },
     { name: "Kategori", href: "/dashboard/categories", icon: Layers },
     { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
+    { name: "Halaman", icon: Smartphone, href: "/dashboard/microsite", isNew: true},
     { name: "Statistik", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },
-    { name: "Microsite", icon: Smartphone, href: "/dashboard/microsite", isNew: true},
   ];
 
   return (

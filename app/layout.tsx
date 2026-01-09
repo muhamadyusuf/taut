@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   // DESKRIPSI UTAMA (Muncul di hasil pencarian Google)
   // Tips: Gunakan kata kunci "Perpendek Link", "Shortlink", "QR Code", "Gratis"
   description: 
-    "Platform shortlink terbaik untuk kebutuhan akademik dan bisnis. Perpendek link panjang, pantau statistik klik real-time, dan buat QR Code secara gratis. Aman dan terpercaya.",
+    "Platform shortlink terbaik untuk kebutuhan bisnis kamu. Perpendek link panjang, pantau statistik klik real-time, dan buat QR Code secara gratis. Aman dan terpercaya.",
 
   // KATA KUNCI (Meskipun Google jarang pakai ini, mesin pencari lain masih pakai)
   keywords: [
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
   // TAMPILAN TWITTER CARD
   twitter: {
     card: "summary_large_image",
-    title: "singkat.in - Shortlink Kampus & Bisnis",
+    title: "singkat.in - Shortlink Bisnis",
     description: "Platform manajemen tautan paling simpel dan powerful.",
     images: ["/og-image.png"], // Gunakan gambar yang sama
   },

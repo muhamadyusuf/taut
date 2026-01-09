@@ -2,6 +2,9 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
+  // ---------------------------------------------------------
+  // TABEL URL SHORTENER (Tetap)
+  // ---------------------------------------------------------
   links: defineTable({
     originalUrl: v.string(),
     shortCode: v.string(),
@@ -9,7 +12,6 @@ export default defineSchema({
     clicks: v.number(),
     title: v.optional(v.string()),
     createdAt: v.number(),
-    // HAPUS categoryId dari sini, kita pindah ke tabel penghubung
   })
   .index("by_shortCode", ["shortCode"])
   .index("by_userId", ["userId"]),
@@ -21,38 +23,58 @@ export default defineSchema({
   })
   .index("by_userId", ["userId"]),
 
-  // TABEL BARU: PENGHUBUNG (Many-to-Many)
   link_categories: defineTable({
     linkId: v.id("links"),
     categoryId: v.id("categories"),
   })
-  .index("by_linkId", ["linkId"])       // Agar cepat cari kategori dari sebuah link
-  .index("by_categoryId", ["categoryId"]), // Agar cepat cari semua link dalam satu kategori
+  .index("by_linkId", ["linkId"])
+  .index("by_categoryId", ["categoryId"]),
 
-microsites: defineTable({
+  // ---------------------------------------------------------
+  // TABEL MICROSITES (Diperbaharui)
+  // ---------------------------------------------------------
+  microsites: defineTable({
     userId: v.string(),
-    slug: v.string(), 
+    slug: v.string(),
     title: v.string(),
     bio: v.optional(v.string()),
     
-    // IMAGE SUPPORT (Menyimpan Storage ID dari Convex)
-    imageStorageId: v.optional(v.string()), // Foto Profil
-    backgroundStorageId: v.optional(v.string()), // Background Image
+    // Tampilan
+    theme: v.string(),
+    buttonStyle: v.optional(v.string()), // e.g: "rounded", "sharp", "outline"
     
-    theme: v.string(), 
-    
-    // STRUKTUR LINK BARU (Mendukung Kategori/Header)
+    // Gambar (URL String)
+    imageUrl: v.optional(v.string()), 
+    backgroundUrl: v.optional(v.string()), 
+
+    // Statistik
+    visitorCount: v.optional(v.number()),
+
+    // Social Media Links (Objek Terpisah)
+    socials: v.optional(
+      v.object({
+        instagram: v.optional(v.string()),
+        tiktok: v.optional(v.string()),
+        whatsapp: v.optional(v.string()),
+        linkedin: v.optional(v.string()),
+        youtube: v.optional(v.string()),
+        email: v.optional(v.string()),
+      })
+    ),
+
+    // Array Link/Konten
     links: v.array(
       v.object({
         id: v.string(),
-        type: v.string(), // "link" atau "header" (kategori)
+        type: v.string(), // "link" | "header"
         label: v.string(),
-        url: v.optional(v.string()), // Header tidak butuh URL
+        url: v.optional(v.string()),
         active: v.boolean(),
-        thumbnail: v.optional(v.string()), // Opsional: Ikon link
+        thumbnail: v.optional(v.string()), // Gambar kecil di tombol
+        icon: v.optional(v.string()),      // Class icon (jika pakai library icon)
       })
     ),
   })
-    .index("by_userId", ["userId"])
-    .index("by_slug", ["slug"]),
-  });
+  .index("by_userId", ["userId"])
+  .index("by_slug", ["slug"]),
+});

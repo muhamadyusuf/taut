@@ -1,24 +1,22 @@
 "use client";
 
-import { useUser } from "@clerk/nextjs"; // 1. Pastikan ini ada
+import { useUser } from "@clerk/nextjs";
 import { useState, useEffect, use } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
-import { Plus, Trash2, Save, GripVertical, Type, Palette, Link as LinkIcon, Smartphone, ExternalLink, AlertCircle, ChevronDown, X } from "lucide-react";
+import { Plus, Trash2, Save, GripVertical, Type, Palette, Link as LinkIcon, Smartphone, ExternalLink, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { THEMES } from "@/lib/themeConfig";
 import DrivePicker from "../_components/DrivePicker"; 
-import { getIcon, ICONS } from "@/lib/iconMap"; // Import Icon Map
 
-// ... (TYPE DEFINITIONS & HELPER tetap sama) ...
+// --- TYPE DEFINITIONS ---
 type LinkItem = {
   id: string;
   type: "link" | "header";
   label: string;
   url?: string;
-  icon?: string;
   active: boolean;
 };
 
@@ -33,6 +31,7 @@ interface MicrositeForm {
   backgroundUrl?: string;
 }
 
+// --- HELPER: Ensure URL protocol ---
 const formatUrl = (url: string) => {
     if (!url) return "";
     if (!/^https?:\/\//i.test(url)) {
@@ -41,26 +40,28 @@ const formatUrl = (url: string) => {
     return url;
 };
 
+// --- MAIN EDITOR COMPONENT ---
 export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"microsites"> }> }) {
   const { id } = use(params);
-  
-  // 2. Ambil data user yang sedang login dari Clerk
-  const { user } = useUser(); 
 
+  // Data Fetching
   const micrositeData = useQuery(api.microsites.getMicrositeById, { id });
   const updateMicrosite = useMutation(api.microsites.updateMicrosite);
   
+  // Local State
   const [formData, setFormData] = useState<MicrositeForm | null>(null);
   const [loading, setLoading] = useState(false);
-  const [isDirty, setIsDirty] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
-  const [activeIconPicker, setActiveIconPicker] = useState<string | null>(null);
+  const [isDirty, setIsDirty] = useState(false); // Melacak perubahan belum disimpan
+  const [isMounted, setIsMounted] = useState(false); // Fix untuk Hydration DnD
 
+  // 1. Handle Hydration & Initial Data Load
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
   useEffect(() => {
+    // Hanya set data jika formData masih kosong (Initial Load)
+    // Ini mencegah ketikan user tertimpa saat Convex melakukan background refresh
     if (micrositeData && !formData) {
         setFormData({
             ...micrositeData,
@@ -69,6 +70,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
     }
   }, [micrositeData, formData]);
 
+  // Handle Input Change Wrapper (untuk set dirty state)
   const handleInputChange = (updater: (prev: MicrositeForm) => MicrositeForm) => {
       if (!formData) return;
       setFormData(updater(formData));
@@ -77,7 +79,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
   if (!formData || !isMounted) return <div className="p-10 text-center animate-pulse text-gray-500">Memuat Editor...</div>;
 
-  // ... (LOGIC CRUD: addLink, addHeader, updateItem, deleteItem, handleOnDragEnd tetap sama) ...
+  // --- LOGIC CRUD LINKS ---
   const addLink = () => {
     const newLink: LinkItem = { id: Date.now().toString(), type: "link", label: "", url: "", active: true };
     handleInputChange(prev => ({ ...prev, links: [...prev.links, newLink] }));
@@ -115,10 +117,12 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
     });
   };
 
+  // --- SAVE LOGIC ---
   const handleSave = async () => {
     if (!formData) return;
     setLoading(true);
     try {
+        // Validasi data sebelum kirim (opsional)
         const cleanedLinks = formData.links.map(l => ({
             ...l,
             url: l.type === 'link' ? formatUrl(l.url || "") : undefined
@@ -136,6 +140,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
         });
         
         setIsDirty(false);
+        // Bisa diganti dengan Toast Library (Sonner/Hot-Toast)
         alert("Berhasil disimpan!"); 
     } catch (e) {
         const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
@@ -147,11 +152,6 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
   const currentTheme = THEMES[formData.theme] || THEMES["simple-blue"];
 
-  // 3. LOGIC PENENTUAN GAMBAR UTAMA
-  // Jika formData.imageUrl ada isinya (custom upload), pakai itu.
-  // Jika kosong, pakai user?.imageUrl (dari Clerk).
-  const displayImage = formData.imageUrl || user?.imageUrl;
-
   return (
     <div className="max-w-6xl mx-auto h-[calc(100vh-100px)] flex gap-8 pb-10">
       
@@ -162,10 +162,12 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
         <div className="flex justify-between items-center sticky top-0 bg-[#f8faff]/95 backdrop-blur z-20 py-4 border-b">
             <div className="flex items-center gap-2">
                 <Link href="/dashboard/microsite" className="text-gray-400 hover:text-gray-600 transition">← Kembali</Link>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                    Edit: {formData.title}
-                    {isDirty && <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Perubahan belum disimpan"></span>}
-                </h1>
+                <div className="flex flex-col">
+                    <h1 className="text-xl font-bold flex items-center gap-2">
+                        Edit: {formData.title}
+                        {isDirty && <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Perubahan belum disimpan"></span>}
+                    </h1>
+                </div>
             </div>
             <button 
                 onClick={handleSave} 
@@ -184,10 +186,6 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
             <div className="flex items-center gap-2 text-gray-700 font-bold border-b pb-2"><Palette size={18}/> Tampilan</div>
             
             <div className="grid md:grid-cols-2 gap-4">
-                {/* Catatan: DrivePicker tetap menampilkan formData.imageUrl (nilai asli database).
-                    Jika kosong, biarkan kosong agar user tahu dia belum set custom image.
-                    Tapi kita bisa kasih hint text jika mau.
-                */}
                 <DrivePicker 
                     label="Foto Profil" 
                     currentUrl={formData.imageUrl} 
@@ -200,7 +198,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                 />
             </div>
 
-            {/* Theme Selector, Basic Info, Textarea Bio tetap sama ... */}
+            {/* Theme Selector */}
             <div>
                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Pilih Tema</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
@@ -220,6 +218,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                 </div>
             </div>
 
+            {/* Basic Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label className="text-xs font-bold text-gray-400 block mb-1">Nama Tampilan</label>
@@ -251,9 +250,8 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
             />
         </div>
 
-        {/* Link Builder Section tetap sama... */}
+        {/* 2. Link Builder Section */}
         <div className="space-y-4">
-             {/* ... Kode drag and drop ... */}
              <div className="flex justify-between items-center sticky top-[72px] bg-[#f8faff] z-10 py-2">
                 <h3 className="font-bold text-gray-700 flex items-center gap-2"><LinkIcon size={18}/> Konten Link</h3>
                 <div className="flex gap-2">
@@ -279,6 +277,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                             <div {...provided.dragHandleProps} className="text-gray-300 cursor-grab active:cursor-grabbing hover:text-gray-500 p-1"><GripVertical size={20}/></div>
                                             
                                             <div className="flex-1 space-y-1">
+                                                {/* Label Input */}
                                                 <input 
                                                     type="text" 
                                                     value={item.label} 
@@ -287,70 +286,17 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                     placeholder={item.type === 'header' ? "JUDUL KATEGORI" : "Label Tombol"}
                                                     autoFocus={item.label === ""}
                                                 />
+                                                {/* URL Input */}
                                                 {item.type === 'link' && (
-                                                    <div className="flex gap-3 w-full">
-
-                                                        {/* === TOMBOL ICON PICKER (BARU) === */}
-                                                        <div className="relative">
-                                                            <button 
-                                                                onClick={() => setActiveIconPicker(activeIconPicker === item.id ? null : item.id)}
-                                                                className="w-10 h-10 border rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 transition"
-                                                                title="Pilih Icon"
-                                                            >
-                                                                {getIcon(item.icon)}
-                                                            </button>
-
-                                                            {/* POPOVER PILIHAN ICON */}
-                                                            {activeIconPicker === item.id && (
-                                                                <div className="absolute top-12 left-0 z-50 bg-white border shadow-xl rounded-xl p-3 w-64 grid grid-cols-5 gap-2 animate-in fade-in slide-in-from-top-2">
-                                                                    {Object.keys(ICONS).filter(k => k !== 'default').map((iconKey) => (
-                                                                        <button
-                                                                            key={iconKey}
-                                                                            onClick={() => {
-                                                                                updateItem(index, 'icon', iconKey);
-                                                                                setActiveIconPicker(null);
-                                                                            }}
-                                                                            className={`p-2 rounded-lg flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition ${item.icon === iconKey ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
-                                                                            title={iconKey}
-                                                                        >
-                                                                            {ICONS[iconKey]}
-                                                                        </button>
-                                                                    ))}
-                                                                    {/* Tombol Hapus Icon */}
-                                                                    <button 
-                                                                        onClick={() => { updateItem(index, 'icon', ""); setActiveIconPicker(null); }}
-                                                                        className="p-2 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 col-span-5 text-xs font-bold mt-2 border-t pt-3"
-                                                                    >
-                                                                        <X size={14} className="mr-1"/> Hapus Icon
-                                                                    </button>
-                                                                </div>
-                                                            )}
-                                                            {/* Backdrop untuk menutup popover saat klik luar */}
-                                                            {activeIconPicker === item.id && (
-                                                                <div className="fixed inset-0 z-40" onClick={() => setActiveIconPicker(null)}></div>
-                                                            )}
-                                                        </div>
-
-                                                        {/* INPUT FORM (URL & LABEL) */}
-                                                        <div className="flex-1 space-y-2">
-                                                            <input 
-                                                                type="text" 
-                                                                value={item.label} 
-                                                                onChange={e => updateItem(index, 'label', e.target.value)}
-                                                                className="w-full bg-transparent font-bold focus:outline-none text-gray-800"
-                                                                placeholder="Label Link (cth: Instagram)"
-                                                            />
-                                                            <div className="flex items-center gap-2">
-                                                                <ExternalLink size={12} className="text-gray-300"/>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={item.url || ""} 
-                                                                    onChange={e => updateItem(index, 'url', e.target.value)}
-                                                                    className="w-full text-xs text-gray-500 bg-transparent py-1 rounded focus:outline-none focus:text-[#0193ff]"
-                                                                    placeholder="https://..."
-                                                                />
-                                                            </div>
-                                                        </div>
+                                                    <div className="flex items-center gap-2">
+                                                        <ExternalLink size={12} className="text-gray-300"/>
+                                                        <input 
+                                                            type="text" 
+                                                            value={item.url || ""} 
+                                                            onChange={e => updateItem(index, 'url', e.target.value)}
+                                                            className="w-full text-xs text-gray-500 bg-transparent py-1 rounded focus:outline-none focus:text-[#0193ff]"
+                                                            placeholder="https://tujuan.com"
+                                                        />
                                                     </div>
                                                 )}
                                             </div>
@@ -396,24 +342,21 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
              <div className="relative z-10 p-6 h-full overflow-y-auto no-scrollbar flex flex-col items-center pt-14">
                  {/* Avatar */}
                  <div className="w-24 h-24 rounded-full border-4 border-white/80 shadow-lg overflow-hidden mb-4 bg-gray-200 shrink-0 relative group cursor-pointer">
-                     
-                     {/* 4. GUNAKAN displayImage DISINI */}
-                     {displayImage ? (
-                        <img src={displayImage} className="w-full h-full object-cover" alt="profile" />
+                     {formData.imageUrl ? (
+                        <img src={formData.imageUrl} className="w-full h-full object-cover" alt="profile" />
                      ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No img</div>
                      )}
-
                  </div>
                  
                  <h2 className={`font-bold text-lg text-center leading-snug break-words max-w-full ${currentTheme.text}`}>
                      {formData.title || "Nama Anda"}
                  </h2>
-                 {/* ... Sisanya sama ... */}
                  <p className={`text-xs text-center mt-2 mb-8 px-2 opacity-90 leading-relaxed whitespace-pre-wrap ${currentTheme.text}`}>
                      {formData.bio || "Tulis deskripsi singkat tentang diri anda disini."}
                  </p>
 
+                 {/* Links Render */}
                  <div className="w-full space-y-3 pb-10">
                      {formData.links.map((item) => (
                          item.type === 'header' ? (
