@@ -8,7 +8,7 @@ export default function NotFound() {
       
       {/* Header Minimalis */}
       <header className="p-6 flex justify-center md:justify-start">
-        <Link href="/" className="flex items-center gap-2.5">
+        <Link href={process.env.NEXT_PUBLIC_APP_URL || "/"} className="flex items-center gap-2.5">
             {/* Logo */}
             <Image src="/logo.svg" alt="singkat.in logo" width={40} height={40} />
             {/* Nama Brand */}
@@ -43,7 +43,7 @@ export default function NotFound() {
 
         {/* Tombol Aksi */}
         <div className="flex flex-col sm:flex-row gap-4">
-            <Link href="/">
+            <Link href={process.env.NEXT_PUBLIC_APP_URL || "/"}>
                 <button className="px-8 py-3.5 bg-[#0193ff] hover:bg-[#007acc] text-white rounded-full font-bold shadow-lg shadow-blue-500/30 transition hover:-translate-y-1 flex items-center gap-2">
                     <ArrowLeft size={20} />
                     Kembali ke Beranda
@@ -51,7 +51,7 @@ export default function NotFound() {
             </Link>
             
             {/* Opsi Tambahan (Opsional) */}
-            <Link href="/contact">
+            <Link href={process.env.NEXT_PUBLIC_APP_URL ? `${process.env.NEXT_PUBLIC_APP_URL}/contact` : "/contact"}>
                 <button className="px-8 py-3.5 bg-white border border-gray-200 hover:border-[#0193ff] text-gray-600 hover:text-[#0193ff] rounded-full font-bold transition">
                     Lapor Masalah
                 </button>
