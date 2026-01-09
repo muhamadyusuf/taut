@@ -51,7 +51,7 @@ export default function Navbar() {
                     </button>
                 </Link>
                 {/* Tampilkan Foto Profil User */}
-                <UserButton/>
+                <UserButton afterSignOutUrl={process.env.NEXT_PUBLIC_APP_URL || "/"} />
                 </div>
             </SignedIn>
         </div>
