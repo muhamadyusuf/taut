@@ -268,3 +268,13 @@ export const createOrderRecord = internalMutation({
     });
   },
 });
+
+export const getOrderByMidtransId = internalQuery({
+  args: { midtransOrderId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("orders")
+      .withIndex("by_midtransOrderId", (q) => q.eq("midtransOrderId", args.midtransOrderId))
+      .first();
+  },
+});
