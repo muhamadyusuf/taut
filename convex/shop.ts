@@ -1,0 +1,270 @@
+import { v } from "convex/values";
+import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
+
+// ------------------------------------------------------------------
+// BAGIAN 1: PENGATURAN TOKO (Identity & Keys)
+// ------------------------------------------------------------------
+
+// Simpan Pengaturan (API Key, Nama Toko, Slug, Logo)
+export const saveShopSettings = mutation({
+  args: {
+    clientKey: v.string(),
+    serverKey: v.string(),
+    isProduction: v.boolean(),
+    // Identitas Toko
+    slug: v.string(),
+    shopName: v.string(),
+    logoUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    // 1. Validasi Slug Unik
+    // Bersihkan slug (hanya huruf kecil, angka, strip)
+    const cleanSlug = args.slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    
+    // Cek apakah slug sudah dipakai orang lain
+    const existingSlug = await ctx.db.query("shop_settings")
+        .withIndex("by_slug", q => q.eq("slug", cleanSlug))
+        .first();
+
+    // Ambil settingan saya saat ini (jika ada)
+    const mySettings = await ctx.db.query("shop_settings")
+        .withIndex("by_userId", q => q.eq("userId", identity.subject))
+        .first();
+
+    // Jika slug ada, DAN bukan punya saya -> Error
+    if (existingSlug && existingSlug.userId !== identity.subject) {
+        throw new Error("URL Toko ini sudah dipakai orang lain. Silakan pilih yang lain.");
+    }
+
+    const dataToSave = {
+        userId: identity.subject,
+        clientKey: args.clientKey,
+        serverKey: args.serverKey,
+        isProduction: args.isProduction,
+        slug: cleanSlug,
+        shopName: args.shopName,
+        logoUrl: args.logoUrl,
+    };
+
+    if (mySettings) {
+      await ctx.db.patch(mySettings._id, dataToSave);
+    } else {
+      await ctx.db.insert("shop_settings", dataToSave);
+    }
+  },
+});
+
+// Ambil Pengaturan Saya (Untuk Dashboard)
+export const getMySettings = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+    return await ctx.db
+      .query("shop_settings")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .first();
+  },
+});
+
+// PUBLIC: Ambil Toko Berdasarkan Slug (Untuk Halaman Toko Pembeli)
+export const getShopBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("shop_settings")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+  },
+});
+
+// ------------------------------------------------------------------
+// BAGIAN 2: MANAJEMEN PRODUK (CRUD + STOK)
+// ------------------------------------------------------------------
+
+// 1. CREATE (Tambah Produk)
+export const createProduct = mutation({
+  args: {
+    title: v.string(),
+    description: v.string(),
+    price: v.number(),
+    stock: v.number(), // Input Stok
+    fileUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    await ctx.db.insert("products", {
+      userId: identity.subject,
+      title: args.title,
+      description: args.description,
+      price: args.price,
+      stock: args.stock, 
+      fileUrl: args.fileUrl,
+      isActive: true,
+    });
+  },
+});
+
+// 2. UPDATE (Edit Produk)
+export const updateProduct = mutation({
+  args: {
+    id: v.id("products"),
+    title: v.string(),
+    description: v.string(),
+    price: v.number(),
+    stock: v.number(),
+    fileUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const product = await ctx.db.get(args.id);
+    
+    // Validasi Kepemilikan
+    if (!product || product.userId !== identity.subject) {
+        throw new Error("Anda tidak memiliki izin mengedit produk ini.");
+    }
+
+    await ctx.db.patch(args.id, {
+        title: args.title,
+        description: args.description,
+        price: args.price,
+        stock: args.stock,
+        fileUrl: args.fileUrl,
+    });
+  },
+});
+
+// 3. DELETE (Hapus Produk)
+export const deleteProduct = mutation({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const product = await ctx.db.get(args.id);
+    if (!product || product.userId !== identity.subject) {
+        throw new Error("Anda tidak memiliki izin menghapus produk ini.");
+    }
+
+    await ctx.db.delete(args.id);
+  },
+});
+
+// Ambil Semua Produk Saya (Dashboard)
+export const getMyProducts = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    
+    return await ctx.db
+      .query("products")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .order("desc")
+      .collect();
+  },
+});
+
+// Ambil 1 Produk by ID (Untuk Form Edit)
+export const getProductById = query({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+// PUBLIC: Ambil Produk Toko (Untuk Halaman Pembeli)
+export const getProductsBySeller = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("products")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .filter(q => q.eq(q.field("isActive"), true)) // Hanya yang aktif
+      .collect();
+  },
+});
+
+// ------------------------------------------------------------------
+// BAGIAN 3: MANAJEMEN ORDER
+// ------------------------------------------------------------------
+
+// Ambil Riwayat Pesanan (Dashboard Penjual)
+export const getMyOrders = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return [];
+    
+    return await ctx.db
+      .query("orders")
+      .withIndex("by_sellerId", (q) => q.eq("sellerId", identity.subject))
+      .order("desc")
+      .collect();
+  },
+});
+
+// Update Status Order (Dipanggil Webhook)
+export const updateOrderStatusInternal = mutation({
+    args: { midtransOrderId: v.string(), status: v.string() },
+    handler: async (ctx, args) => {
+        const order = await ctx.db.query("orders")
+            .withIndex("by_midtransOrderId", q => q.eq("midtransOrderId", args.midtransOrderId))
+            .first();
+        
+        if (order) {
+            await ctx.db.patch(order._id, { status: args.status });
+            
+            // OPSIONAL: Kurangi Stok jika status PAID
+            // (Logic pengurangan stok bisa ditambahkan disini jika diinginkan)
+        }
+    }
+});
+
+// ------------------------------------------------------------------
+// BAGIAN 4: INTERNAL HELPERS (Dipanggil oleh shopActions.ts)
+// ------------------------------------------------------------------
+
+// Helper: Ambil Setting Penjual (API Key) secara aman di server side
+export const getSellerSettingsInternal = internalQuery({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("shop_settings")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+  },
+});
+
+// Helper: Ambil Produk untuk validasi harga di server side
+export const getProductInternal = internalQuery({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.id);
+  },
+});
+
+// Helper: Catat Order Baru (Termasuk No Telp)
+export const createOrderRecord = internalMutation({
+  args: {
+    productId: v.id("products"), // ID produk representatif (item pertama)
+    sellerId: v.string(),
+    buyerName: v.string(),
+    buyerEmail: v.string(),
+    buyerPhone: v.string(), // <--- Data Telepon
+    amount: v.number(),
+    snapToken: v.string(),
+    midtransOrderId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.insert("orders", {
+      ...args,
+      status: "pending",
+      createdAt: Date.now(),
+    });
+  },
+});

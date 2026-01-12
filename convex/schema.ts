@@ -3,7 +3,7 @@ import { v } from "convex/values";
 
 export default defineSchema({
   // ---------------------------------------------------------
-  // TABEL URL SHORTENER (Tetap)
+  // 1. URL SHORTENER
   // ---------------------------------------------------------
   links: defineTable({
     originalUrl: v.string(),
@@ -13,9 +13,12 @@ export default defineSchema({
     title: v.optional(v.string()),
     createdAt: v.number(),
   })
-  .index("by_shortCode", ["shortCode"])
-  .index("by_userId", ["userId"]),
+  .index("by_shortCode", ["shortCode"]) // Untuk redirect cepat
+  .index("by_userId", ["userId"]),      // Untuk dashboard user
 
+  // ---------------------------------------------------------
+  // 2. KATEGORI & TAGS (Opsional/Fitur Tambahan)
+  // ---------------------------------------------------------
   categories: defineTable({
     name: v.string(),
     userId: v.string(),
@@ -31,26 +34,26 @@ export default defineSchema({
   .index("by_categoryId", ["categoryId"]),
 
   // ---------------------------------------------------------
-  // TABEL MICROSITES (Diperbaharui)
+  // 3. MICROSITES (BIO LINK)
   // ---------------------------------------------------------
   microsites: defineTable({
     userId: v.string(),
-    slug: v.string(),
+    slug: v.string(), // e.g: "singkat.in/bio/namasaya"
     title: v.string(),
     bio: v.optional(v.string()),
     
-    // Tampilan
-    theme: v.string(),
-    buttonStyle: v.optional(v.string()), // e.g: "rounded", "sharp", "outline"
+    // Tampilan Visual
+    theme: v.string(), // "simple-blue", "dark-mode", dll
+    buttonStyle: v.optional(v.string()), // "rounded", "sharp", "outline"
     
-    // Gambar (URL String)
+    // Gambar (URL String External / Cloudinary / Google Drive)
     imageUrl: v.optional(v.string()), 
     backgroundUrl: v.optional(v.string()), 
 
-    // Statistik
+    // Statistik Sederhana
     visitorCount: v.optional(v.number()),
 
-    // Social Media Links (Objek Terpisah)
+    // Social Media Links (Objek Terpisah agar mudah diakses)
     socials: v.optional(
       v.object({
         instagram: v.optional(v.string()),
@@ -62,7 +65,7 @@ export default defineSchema({
       })
     ),
 
-    // Array Link/Konten
+    // Array Link/Konten Tombol
     links: v.array(
       v.object({
         id: v.string(),
@@ -70,11 +73,68 @@ export default defineSchema({
         label: v.string(),
         url: v.optional(v.string()),
         active: v.boolean(),
-        thumbnail: v.optional(v.string()), // Gambar kecil di tombol
-        icon: v.optional(v.string()),      // Class icon (jika pakai library icon)
+        thumbnail: v.optional(v.string()), // Gambar kecil di dalam tombol
+        icon: v.optional(v.string()),      // Class icon / nama icon
       })
     ),
   })
   .index("by_userId", ["userId"])
   .index("by_slug", ["slug"]),
+
+  // ---------------------------------------------------------
+  // 4. TOKO ONLINE (SHOP & MIDTRANS)
+  // ---------------------------------------------------------
+  
+  // A. Pengaturan API Key User (Direct-to-Merchant)
+  shop_settings: defineTable({
+    userId: v.string(),
+    merchantId: v.optional(v.string()),
+    
+    // Identitas Toko
+    slug: v.optional(v.string()), // e.g: "tokoberkah" -> singkat.in/s/tokoberkah
+    shopName: v.optional(v.string()),
+    logoUrl: v.optional(v.string()),
+
+    // Midtrans Keys
+    clientKey: v.string(),
+    serverKey: v.string(),
+    isProduction: v.boolean(),
+  })
+  .index("by_userId", ["userId"])
+  .index("by_slug", ["slug"]), // Index baru untuk pencarian toko publik
+
+  // B. Produk Digital
+  products: defineTable({
+    userId: v.string(),
+    micrositeId: v.optional(v.id("microsites")), // Jika ingin menempelkan produk ke bio tertentu
+    title: v.string(),
+    description: v.string(),
+    price: v.number(),
+    stock: v.number(),
+    fileUrl: v.optional(v.string()), // Link file download (Google Drive/Lainnya) setelah bayar
+    isActive: v.boolean(),
+  })
+  .index("by_userId", ["userId"]),
+
+  // C. Riwayat Transaksi (Orders)
+  orders: defineTable({
+    productId: v.id("products"),
+    sellerId: v.string(), // ID User penjual (untuk query dashboard penjual)
+    
+    // Data Pembeli
+    buyerName: v.string(),
+    buyerEmail: v.string(),
+    buyerPhone: v.string(),
+    
+    amount: v.number(),
+    status: v.string(), // "pending", "paid", "failed", "challenge"
+    
+    // Data Midtrans
+    snapToken: v.optional(v.string()),
+    midtransOrderId: v.string(), // ID Order unik (ORDER-TIMESTAMP-XXX)
+    
+    createdAt: v.number(),
+  })
+  .index("by_midtransOrderId", ["midtransOrderId"]) // Wajib untuk Webhook mencari order
+  .index("by_sellerId", ["sellerId"]), // Agar penjual bisa lihat history penjualannya
 });
