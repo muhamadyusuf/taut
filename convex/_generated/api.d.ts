@@ -12,6 +12,7 @@ import type * as categories from "../categories.js";
 import type * as http from "../http.js";
 import type * as links from "../links.js";
 import type * as microsites from "../microsites.js";
+import type * as midtransActions from "../midtransActions.js";
 import type * as shop from "../shop.js";
 import type * as shopActions from "../shopActions.js";
 
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   links: typeof links;
   microsites: typeof microsites;
+  midtransActions: typeof midtransActions;
   shop: typeof shop;
   shopActions: typeof shopActions;
 }>;
