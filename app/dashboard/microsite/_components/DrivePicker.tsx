@@ -184,7 +184,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
       supportDrives: true,
       multiselect: false,
       token: accessToken, // Kirim token jika ada
-      customScopes: ['https://www.googleapis.com/auth/drive'], 
+      customScopes: ['https://www.googleapis.com/auth/drive.file'], 
       callbackFunction: (data: PickerCallbackData) => {
         if (data.action === "picked") {
           const file = data.docs[0];
