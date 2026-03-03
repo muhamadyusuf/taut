@@ -93,6 +93,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id">
+      <meta name="google-adsense-account" content="ca-pub-1728956538753705"></meta>
       <body>
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
