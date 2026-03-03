@@ -94,6 +94,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <meta name="google-adsense-account" content="ca-pub-1728956538753705"></meta>
+      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1728956538753705" crossOrigin="anonymous"></script>
       <body>
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
