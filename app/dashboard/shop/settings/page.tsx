@@ -3,7 +3,21 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Loader2, Save, Eye, EyeOff, Store, Link as LinkIcon, AlertCircle, Palette, Check } from "lucide-react";
+import { Loader2, Save, Eye, EyeOff, Store, Link as LinkIcon, AlertCircle, Palette, Check, Paintbrush } from "lucide-react";
+
+// --- PRESET PRIMARY COLORS ---
+const PRESET_COLORS = [
+  "#3B82F6", // biru
+  "#EF4444", // merah
+  "#10B981", // hijau
+  "#F59E0B", // amber
+  "#8B5CF6", // ungu
+  "#EC4899", // pink
+  "#14B8A6", // teal
+  "#F97316", // orange
+  "#06B6D4", // cyan
+  "#1E293B", // slate gelap
+];
 
 // --- THEME DEFINITIONS (untuk preview di settings) ---
 const SHOP_THEMES = [
@@ -57,6 +71,7 @@ export default function ShopSettingsPage() {
     logoUrl: "",
     description: "",
     theme: "classic",
+    primaryColor: "",
     clientKey: "",
     serverKey: "",
     isProduction: false,
@@ -74,6 +89,7 @@ export default function ShopSettingsPage() {
             logoUrl: settings.logoUrl || "",
             description: settings.description || "",
             theme: settings.theme || "classic",
+            primaryColor: settings.primaryColor || "",
             clientKey: settings.clientKey || "",
             serverKey: settings.serverKey || "",
             isProduction: settings.isProduction || false,
@@ -246,6 +262,102 @@ export default function ShopSettingsPage() {
                     );
                 })}
             </div>
+        </div>
+
+        {/* --- BAGIAN 1c: WARNA PRIMER --- */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-5">
+            <div className="flex items-center gap-2 border-b pb-4 mb-4">
+                <Paintbrush className="text-pink-500" size={20} />
+                <h3 className="font-bold text-gray-800">Warna Primer</h3>
+            </div>
+            <p className="text-sm text-gray-500 -mt-2">
+                Kustomisasi warna aksen tombol, harga, dan link di halaman toko publik.
+                Biarkan &quot;Auto&quot; untuk mengikuti warna default tema.
+            </p>
+
+            {/* Swatch Presets */}
+            <div className="flex flex-wrap gap-2.5 items-center">
+                {/* Auto (gunakan default tema) */}
+                <button
+                    type="button"
+                    title="Gunakan default tema"
+                    onClick={() => setForm({ ...form, primaryColor: "" })}
+                    className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
+                        !form.primaryColor
+                            ? "border-gray-900 shadow-md scale-110"
+                            : "border-gray-300 hover:border-gray-500"
+                    }`}
+                >
+                    <span className="text-[9px] font-bold text-gray-500 leading-none">Auto</span>
+                </button>
+
+                {PRESET_COLORS.map((color) => (
+                    <button
+                        type="button"
+                        key={color}
+                        title={color}
+                        onClick={() => setForm({ ...form, primaryColor: color })}
+                        style={{ backgroundColor: color }}
+                        className={`w-9 h-9 rounded-full border-2 transition-all ${
+                            form.primaryColor === color
+                                ? "border-gray-900 scale-110 shadow-md"
+                                : "border-transparent hover:scale-105 hover:shadow-sm"
+                        }`}
+                    />
+                ))}
+            </div>
+
+            {/* Custom color input */}
+            <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                    <label className="text-sm font-bold text-gray-700">Warna Kustom:</label>
+                    <input
+                        type="color"
+                        value={form.primaryColor || "#3B82F6"}
+                        onChange={e => setForm({ ...form, primaryColor: e.target.value })}
+                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+                    />
+                </div>
+                <input
+                    type="text"
+                    value={form.primaryColor}
+                    onChange={e => {
+                        const val = e.target.value;
+                        if (/^#?[0-9A-Fa-f]{0,6}$/.test(val)) {
+                            setForm({ ...form, primaryColor: val.startsWith("#") || val === "" ? val : "#" + val });
+                        }
+                    }}
+                    className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                    placeholder="#3B82F6"
+                    maxLength={7}
+                />
+                {form.primaryColor && (
+                    <button
+                        type="button"
+                        onClick={() => setForm({ ...form, primaryColor: "" })}
+                        className="text-xs text-gray-400 hover:text-red-500 transition"
+                    >
+                        Reset ke default
+                    </button>
+                )}
+            </div>
+
+            {/* Live preview */}
+            {form.primaryColor && /^#[0-9A-Fa-f]{6}$/.test(form.primaryColor) && (
+                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100 flex-wrap">
+                    <button
+                        type="button"
+                        style={{ backgroundColor: form.primaryColor }}
+                        className="px-4 py-2 rounded-xl text-white text-sm font-bold shadow-sm pointer-events-none"
+                    >
+                        + Tambah ke Keranjang
+                    </button>
+                    <span className="text-base font-extrabold" style={{ color: form.primaryColor }}>
+                        Rp 150.000
+                    </span>
+                    <span className="text-xs text-gray-400 italic">← Preview warna primer</span>
+                </div>
+            )}
         </div>
 
         {/* --- BAGIAN 2: INTEGRASI MIDTRANS --- */}

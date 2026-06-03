@@ -17,6 +17,7 @@ export const saveShopSettings = mutation({
     logoUrl: v.optional(v.string()),
     description: v.optional(v.string()),
     theme: v.optional(v.string()),
+    primaryColor: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -51,6 +52,7 @@ export const saveShopSettings = mutation({
         logoUrl: args.logoUrl,
         description: args.description,
         theme: args.theme,
+        primaryColor: args.primaryColor,
     };
 
     if (mySettings) {

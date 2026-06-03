@@ -96,6 +96,7 @@ export default defineSchema({
     logoUrl: v.optional(v.string()),
     description: v.optional(v.string()), // Deskripsi toko (tampil di header halaman publik)
     theme: v.optional(v.string()), // Template tampilan: "classic" | "dark" | "minimal"
+    primaryColor: v.optional(v.string()), // Warna primer kustom (hex, e.g. "#3B82F6")
 
     // Midtrans Keys
     clientKey: v.string(),

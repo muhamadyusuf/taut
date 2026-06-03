@@ -88,10 +88,10 @@ const THEMES: Record<ThemeKey, ThemeTokens> = {
     priceTxt: "text-blue-600",
     stockBadge: "text-green-600 bg-green-50",
     outBadge: "text-red-500 bg-red-50",
-    btnAdd: "bg-blue-600 hover:bg-blue-700 text-white shadow-sm shadow-blue-200",
-    btnQtyWrap: "bg-blue-50 border border-blue-200",
+    btnAdd: "bg-linear-to-r from-blue-600 to-blue-500 hover:from-blue-700 hover:to-blue-600 text-white shadow-md shadow-blue-300/50 hover:shadow-lg hover:shadow-blue-400/40",
+    btnQtyWrap: "bg-blue-50 border-2 border-blue-200",
     btnQtyText: "text-blue-700",
-    btnQtyCtrl: "bg-white border border-gray-200 hover:bg-gray-100 text-gray-700",
+    btnQtyCtrl: "bg-white border border-blue-200 hover:bg-blue-50 text-blue-600 hover:text-blue-700",
     cartFloat: "bg-blue-600 hover:bg-blue-700 text-white shadow-2xl shadow-blue-500/40",
     cartCountBadge: "bg-white text-blue-600",
     emptyIcon: "text-gray-300",
@@ -122,10 +122,10 @@ const THEMES: Record<ThemeKey, ThemeTokens> = {
     priceTxt: "text-amber-400",
     stockBadge: "text-emerald-400 bg-emerald-900/40",
     outBadge: "text-red-400 bg-red-900/40",
-    btnAdd: "bg-amber-500 hover:bg-amber-400 text-gray-900 font-bold",
-    btnQtyWrap: "bg-gray-700 border border-gray-600",
+    btnAdd: "bg-linear-to-r from-amber-500 to-yellow-400 hover:from-amber-400 hover:to-yellow-300 text-gray-900 font-bold shadow-md shadow-amber-900/50 hover:shadow-lg hover:shadow-amber-700/40",
+    btnQtyWrap: "bg-gray-700 border-2 border-amber-500/50",
     btnQtyText: "text-amber-400",
-    btnQtyCtrl: "bg-gray-600 border border-gray-500 hover:bg-gray-500 text-gray-200",
+    btnQtyCtrl: "bg-gray-600 border border-gray-500 hover:bg-gray-500 text-amber-300",
     cartFloat: "bg-amber-500 hover:bg-amber-400 text-gray-900 shadow-2xl shadow-amber-900/60",
     cartCountBadge: "bg-gray-900 text-amber-400",
     emptyIcon: "text-gray-700",
@@ -156,10 +156,10 @@ const THEMES: Record<ThemeKey, ThemeTokens> = {
     priceTxt: "text-stone-900 font-extrabold",
     stockBadge: "text-teal-700 bg-teal-50",
     outBadge: "text-rose-600 bg-rose-50",
-    btnAdd: "bg-stone-900 hover:bg-stone-700 text-white",
-    btnQtyWrap: "bg-stone-100 border border-stone-200",
+    btnAdd: "bg-stone-900 hover:bg-stone-800 text-white shadow-md shadow-stone-900/20 hover:shadow-lg hover:shadow-stone-900/30 tracking-wide",
+    btnQtyWrap: "bg-stone-50 border-2 border-stone-200",
     btnQtyText: "text-stone-800",
-    btnQtyCtrl: "bg-white border border-stone-200 hover:bg-stone-50 text-stone-700",
+    btnQtyCtrl: "bg-white border border-stone-200 hover:bg-stone-100 text-stone-700",
     cartFloat: "bg-stone-900 hover:bg-stone-700 text-white shadow-xl shadow-stone-900/30",
     cartCountBadge: "bg-white text-stone-900",
     emptyIcon: "text-stone-300",
@@ -223,7 +223,7 @@ function ProductImage({ imageUrl, title, t }: { imageUrl?: string; title: string
       alt={title}
       referrerPolicy="no-referrer"
       onError={() => setError(true)}
-      className="w-full h-56 object-cover"
+      className="w-full h-56 object-contain"
     />
   );
 }
@@ -257,6 +257,18 @@ export default function PublicStorePage() {
   const rawTheme = shop?.theme ?? "classic";
   const themeKey: ThemeKey = rawTheme in THEMES ? (rawTheme as ThemeKey) : "classic";
   const t = THEMES[themeKey];
+
+  // Warna primer kustom (dari admin settings)
+  const primaryColor = shop?.primaryColor && /^#[0-9A-Fa-f]{6}$/.test(shop.primaryColor)
+    ? shop.primaryColor
+    : null;
+  const primaryStyle = primaryColor ? ({ "--clr-primary": primaryColor } as React.CSSProperties) : undefined;
+  // Override class untuk elemen berbasis warna primer
+  const clsBtnAdd     = primaryColor ? `bg-[var(--clr-primary)] hover:brightness-90 text-white shadow-sm` : t.btnAdd;
+  const clsCartFloat  = primaryColor ? `bg-[var(--clr-primary)] hover:brightness-90 text-white shadow-2xl` : t.cartFloat;
+  const clsModalBtn   = primaryColor ? `bg-[var(--clr-primary)] hover:brightness-90 text-white shadow-lg` : t.modalBtn;
+  const clsPriceTxt   = primaryColor ? `text-[var(--clr-primary)] font-bold` : t.priceTxt;
+  const clsModalTotal = primaryColor ? `text-[var(--clr-primary)]` : t.modalTotal;
 
   const addToCart = (product: Product) => {
     setCart(prev => {
@@ -344,7 +356,7 @@ export default function PublicStorePage() {
   );
 
   return (
-    <div className={`min-h-screen ${t.pageBg} pb-28`}>
+    <div className={`min-h-screen ${t.pageBg} pb-28`} style={primaryStyle}>
 
       {/* ── HEADER TOKO ── */}
       <div className={t.headerBg}>
@@ -416,7 +428,7 @@ export default function PublicStorePage() {
 
                     {/* HARGA & STOK */}
                     <div className={`mt-auto pt-3 flex items-center justify-between border-t ${t.divider}`}>
-                      <span className={`font-bold text-base ${t.priceTxt}`}>
+                      <span className={`font-bold text-base ${clsPriceTxt}`}>
                         Rp {product.price.toLocaleString("id-ID")}
                       </span>
                       {product.stock > 0 ? (
@@ -432,29 +444,30 @@ export default function PublicStorePage() {
                   </div>
 
                   {/* TOMBOL CART */}
-                  <div className={`px-4 pb-4 pt-1 border-t ${t.divider}`}>
+                  <div className="px-4 pb-5 pt-1">
                     {qty === 0 ? (
                       <button
                         onClick={() => addToCart(product)}
                         disabled={product.stock === 0}
-                        className={`w-full mt-2 py-2.5 rounded-xl font-bold text-sm transition active:scale-95 flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed ${t.btnAdd}`}
+                        className={`group w-full mt-3 py-3.5 rounded-2xl font-bold text-sm transition-all duration-200 active:scale-95 hover:-translate-y-0.5 disabled:hover:translate-y-0 flex items-center justify-center gap-2.5 disabled:opacity-40 disabled:cursor-not-allowed ${clsBtnAdd}`}
                       >
-                        <Plus size={16} /> Tambah ke Keranjang
+                        <ShoppingCart size={17} className="transition-transform duration-200 group-hover:scale-110" />
+                        Tambah ke Keranjang
                       </button>
                     ) : (
-                      <div className={`mt-2 flex items-center justify-between rounded-xl px-3 py-1.5 ${t.btnQtyWrap}`}>
+                      <div className={`mt-3 flex items-center justify-between rounded-2xl px-2 py-1.5 ${t.btnQtyWrap}`}>
                         <button
                           onClick={() => updateQty(product._id, -1, product.stock)}
-                          className={`p-1.5 rounded-lg transition ${t.btnQtyCtrl}`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${t.btnQtyCtrl}`}
                         >
-                          <Minus size={14} />
+                          <Minus size={15} />
                         </button>
-                        <span className={`font-bold text-sm w-6 text-center ${t.btnQtyText}`}>{qty}</span>
+                        <span className={`font-extrabold text-base w-8 text-center tabular-nums ${t.btnQtyText}`}>{qty}</span>
                         <button
                           onClick={() => updateQty(product._id, 1, product.stock)}
-                          className={`p-1.5 rounded-lg transition ${t.btnQtyCtrl}`}
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-90 ${t.btnQtyCtrl}`}
                         >
-                          <Plus size={14} />
+                          <Plus size={15} />
                         </button>
                       </div>
                     )}
@@ -471,7 +484,7 @@ export default function PublicStorePage() {
         <div className="fixed bottom-6 left-0 right-0 flex justify-center px-4 z-50">
           <button
             onClick={() => setIsCheckoutOpen(true)}
-            className={`rounded-full px-6 py-3.5 flex items-center gap-4 transition transform hover:-translate-y-0.5 active:scale-95 ${t.cartFloat}`}
+            className={`rounded-full px-6 py-3.5 flex items-center gap-4 transition transform hover:-translate-y-0.5 active:scale-95 ${clsCartFloat}`}
           >
             <div className="flex items-center gap-2 font-bold">
               <ShoppingCart size={20} />
@@ -537,7 +550,7 @@ export default function PublicStorePage() {
             <div className={`p-4 space-y-4 rounded-b-2xl sm:rounded-b-xl ${t.modalFooterBg}`}>
               <div className="flex justify-between font-bold text-base">
                 <span className={t.cardTitle}>Total Pembayaran</span>
-                <span className={t.modalTotal}>Rp {totalAmount.toLocaleString("id-ID")}</span>
+                <span className={clsModalTotal}>Rp {totalAmount.toLocaleString("id-ID")}</span>
               </div>
 
               <form onSubmit={handleCheckout} className="space-y-3">
@@ -566,7 +579,7 @@ export default function PublicStorePage() {
                 />
                 <button
                   disabled={isLoading}
-                  className={`w-full py-3.5 rounded-xl font-bold disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg transition active:scale-95 ${t.modalBtn}`}
+                  className={`w-full py-3.5 rounded-xl font-bold disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg transition active:scale-95 ${clsModalBtn}`}
                 >
                   {isLoading
                     ? <Loader2 className="animate-spin" />
