@@ -384,14 +384,14 @@ export default function PublicStorePage() {
       </div>
 
       {/* ── LIST PRODUK ── */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         {products.length === 0 ? (
           <div className={`text-center py-20 ${t.emptyText}`}>
             <Package size={48} className={`mx-auto mb-3 opacity-40 ${t.emptyIcon}`} />
             <p className="font-medium">Belum ada produk tersedia.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-5">
             {products.map((product) => {
               const qty = getCartQty(product._id);
               const isExpanded = expandedDesc[product._id] ?? false;
