@@ -3,7 +3,47 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Loader2, Save, Eye, EyeOff, Store, Link as LinkIcon, AlertCircle } from "lucide-react";
+import { Loader2, Save, Eye, EyeOff, Store, Link as LinkIcon, AlertCircle, Palette, Check } from "lucide-react";
+
+// --- THEME DEFINITIONS (untuk preview di settings) ---
+const SHOP_THEMES = [
+  {
+    key: "classic",
+    name: "Classic Blue",
+    description: "Bersih & profesional, aksen biru cerah.",
+    preview: {
+      bg: "bg-gray-100",
+      header: "bg-white border border-gray-200",
+      card: "bg-white border border-gray-200",
+      btn: "bg-blue-600",
+      accent: "text-blue-600",
+    },
+  },
+  {
+    key: "dark",
+    name: "Dark Elegant",
+    description: "Mewah & modern, tema gelap dengan aksen emas.",
+    preview: {
+      bg: "bg-gray-900",
+      header: "bg-gray-800 border border-gray-700",
+      card: "bg-gray-800 border border-gray-700",
+      btn: "bg-amber-500",
+      accent: "text-amber-400",
+    },
+  },
+  {
+    key: "minimal",
+    name: "Warm Minimal",
+    description: "Hangat & simpel, tampilan bersih tanpa distraksi.",
+    preview: {
+      bg: "bg-stone-100",
+      header: "bg-stone-50 border border-stone-200",
+      card: "bg-white border border-stone-100",
+      btn: "bg-stone-900",
+      accent: "text-stone-900",
+    },
+  },
+] as const;
 
 export default function ShopSettingsPage() {
   // 1. Fetch Data Existing
@@ -15,6 +55,8 @@ export default function ShopSettingsPage() {
     shopName: "",
     slug: "",
     logoUrl: "",
+    description: "",
+    theme: "classic",
     clientKey: "",
     serverKey: "",
     isProduction: false,
@@ -30,6 +72,8 @@ export default function ShopSettingsPage() {
             shopName: settings.shopName || "",
             slug: settings.slug || "",
             logoUrl: settings.logoUrl || "",
+            description: settings.description || "",
+            theme: settings.theme || "classic",
             clientKey: settings.clientKey || "",
             serverKey: settings.serverKey || "",
             isProduction: settings.isProduction || false,
@@ -138,6 +182,69 @@ export default function ShopSettingsPage() {
                     </div>
                     <p className="text-xs text-gray-500 mt-1">Masukkan link gambar langsung (Direct Link).</p>
                 </div>
+
+                {/* Deskripsi Toko */}
+                <div className="col-span-2">
+                    <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Toko <span className="font-normal text-gray-400">(Opsional)</span></label>
+                    <textarea
+                        rows={3}
+                        value={form.description}
+                        onChange={e => setForm({ ...form, description: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition resize-none"
+                        placeholder="Ceritakan sedikit tentang toko Anda. Teks ini akan tampil di halaman toko publik."
+                    />
+                    <p className="text-xs text-gray-400 mt-1">{form.description.length}/300 karakter</p>
+                </div>
+            </div>
+        </div>
+
+        {/* --- BAGIAN 1b: TAMPILAN TOKO --- */}
+        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
+            <div className="flex items-center gap-2 border-b pb-4 mb-4">
+                <Palette className="text-purple-600" size={20} />
+                <h3 className="font-bold text-gray-800">Template Tampilan</h3>
+            </div>
+            <p className="text-sm text-gray-500 -mt-2">Pilih tema visual untuk halaman toko publik Anda.</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {SHOP_THEMES.map((theme) => {
+                    const isSelected = form.theme === theme.key;
+                    return (
+                        <button
+                            key={theme.key}
+                            type="button"
+                            onClick={() => setForm({ ...form, theme: theme.key })}
+                            className={`relative text-left rounded-xl border-2 p-4 transition-all ${
+                                isSelected
+                                    ? "border-blue-500 bg-blue-50 shadow-md"
+                                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                            }`}
+                        >
+                            {/* Check badge */}
+                            {isSelected && (
+                                <span className="absolute top-2 right-2 bg-blue-600 text-white rounded-full p-0.5">
+                                    <Check size={10} />
+                                </span>
+                            )}
+
+                            {/* Mini preview */}
+                            <div className={`w-full h-16 rounded-lg mb-3 p-2 flex flex-col gap-1.5 ${theme.preview.bg}`}>
+                                <div className={`w-full h-4 rounded ${theme.preview.header}`}></div>
+                                <div className="flex gap-1.5 flex-1">
+                                    <div className={`flex-1 rounded ${theme.preview.card}`}></div>
+                                    <div className={`flex-1 rounded ${theme.preview.card}`}></div>
+                                    <div className={`flex-1 rounded ${theme.preview.card} hidden sm:block`}></div>
+                                </div>
+                            </div>
+
+                            <div className={`text-xs font-bold mb-0.5 ${isSelected ? "text-blue-700" : "text-gray-800"}`}>{theme.name}</div>
+                            <div className="text-xs text-gray-500 leading-snug">{theme.description}</div>
+
+                            {/* Accent dot */}
+                            <div className={`mt-2 w-5 h-1.5 rounded-full ${theme.preview.btn}`}></div>
+                        </button>
+                    );
+                })}
             </div>
         </div>
 

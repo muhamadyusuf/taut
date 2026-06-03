@@ -15,6 +15,8 @@ export const saveShopSettings = mutation({
     slug: v.string(),
     shopName: v.string(),
     logoUrl: v.optional(v.string()),
+    description: v.optional(v.string()),
+    theme: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -47,6 +49,8 @@ export const saveShopSettings = mutation({
         slug: cleanSlug,
         shopName: args.shopName,
         logoUrl: args.logoUrl,
+        description: args.description,
+        theme: args.theme,
     };
 
     if (mySettings) {
@@ -91,6 +95,7 @@ export const createProduct = mutation({
     description: v.string(),
     price: v.number(),
     stock: v.number(), // Input Stok
+    imageUrl: v.optional(v.string()),
     fileUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -102,7 +107,8 @@ export const createProduct = mutation({
       title: args.title,
       description: args.description,
       price: args.price,
-      stock: args.stock, 
+      stock: args.stock,
+      imageUrl: args.imageUrl,
       fileUrl: args.fileUrl,
       isActive: true,
     });
@@ -117,6 +123,7 @@ export const updateProduct = mutation({
     description: v.string(),
     price: v.number(),
     stock: v.number(),
+    imageUrl: v.optional(v.string()),
     fileUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -135,6 +142,7 @@ export const updateProduct = mutation({
         description: args.description,
         price: args.price,
         stock: args.stock,
+        imageUrl: args.imageUrl,
         fileUrl: args.fileUrl,
     });
   },
@@ -153,6 +161,22 @@ export const deleteProduct = mutation({
     }
 
     await ctx.db.delete(args.id);
+  },
+});
+
+// Toggle Status Aktif/Nonaktif Produk
+export const toggleProductStatus = mutation({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const product = await ctx.db.get(args.id);
+    if (!product || product.userId !== identity.subject) {
+        throw new Error("Anda tidak memiliki izin mengubah produk ini.");
+    }
+
+    await ctx.db.patch(args.id, { isActive: !product.isActive });
   },
 });
 
@@ -208,7 +232,7 @@ export const getMyOrders = query({
   },
 });
 
-// Update Status Order (Dipanggil Webhook)
+// Update Status Order + Logika Stok (Dipanggil Webhook & updateOrderStatusInternal)
 export const updateOrderStatusInternal = mutation({
     args: { midtransOrderId: v.string(), status: v.string() },
     handler: async (ctx, args) => {
@@ -216,11 +240,24 @@ export const updateOrderStatusInternal = mutation({
             .withIndex("by_midtransOrderId", q => q.eq("midtransOrderId", args.midtransOrderId))
             .first();
         
-        if (order) {
-            await ctx.db.patch(order._id, { status: args.status });
-            
-            // OPSIONAL: Kurangi Stok jika status PAID
-            // (Logic pengurangan stok bisa ditambahkan disini jika diinginkan)
+        if (!order) return;
+
+        // Jangan proses ulang jika status sudah final
+        if (order.status === "paid" || order.status === "failed") return;
+
+        await ctx.db.patch(order._id, { status: args.status });
+
+        // Jika gagal/expire/cancel → kembalikan stok
+        if (args.status === "failed" || args.status === "expire" || args.status === "cancel") {
+            const itemsToRestore = order.items ?? [{ productId: order.productId, quantity: 1 }];
+            for (const item of itemsToRestore) {
+                const product = await ctx.db.get(item.productId);
+                if (product) {
+                    await ctx.db.patch(item.productId, {
+                        stock: product.stock + item.quantity,
+                    });
+                }
+            }
         }
     }
 });
@@ -248,14 +285,15 @@ export const getProductInternal = internalQuery({
   },
 });
 
-// Helper: Catat Order Baru (Termasuk No Telp)
+// Helper: Catat Order Baru — menyimpan semua item untuk keperluan restore stok
 export const createOrderRecord = internalMutation({
   args: {
-    productId: v.id("products"), // ID produk representatif (item pertama)
+    productId: v.id("products"),
+    items: v.array(v.object({ productId: v.id("products"), quantity: v.number() })),
     sellerId: v.string(),
     buyerName: v.string(),
     buyerEmail: v.string(),
-    buyerPhone: v.string(), // <--- Data Telepon
+    buyerPhone: v.string(),
     amount: v.number(),
     snapToken: v.string(),
     midtransOrderId: v.string(),
@@ -266,6 +304,23 @@ export const createOrderRecord = internalMutation({
       status: "pending",
       createdAt: Date.now(),
     });
+  },
+});
+
+// Helper: Kurangi stok semua item (dipanggil saat transaksi dibuat)
+export const reserveStockInternal = internalMutation({
+  args: {
+    items: v.array(v.object({ productId: v.id("products"), quantity: v.number() })),
+  },
+  handler: async (ctx, args) => {
+    for (const item of args.items) {
+      const product = await ctx.db.get(item.productId);
+      if (!product) throw new Error(`Produk tidak ditemukan: ${item.productId}`);
+      if (product.stock < item.quantity) {
+        throw new Error(`Stok produk "${product.title}" tidak mencukupi (tersisa ${product.stock}).`);
+      }
+      await ctx.db.patch(item.productId, { stock: product.stock - item.quantity });
+    }
   },
 });
 

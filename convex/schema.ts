@@ -94,6 +94,8 @@ export default defineSchema({
     slug: v.optional(v.string()), // e.g: "tokoberkah" -> singkat.in/s/tokoberkah
     shopName: v.optional(v.string()),
     logoUrl: v.optional(v.string()),
+    description: v.optional(v.string()), // Deskripsi toko (tampil di header halaman publik)
+    theme: v.optional(v.string()), // Template tampilan: "classic" | "dark" | "minimal"
 
     // Midtrans Keys
     clientKey: v.string(),
@@ -111,6 +113,7 @@ export default defineSchema({
     description: v.string(),
     price: v.number(),
     stock: v.number(),
+    imageUrl: v.optional(v.string()), // Link gambar produk (opsional)
     fileUrl: v.optional(v.string()), // Link file download (Google Drive/Lainnya) setelah bayar
     isActive: v.boolean(),
   })
@@ -121,6 +124,12 @@ export default defineSchema({
     productId: v.id("products"),
     sellerId: v.string(), // ID User penjual (untuk query dashboard penjual)
     
+    // Semua item keranjang — dibutuhkan untuk restore stok saat expire/gagal
+    items: v.optional(v.array(v.object({
+      productId: v.id("products"),
+      quantity: v.number(),
+    }))),
+
     // Data Pembeli
     buyerName: v.string(),
     buyerEmail: v.string(),

@@ -219,7 +219,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
       </div>
 
       <div className="flex gap-4 items-start">
-        <div className={`w-20 h-20 bg-white rounded-lg overflow-visible border flex-shrink-0 relative group ${status === 'invalid' ? 'border-red-400 opacity-80' : ''}`}>
+        <div className={`w-20 h-20 bg-white rounded-lg overflow-visible border shrink-0 relative group ${status === 'invalid' ? 'border-red-400 opacity-80' : ''}`}>
           
           {currentUrl ? (
             <>
@@ -234,6 +234,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
                 
                 {/* BUTTON REMOVE */}
                 <button 
+                    type="button"
                     onClick={handleRemove}
                     className="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 border border-gray-200 rounded-full p-1 shadow-md hover:bg-red-50 hover:border-red-200 transition-all z-10 opacity-100 scale-100"
                     title="Hapus gambar"
@@ -247,7 +248,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
         </div>
 
         <div className="flex-1 space-y-2">
-            <button onClick={handleOpenPicker} className="w-full bg-white border border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition text-xs">
+            <button type="button" onClick={handleOpenPicker} className="w-full bg-white border border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition text-xs">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive"/>
                 {currentUrl ? "Ganti File" : "Pilih dari Drive"}
             </button>
@@ -259,7 +260,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
                         <div><p className="font-bold">Gambar Tidak Muncul?</p><p className="leading-tight opacity-80">File ini masih Private.</p></div>
                     </div>
                     {accessToken ? (
-                        <button onClick={makePublic} disabled={isFixing} className="w-full bg-red-600 hover:bg-red-700 text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-bold transition shadow-sm disabled:opacity-50">
+                        <button type="button" onClick={makePublic} disabled={isFixing} className="w-full bg-red-600 hover:bg-red-700 text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-bold transition shadow-sm disabled:opacity-50">
                             {isFixing ? <><Loader2 size={12} className="animate-spin"/> Memproses...</> : <><Wrench size={12}/> Ubah ke Publik Sekarang</>}
                         </button>
                     ) : (

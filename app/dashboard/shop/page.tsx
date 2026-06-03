@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { Loader2, Trash2, ExternalLink, Copy, Edit, Store, AlertCircle } from "lucide-react";
+import { Loader2, Trash2, ExternalLink, Copy, Edit, Store, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
 
 export default function ProductsPage() {
@@ -10,6 +10,7 @@ export default function ProductsPage() {
   const products = useQuery(api.shop.getMyProducts);
   const settings = useQuery(api.shop.getMySettings);
   const deleteProduct = useMutation(api.shop.deleteProduct);
+  const toggleStatus = useMutation(api.shop.toggleProductStatus);
 
   // Loading State
   if (products === undefined || settings === undefined) {
@@ -88,6 +89,7 @@ export default function ProductsPage() {
                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Produk</th>
                 <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Harga</th>
                 <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Stok</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
                 <th className="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Aksi</th>
               </tr>
             </thead>
@@ -109,6 +111,19 @@ export default function ProductsPage() {
                       }`}>
                           {product.stock}
                       </span>
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                      <button
+                          onClick={() => toggleStatus({ id: product._id })}
+                          title={product.isActive ? "Klik untuk nonaktifkan" : "Klik untuk aktifkan"}
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition ${
+                              product.isActive
+                                  ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                  : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}
+                      >
+                          {product.isActive ? <><Eye size={12} /> Tampil</> : <><EyeOff size={12} /> Nonaktif</>}
+                      </button>
                   </td>
                   <td className="px-6 py-4 text-right text-sm font-medium">
                       <div className="flex justify-end items-center gap-2">

@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { Loader2, Trash2, Save } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
+import DrivePicker from "../../microsite/_components/DrivePicker";
 
 interface ProductFormProps {
   initialData?: {
@@ -14,6 +15,7 @@ interface ProductFormProps {
     description: string;
     price: number;
     stock: number;
+    imageUrl?: string;
     fileUrl?: string;
   };
   mode: "create" | "edit";
@@ -27,18 +29,37 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
 
   const [loading, setLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageUrl, setImageUrl] = useState(initialData?.imageUrl ?? "");
+  const [fileUrl, setFileUrl] = useState(initialData?.fileUrl ?? "");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     const formData = new FormData(e.currentTarget);
+
+    // Validate stock is non-negative integer
+    const stockVal = Number(formData.get("stock"));
+    if (!Number.isInteger(stockVal) || stockVal < 0) {
+        alert("Stok harus berupa angka bulat non-negatif.");
+        setLoading(false);
+        return;
+    }
+
+    // Validate price
+    const priceVal = Number(formData.get("price"));
+    if (priceVal < 1000) {
+        alert("Harga minimum adalah Rp 1.000.");
+        setLoading(false);
+        return;
+    }
     
     const payload = {
-        title: formData.get("title") as string,
-        description: formData.get("description") as string,
-        price: Number(formData.get("price")),
-        stock: Number(formData.get("stock")),
-        fileUrl: (formData.get("fileUrl") as string) || undefined,
+        title: (formData.get("title") as string).trim(),
+        description: (formData.get("description") as string).trim(),
+        price: priceVal,
+        stock: stockVal,
+        imageUrl: imageUrl || undefined,
+        fileUrl: fileUrl || undefined,
     };
 
     try {
@@ -46,16 +67,14 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
             await createProduct(payload);
             alert("Produk berhasil dibuat!");
         } else if (mode === "edit" && initialData) {
-            await updateProduct({
-                id: initialData._id,
-                ...payload
-            });
+            await updateProduct({ id: initialData._id, ...payload });
             alert("Produk berhasil diperbarui!");
         }
         router.push("/dashboard/shop");
         router.refresh();
     } catch (err) {
-        alert("Gagal menyimpan produk.");
+        const message = err instanceof Error ? err.message : "Kesalahan tidak diketahui";
+        alert("Gagal menyimpan produk: " + message);
         console.error(err);
     } finally {
         setLoading(false);
@@ -71,7 +90,8 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
         router.push("/dashboard/shop");
         router.refresh();
     } catch (err) {
-        alert("Gagal menghapus produk");
+        const message = err instanceof Error ? err.message : "Kesalahan tidak diketahui";
+        alert("Gagal menghapus produk: " + message);
     } finally {
         setIsDeleting(false);
     }
@@ -88,10 +108,11 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                     type="button" 
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="text-red-500 hover:text-red-700 p-2 rounded hover:bg-red-50 transition"
+                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 border border-red-200 hover:border-red-300 transition"
                     title="Hapus Produk"
                 >
-                    {isDeleting ? <Loader2 className="animate-spin" size={20}/> : <Trash2 size={20}/>}
+                    {isDeleting ? <Loader2 className="animate-spin" size={16}/> : <Trash2 size={16}/>}
+                    Hapus Produk
                 </button>
             )}
         </div>
@@ -124,7 +145,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         placeholder="100000" 
                     />
                 </div>
-                {/* STOK / KUANTITI */}
+                {/* STOK */}
                 <div>
                     <label className="block text-sm font-bold text-gray-700 mb-1">Stok Barang</label>
                     <input 
@@ -133,15 +154,17 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         required 
                         type="number" 
                         min="0" 
+                        step="1"
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
                         placeholder="Jumlah stok" 
                     />
+                    <p className="text-xs text-gray-400 mt-1">Stok akan otomatis berkurang saat ada transaksi pending.</p>
                 </div>
             </div>
 
             {/* DESKRIPSI */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Singkat</label>
+                <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Produk</label>
                 <textarea 
                     name="description" 
                     defaultValue={initialData?.description}
@@ -152,16 +175,58 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                 />
             </div>
 
-            {/* LINK FILE */}
+            {/* GAMBAR PRODUK — Google Drive Picker */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Link File / Konten (Opsional)</label>
-                <input 
-                    name="fileUrl" 
-                    defaultValue={initialData?.fileUrl}
-                    type="url" 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
-                    placeholder="https://drive.google.com/..." 
+                <label className="block text-sm font-bold text-gray-700 mb-2">Gambar Produk (Opsional)</label>
+                <DrivePicker
+                    label="Pilih Gambar dari Google Drive"
+                    currentUrl={imageUrl || null}
+                    onSelect={(url) => setImageUrl(url)}
                 />
+                {imageUrl && (
+                    <div className="mt-2 flex items-start gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                            src={imageUrl}
+                            alt="Preview gambar produk"
+                            referrerPolicy="no-referrer"
+                            className="w-20 h-20 object-cover rounded-lg border"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                        />
+                        <div className="flex-1">
+                            <p className="text-xs text-gray-500 break-all line-clamp-2">{imageUrl}</p>
+                            <button
+                                type="button"
+                                onClick={() => setImageUrl("")}
+                                className="mt-1 text-xs text-red-500 hover:text-red-700"
+                            >
+                                Hapus gambar
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* LINK FILE — Google Drive Picker */}
+            <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Link File / Konten (Opsional)</label>
+                <DrivePicker
+                    label="Pilih File dari Google Drive"
+                    currentUrl={fileUrl || null}
+                    onSelect={(url) => setFileUrl(url)}
+                />
+                {fileUrl && (
+                    <div className="mt-2 flex items-center justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
+                        <p className="text-xs text-gray-600 break-all line-clamp-1 flex-1">{fileUrl}</p>
+                        <button
+                            type="button"
+                            onClick={() => setFileUrl("")}
+                            className="text-xs text-red-500 hover:text-red-700 shrink-0"
+                        >
+                            Hapus
+                        </button>
+                    </div>
+                )}
                 <p className="text-xs text-gray-500 mt-1">Link ini akan diberikan ke pembeli setelah pembayaran sukses.</p>
             </div>
 

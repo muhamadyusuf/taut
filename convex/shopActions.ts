@@ -40,29 +40,34 @@ export const createTransaction = action({
       throw new Error("Toko ini belum mengatur metode pembayaran.");
     }
 
-    // 2. Hitung Total & Validasi Harga dari Server (Looping Keranjang)
-    // Kita tidak boleh percaya harga dari frontend (args), harus fetch DB.
+    // 2. Hitung Total, Validasi Harga & Stok dari Server
     let grossAmount = 0;
     const itemDetails = [];
 
     for (const item of args.items) {
-        // Ambil data produk asli
         const product = await ctx.runQuery(internal.shop.getProductInternal, { id: item.productId });
         
-        if (product) {
-            const subtotal = product.price * item.quantity;
-            grossAmount += subtotal;
-            
-            itemDetails.push({
-                id: product._id,
-                price: product.price,
-                quantity: item.quantity,
-                name: product.title.substring(0, 49), // Batas char Midtrans
-            });
+        if (!product) {
+            throw new Error(`Produk tidak ditemukan.`);
         }
+        if (!product.isActive) {
+            throw new Error(`Produk "${product.title}" sudah tidak tersedia.`);
+        }
+        if (product.stock < item.quantity) {
+            throw new Error(`Stok produk "${product.title}" tidak mencukupi. Tersisa: ${product.stock}.`);
+        }
+
+        const subtotal = product.price * item.quantity;
+        grossAmount += subtotal;
+        
+        itemDetails.push({
+            id: product._id,
+            price: product.price,
+            quantity: item.quantity,
+            name: product.title.substring(0, 49),
+        });
     }
 
-    // Validasi jika keranjang kosong atau error
     if (grossAmount <= 0 || itemDetails.length === 0) {
         throw new Error("Keranjang kosong atau produk tidak valid.");
     }
@@ -96,18 +101,20 @@ export const createTransaction = action({
 
     const transaction: { token: string } = await snap.createTransaction(parameter);
 
-    // 5. Catat Order ke Database
-    // Catatan: Schema 'orders' kita saat ini didesain simple (1 product ID).
-    // Untuk transaksi banyak barang, kita catat ID barang pertama sebagai referensi utama,
-    // tapi TOTAL harganya adalah total keranjang.
-    
+    // 5. Kurangi stok (reserve) untuk semua item
+    await ctx.runMutation(internal.shop.reserveStockInternal, {
+      items: args.items,
+    });
+
+    // 6. Catat Order ke Database (simpan semua items untuk keperluan restore stok)
     await ctx.runMutation(internal.shop.createOrderRecord, {
-      productId: args.items[0].productId, // Menggunakan produk pertama sebagai referensi
+      productId: args.items[0].productId,
+      items: args.items,
       sellerId: args.sellerId,
       buyerName: args.buyerName,
       buyerEmail: args.buyerEmail,
       buyerPhone: args.buyerPhone,
-      amount: grossAmount, // Total semua barang
+      amount: grossAmount,
       snapToken: transaction.token,
       midtransOrderId: orderId,
     });
