@@ -142,7 +142,7 @@ export default function RedirectPage() {
 
 
         {/* ── LEFT PANEL (30%) ── */}
-        <aside className="w-full md:w-[30%] shrink-0">
+        <aside className="w-full md:w-[50%] shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
             {/* Header */}
             <div className="bg-linear-to-br from-[#0b1736] to-[#0a2970] px-6 py-5 text-white">
