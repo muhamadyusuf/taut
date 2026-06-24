@@ -192,7 +192,7 @@ export default function RedirectPage() {
                     src={activeAd.imageUrl}
                     alt={activeAd.title ?? "Iklan"}
                     fill
-                    className="object-cover group-hover:scale-[1.01] transition-transform duration-300"
+                    className="group-hover:scale-[1.01] transition-transform duration-300"
                     unoptimized
                   />
                   {/* Overlay label */}
