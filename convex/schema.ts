@@ -147,4 +147,16 @@ export default defineSchema({
   })
   .index("by_midtransOrderId", ["midtransOrderId"]) // Wajib untuk Webhook mencari order
   .index("by_sellerId", ["sellerId"]), // Agar penjual bisa lihat history penjualannya
+
+  // ---------------------------------------------------------
+  // 5. ADS (Iklan pada halaman redirect)
+  // ---------------------------------------------------------
+  ads: defineTable({
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+    linkUrl: v.optional(v.string()),
+    isActive: v.boolean(),
+    createdAt: v.number(),
+  }),
 });

@@ -3,7 +3,8 @@ import { NextResponse } from "next/server";
 
 // 1. Definisikan Rute yang WAJIB Login
 const isProtectedRoute = createRouteMatcher([
-  '/dashboard(.*)', 
+  '/dashboard(.*)',
+  '/admin(.*)',
 ]);
 
 export default clerkMiddleware(async (auth, req) => {

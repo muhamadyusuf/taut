@@ -7,7 +7,7 @@ import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import { 
   LayoutDashboard, Link as LinkIcon, BarChart3, Settings, 
   Menu, X, QrCode, Plus, Layers, Smartphone,
-  ShoppingBag
+  ShoppingBag, ShieldCheck
 } from "lucide-react";
 import Image from "next/image";
 import CreateLinkModal from "./_components/CreateLinkModal";
@@ -16,7 +16,10 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn, isLoaded, user } = useUser();
+
+  const ADMIN_EMAIL = "muhamadyusuf0012@gmail.com";
+  const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
 
   if (!isLoaded) return <div className="h-screen flex items-center justify-center text-[#0193ff] font-medium">Memuat...</div>;
 
@@ -88,6 +91,30 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
               </Link>
             );
           })}
+
+          {/* Menu Administrator — hanya untuk admin */}
+          {isAdmin && (
+            <>
+              <div className="my-2 border-t border-gray-100" />
+              <Link
+                href="/admin"
+                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                  pathname.startsWith("/admin")
+                    ? "bg-[#0b1736] text-white font-bold"
+                    : "text-gray-500 hover:bg-[#0b1736]/10 hover:text-[#0b1736] font-medium"
+                }`}
+              >
+                <ShieldCheck
+                  size={20}
+                  className={pathname.startsWith("/admin") ? "text-[#0193ff]" : "text-gray-400 group-hover:text-[#0b1736]"}
+                />
+                <span>Administrator</span>
+                <span className="absolute right-3 bg-[#0193ff]/10 text-[#0193ff] text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  ADMIN
+                </span>
+              </Link>
+            </>
+          )}
         </nav>
 
         <div className="p-6">
