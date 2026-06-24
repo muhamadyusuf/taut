@@ -80,6 +80,67 @@ export default function RedirectPage() {
 
       {/* Main layout */}
       <div className="flex flex-col md:flex-row flex-1 gap-0 md:gap-4 p-4 md:p-6 max-w-7xl mx-auto w-full">
+
+        {/* ── RIGHT PANEL (70%) — Ad space ── */}
+        <main className="flex-1">
+          {activeAd ? (
+            <a
+              href={activeAd.linkUrl ?? "#"}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="block w-full h-full min-h-100 rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative group"
+            >
+              {activeAd.imageUrl ? (
+                <div className="relative w-full h-full min-h-100">
+                  <Image
+                    src={activeAd.imageUrl}
+                    alt={activeAd.title ?? "Iklan"}
+                    fill
+                    className="group-hover:scale-[1.01] transition-transform duration-300"
+                    unoptimized
+                  />
+                  {/* Overlay label */}
+                  <div className="absolute top-3 left-3 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
+                    IKLAN
+                  </div>
+                  {activeAd.title && (
+                    <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent px-5 py-4">
+                      <p className="text-white font-bold text-lg">{activeAd.title}</p>
+                      {activeAd.description && (
+                        <p className="text-white/80 text-sm mt-0.5">{activeAd.description}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Text-only ad */
+                <div className="w-full h-full min-h-100 bg-linear-to-br from-[#0b1736] to-[#0a2970] flex flex-col items-center justify-center p-10 text-center text-white gap-4 rounded-2xl">
+                  <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">IKLAN</span>
+                  {activeAd.title && (
+                    <h2 className="text-3xl font-extrabold">{activeAd.title}</h2>
+                  )}
+                  {activeAd.description && (
+                    <p className="text-white/70 max-w-sm">{activeAd.description}</p>
+                  )}
+                  {activeAd.linkUrl && (
+                    <span className="mt-2 bg-[#0193ff] hover:bg-[#0078d4] text-white font-semibold px-6 py-2.5 rounded-xl text-sm">
+                      Kunjungi
+                    </span>
+                  )}
+                </div>
+              )}
+            </a>
+          ) : (
+            /* No active ad — placeholder */
+            <div className="w-full h-full min-h-100 rounded-2xl border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center text-gray-400 gap-3">
+              <ShieldCheck className="h-12 w-12 text-gray-300" />
+              <p className="text-sm font-medium">Ruang Iklan</p>
+              <p className="text-xs">Belum ada iklan aktif</p>
+            </div>
+          )}
+        </main>
+
+
         {/* ── LEFT PANEL (30%) ── */}
         <aside className="w-full md:w-[30%] shrink-0">
           <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
@@ -176,65 +237,6 @@ export default function RedirectPage() {
             </div>
           </div>
         </aside>
-
-        {/* ── RIGHT PANEL (70%) — Ad space ── */}
-        <main className="flex-1">
-          {activeAd ? (
-            <a
-              href={activeAd.linkUrl ?? "#"}
-              target="_blank"
-              rel="noopener noreferrer sponsored"
-              className="block w-full h-full min-h-100 rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative group"
-            >
-              {activeAd.imageUrl ? (
-                <div className="relative w-full h-full min-h-100">
-                  <Image
-                    src={activeAd.imageUrl}
-                    alt={activeAd.title ?? "Iklan"}
-                    fill
-                    className="group-hover:scale-[1.01] transition-transform duration-300"
-                    unoptimized
-                  />
-                  {/* Overlay label */}
-                  <div className="absolute top-3 left-3 bg-black/50 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full">
-                    IKLAN
-                  </div>
-                  {activeAd.title && (
-                    <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/70 to-transparent px-5 py-4">
-                      <p className="text-white font-bold text-lg">{activeAd.title}</p>
-                      {activeAd.description && (
-                        <p className="text-white/80 text-sm mt-0.5">{activeAd.description}</p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Text-only ad */
-                <div className="w-full h-full min-h-100 bg-linear-to-br from-[#0b1736] to-[#0a2970] flex flex-col items-center justify-center p-10 text-center text-white gap-4 rounded-2xl">
-                  <span className="text-[10px] font-semibold bg-white/20 px-2 py-0.5 rounded-full">IKLAN</span>
-                  {activeAd.title && (
-                    <h2 className="text-3xl font-extrabold">{activeAd.title}</h2>
-                  )}
-                  {activeAd.description && (
-                    <p className="text-white/70 max-w-sm">{activeAd.description}</p>
-                  )}
-                  {activeAd.linkUrl && (
-                    <span className="mt-2 bg-[#0193ff] hover:bg-[#0078d4] text-white font-semibold px-6 py-2.5 rounded-xl text-sm">
-                      Kunjungi
-                    </span>
-                  )}
-                </div>
-              )}
-            </a>
-          ) : (
-            /* No active ad — placeholder */
-            <div className="w-full h-full min-h-100 rounded-2xl border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center text-gray-400 gap-3">
-              <ShieldCheck className="h-12 w-12 text-gray-300" />
-              <p className="text-sm font-medium">Ruang Iklan</p>
-              <p className="text-xs">Belum ada iklan aktif</p>
-            </div>
-          )}
-        </main>
       </div>
     </div>
   );
