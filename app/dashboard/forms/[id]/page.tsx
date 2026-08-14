@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
 import Link from "next/link";
+import { QRCode } from "react-qrcode-logo";
 import {
   Plus, Trash2, Save, GripVertical, ArrowLeft, Copy, ExternalLink,
-  BarChart2, AlertCircle, ChevronDown, Settings2, Palette, Layers, Check,
+  BarChart2, AlertCircle, ChevronDown, Settings2, Palette, Layers, Check, Download, QrCode as QrIcon,
 } from "lucide-react";
 import { FORM_THEMES, DEFAULT_FORM_THEME } from "@/lib/formThemeConfig";
+import DrivePicker from "../../microsite/_components/DrivePicker";
 
 type QuestionType =
   | "short_answer"
@@ -49,6 +51,7 @@ interface FormData {
   acceptingResponses: boolean;
   confirmationMessage?: string;
   theme?: string;
+  headerImageUrl?: string;
   sections: Section[];
 }
 
@@ -89,6 +92,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
   const [formData, setFormData] = useState<FormData | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  const qrRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (formQuery && !formData) {
@@ -270,6 +274,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
         acceptingResponses: formData.acceptingResponses,
         confirmationMessage: formData.confirmationMessage,
         theme: formData.theme,
+        headerImageUrl: formData.headerImageUrl,
         sections: formData.sections,
       });
       setIsDirty(false);
@@ -282,9 +287,22 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
   };
 
   const copyPublicLink = () => {
-    const url = `${process.env.NEXT_PUBLIC_APP_URL}/forms/${formData.slug}`;
+    const url = `${process.env.NEXT_PUBLIC_APP_URL}/f/${formData.slug}`;
     navigator.clipboard.writeText(url);
     alert("Link formulir berhasil disalin! 🎉");
+  };
+
+  const downloadQR = () => {
+    const qrElement = qrRef.current;
+    const canvas = qrElement?.querySelector("canvas");
+    if (!canvas) return;
+    const pngUrl = canvas.toDataURL("image/png");
+    const downloadLink = document.createElement("a");
+    downloadLink.href = pngUrl;
+    downloadLink.download = `qr-form-${formData.slug}.png`;
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
   };
 
   return (
@@ -345,13 +363,13 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
         {formData.status === "published" && (
           <div className="flex items-center gap-2 bg-muted p-3 rounded-xl border border-border">
             <span className="text-sm text-muted-foreground truncate flex-1">
-              {process.env.NEXT_PUBLIC_APP_URL}/forms/{formData.slug}
+              {process.env.NEXT_PUBLIC_APP_URL}/f/{formData.slug}
             </span>
             <button onClick={copyPublicLink} className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition" title="Salin Link">
               <Copy size={14} />
             </button>
             <a
-              href={`/forms/${formData.slug}`}
+              href={`/f/${formData.slug}`}
               target="_blank"
               className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition"
               title="Buka Formulir"
@@ -371,6 +389,39 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
           <span className="text-sm text-muted-foreground">Menerima jawaban baru</span>
         </label>
       </div>
+
+      {/* QR Code */}
+      {formData.status === "published" && (
+        <div className="card-saweria p-6 space-y-4">
+          <div className="flex items-center gap-2 text-foreground font-bold">
+            <QrIcon size={18} /> QR Code Formulir
+          </div>
+          <div className="flex items-center gap-6">
+            <div ref={qrRef} className="bg-white p-2 rounded-lg border border-border shrink-0">
+              <QRCode
+                value={`${process.env.NEXT_PUBLIC_APP_URL}/f/${formData.slug}`}
+                size={120}
+                ecLevel={"H"}
+                logoImage="/logo.svg"
+                logoWidth={32}
+                logoHeight={32}
+                logoOpacity={1}
+                quietZone={5}
+                qrStyle="squares"
+              />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">Pindai atau unduh untuk kebutuhan materi promosi formulir ini.</p>
+              <button
+                onClick={downloadQR}
+                className="btn-ghost rounded-full px-4 py-2 flex items-center gap-2 text-sm"
+              >
+                <Download size={16} /> Download PNG
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Basic Info */}
       <div className="card-saweria p-6 md:p-8 space-y-4">
@@ -393,10 +444,15 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
             placeholder="Deskripsi formulir (opsional)"
           />
         </div>
+        <DrivePicker
+          label="Gambar Header Formulir"
+          currentUrl={formData.headerImageUrl}
+          onSelect={(url) => handleChange((prev) => ({ ...prev, headerImageUrl: url }))}
+        />
         <div>
           <label className="form-label">URL Formulir (Slug)</label>
           <div className="flex items-center border border-border rounded-xl bg-muted overflow-hidden focus-within:ring-4 focus-within:ring-ring focus-within:border-brand transition">
-            <span className="pl-3 text-subtle text-sm shrink-0">/forms/</span>
+            <span className="pl-3 text-subtle text-sm shrink-0">/f/</span>
             <input
               type="text"
               value={formData.slug}

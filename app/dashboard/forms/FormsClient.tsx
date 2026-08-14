@@ -42,7 +42,7 @@ export default function FormsClient() {
   };
 
   const copyPublicLink = (slug: string) => {
-    const url = `${process.env.NEXT_PUBLIC_APP_URL}/forms/${slug}`;
+    const url = `${process.env.NEXT_PUBLIC_APP_URL}/f/${slug}`;
     navigator.clipboard.writeText(url);
     alert("Link formulir berhasil disalin! 🎉");
   };
@@ -149,7 +149,7 @@ export default function FormsClient() {
                       <Copy size={16} />
                     </button>
                     <a
-                      href={`/forms/${form.slug}`}
+                      href={`/f/${form.slug}`}
                       target="_blank"
                       className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition"
                       title="Buka Formulir"

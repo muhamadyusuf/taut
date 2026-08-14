@@ -104,6 +104,7 @@ export const updateForm = mutation({
     acceptingResponses: v.boolean(),
     confirmationMessage: v.optional(v.string()),
     theme: v.optional(v.string()),
+    headerImageUrl: v.optional(v.string()),
     sections: v.array(sectionValidator),
   },
   handler: async (ctx, args) => {
@@ -132,6 +133,7 @@ export const updateForm = mutation({
       acceptingResponses: args.acceptingResponses,
       confirmationMessage: args.confirmationMessage,
       theme: args.theme,
+      headerImageUrl: args.headerImageUrl,
       sections: args.sections,
       updatedAt: Date.now(),
     });

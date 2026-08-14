@@ -34,6 +34,7 @@ interface FormShape {
   acceptingResponses: boolean;
   confirmationMessage?: string;
   theme?: string;
+  headerImageUrl?: string;
   sections: Section[];
 }
 
@@ -137,9 +138,20 @@ export default function FormFillClient({ form }: { form: FormShape }) {
     <div className={`min-h-screen py-10 px-4 ${theme.pageBg}`}>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
         {/* Header */}
-        <div className={`card-saweria p-8 border-t-8 ${theme.headerBar}`}>
-          <h1 className="text-2xl font-bold text-foreground mb-2">{form.title}</h1>
-          {form.description && <p className="text-muted-foreground whitespace-pre-line">{form.description}</p>}
+        <div className={`card-saweria overflow-hidden ${!form.headerImageUrl ? `border-t-8 ${theme.headerBar}` : ""}`}>
+          {form.headerImageUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={form.headerImageUrl}
+              alt=""
+              referrerPolicy="no-referrer"
+              className="w-full h-40 md:h-56 object-cover"
+            />
+          )}
+          <div className="p-8">
+            <h1 className="text-2xl font-bold text-foreground mb-2">{form.title}</h1>
+            {form.description && <p className="text-muted-foreground whitespace-pre-line">{form.description}</p>}
+          </div>
         </div>
 
         {sections.length > 1 && (

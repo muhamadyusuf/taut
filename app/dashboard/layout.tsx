@@ -47,7 +47,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
     { name: "Formulir", icon: ClipboardList, href: "/dashboard/forms", isNew: true },
     { name: "Microsite", icon: Smartphone, href: "/dashboard/microsite", isNew: false },
-    { name: "Shop", icon: ShoppingBag, href: "/dashboard/shop", isNew: true },
+    { name: "Shop", icon: ShoppingBag, href: "/dashboard/shop", isNew: false },
     { name: "Statistik", href: "/dashboard/analytics", icon: BarChart3 },
     { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },
   ];

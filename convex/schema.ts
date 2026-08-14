@@ -193,7 +193,7 @@ export default defineSchema({
   // ---------------------------------------------------------
   forms: defineTable({
     userId: v.string(),
-    slug: v.string(), // permalink: singkat.in/forms/<slug>
+    slug: v.string(), // permalink: singkat.in/f/<slug>
     title: v.string(),
     description: v.optional(v.string()),
 
@@ -202,6 +202,7 @@ export default defineSchema({
     acceptingResponses: v.boolean(), // saklar terima jawaban baru
     confirmationMessage: v.optional(v.string()), // pesan setelah submit
     theme: v.optional(v.string()), // key preset dari lib/formThemeConfig.ts
+    headerImageUrl: v.optional(v.string()), // gambar banner di atas judul formulir
 
     // Formulir dibagi jadi beberapa bagian (step/page), seperti "Section" di Google Form
     sections: v.array(
