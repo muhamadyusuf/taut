@@ -425,6 +425,47 @@
     font-weight: 600;
   }
 
+  /* ------------------------------------------------------------------
+     KANVAS ILUSTRASI FITUR
+     Bidang tempat ilustrasi SVG tiap fitur digambar. Warna semburatnya
+     diatur per kartu lewat --art-tint.
+     ------------------------------------------------------------------ */
+  .art-canvas {
+    position: relative;
+    overflow: hidden;
+    border-radius: 1.25rem;
+    border: 1px solid var(--border);
+    background-color: var(--muted);
+  }
+  /* Semburat warna khas fitur */
+  .art-canvas::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      130% 100% at 50% 0%,
+      color-mix(in oklab, var(--art-tint, var(--brand)) 22%, transparent),
+      transparent 72%
+    );
+  }
+  /* Grid tipis di belakang ilustrasi */
+  .art-canvas::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 1.5rem 1.5rem;
+    opacity: 0.55;
+    mask-image: radial-gradient(ellipse 85% 85% at 50% 45%, #000, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 85% 85% at 50% 45%, #000, transparent 78%);
+  }
+  .art-canvas > svg {
+    position: relative;
+    z-index: 1;
+  }
+
   /* Permukaan kaca untuk header sticky */
   .glass {
     background-color: color-mix(in oklab, var(--background) 72%, transparent);
@@ -482,6 +523,187 @@
     mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
     -webkit-mask-image: radial-gradient(ellipse 70% 60% at 50% 0%, #000 40%, transparent 100%);
   }
+
+  /* ------------------------------------------------------------------
+     PANGGUNG 3D
+     Kedalaman dibuat memakai transform 3D bawaan CSS (perspective +
+     preserve-3d), bukan WebGL. Hasilnya diakselerasi GPU, nol dependensi,
+     dan tetap ter-render di HTML awal sehingga aman untuk SEO.
+     ------------------------------------------------------------------ */
+  .scene-3d {
+    perspective: 1200px;
+    perspective-origin: 50% 45%;
+  }
+  .layer-3d {
+    transform-style: preserve-3d;
+  }
+
+  /* Kartu yang miring mengikuti kursor. Sudutnya disuntik lewat CSS var
+     oleh komponen TiltCard agar tidak perlu re-render React tiap gerakan. */
+  .tilt-card {
+    transform-style: preserve-3d;
+    transform:
+      rotateX(var(--tilt-x, 0deg))
+      rotateY(var(--tilt-y, 0deg))
+      translate3d(0, 0, 0);
+    transition: transform 500ms cubic-bezier(0.22, 0.7, 0.3, 1);
+    will-change: transform;
+  }
+  /* Saat kursor sedang di atas kartu, respons dipercepat agar terasa lengket */
+  .tilt-card[data-tilting="true"] {
+    transition-duration: 90ms;
+  }
+
+  /* Pantulan cahaya yang mengikuti posisi kursor di atas kartu */
+  .tilt-glare {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 400ms ease;
+    background: radial-gradient(
+      18rem 18rem at var(--glare-x, 50%) var(--glare-y, 50%),
+      color-mix(in oklab, var(--brand) 22%, transparent),
+      transparent 60%
+    );
+  }
+  .tilt-card[data-tilting="true"] .tilt-glare {
+    opacity: 1;
+  }
+
+  /* Anak elemen yang diangkat keluar dari bidang kartu */
+  .depth-1 { transform: translateZ(28px); }
+  .depth-2 { transform: translateZ(55px); }
+  .depth-3 { transform: translateZ(85px); }
+
+  /* ------------------------------------------------------------------
+     REVEAL SAAT MASUK VIEWPORT
+     ------------------------------------------------------------------ */
+  .reveal {
+    opacity: 0;
+    transform: translate3d(0, var(--reveal-y, 1.75rem), 0) scale(var(--reveal-scale, 1));
+    transition:
+      opacity 700ms cubic-bezier(0.22, 0.7, 0.3, 1),
+      transform 700ms cubic-bezier(0.22, 0.7, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+  }
+  .reveal[data-visible="true"] {
+    opacity: 1;
+    transform: none;
+  }
+
+  /* ------------------------------------------------------------------
+     GERAKAN AMBIENT
+     ------------------------------------------------------------------ */
+  .animate-float { animation: float 7s ease-in-out infinite; }
+  .animate-float-slow { animation: float 11s ease-in-out infinite; }
+  .animate-float-delayed { animation: float 8s ease-in-out infinite; animation-delay: -2.5s; }
+
+  .animate-ring { animation: pulse-ring 3.2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+
+  .animate-drift { animation: drift 18s ease-in-out infinite alternate; }
+
+  /* Judul dengan gradasi yang bergerak pelan */
+  .text-gradient-animated {
+    background-image: linear-gradient(
+      100deg,
+      var(--brand),
+      color-mix(in oklab, var(--brand) 40%, #a855f7),
+      var(--brand)
+    );
+    background-size: 220% auto;
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    animation: gradient-pan 7s linear infinite;
+  }
+
+  /* Bola cahaya blur untuk latar */
+  .glow-orb {
+    border-radius: 9999px;
+    filter: blur(70px);
+    pointer-events: none;
+  }
+
+  /* ------------------------------------------------------------------
+     MARQUEE
+     Track digandakan 2x di markup; menggeser -50% menghasilkan loop mulus.
+     ------------------------------------------------------------------ */
+  .marquee-mask {
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  }
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 32s linear infinite;
+  }
+  .marquee-mask:hover .marquee-track {
+    animation-play-state: paused;
+  }
+
+  /* ------------------------------------------------------------------
+     ANIMASI ILUSTRASI FITUR
+     `transform-box: fill-box` wajib untuk elemen SVG — tanpa itu
+     transform-origin dihitung dari sudut viewport SVG, bukan dari kotak
+     elemennya sendiri, sehingga skala/rotasi meleset jauh.
+     ------------------------------------------------------------------ */
+  .art-anim {
+    transform-box: fill-box;
+    transition: transform 550ms cubic-bezier(0.22, 0.7, 0.3, 1);
+  }
+
+  /* Batang URL panjang yang menyusut saat kartu di-hover */
+  .art-shrink {
+    transform-origin: left center;
+  }
+  .group:hover .art-shrink { transform: scaleX(0.46); }
+
+  /* Batang grafik yang meninggi saat di-hover */
+  .art-bar { transform-origin: bottom center; }
+  .group:hover .art-bar { transform: scaleY(1.18); }
+
+  /* Tumpukan kartu kategori yang memekar */
+  .group:hover .art-layer-a { transform: translate(-11px, -7px) rotate(-5deg); }
+  .group:hover .art-layer-c { transform: translate(11px, 7px) rotate(5deg); }
+
+  /* Deretan tombol bio-link yang bergeser berurutan */
+  .group:hover .art-pill-1 { transform: translateX(7px); }
+  .group:hover .art-pill-2 { transform: translateX(7px); transition-delay: 60ms; }
+  .group:hover .art-pill-3 { transform: translateX(7px); transition-delay: 120ms; }
+
+  /* Garis pemindai QR */
+  .art-scan {
+    transform-box: fill-box;
+    animation: art-scan 3.6s ease-in-out infinite;
+  }
+
+  /* Riak yang memancar dari titik puncak grafik / perisai */
+  .art-ping {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-ping 2.8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Sapuan radar pada ilustrasi keamanan */
+  .art-sweep {
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: art-sweep 5s linear infinite;
+  }
+
+  /* Lantai grid berperspektif di bawah hero */
+  .grid-floor {
+    background-image:
+      linear-gradient(to right, var(--border) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--border) 1px, transparent 1px);
+    background-size: 2.5rem 2.5rem;
+    transform: perspective(340px) rotateX(58deg);
+    transform-origin: 50% 0%;
+    mask-image: linear-gradient(to bottom, #000, transparent 75%);
+    -webkit-mask-image: linear-gradient(to bottom, #000, transparent 75%);
+  }
 }
 
 @keyframes enter {
@@ -491,9 +713,77 @@
   }
 }
 
+@keyframes float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -14px, 0); }
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.85); opacity: 0.7; }
+  70% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+@keyframes drift {
+  0% { transform: translate3d(0, 0, 0) scale(1); }
+  100% { transform: translate3d(3rem, -2rem, 0) scale(1.15); }
+}
+
+@keyframes gradient-pan {
+  0% { background-position: 0% center; }
+  100% { background-position: -200% center; }
+}
+
+@keyframes marquee {
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@keyframes art-scan {
+  0%, 100% { transform: translateY(0); opacity: 0.35; }
+  50% { transform: translateY(74px); opacity: 1; }
+}
+
+@keyframes art-ping {
+  0% { transform: scale(0.5); opacity: 0.75; }
+  70% { transform: scale(1.9); opacity: 0; }
+  100% { transform: scale(1.9); opacity: 0; }
+}
+
+@keyframes art-sweep {
+  to { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   HORMATI PREFERENSI GERAK MINIMAL
+   Semua dekorasi dimatikan, dan konten .reveal langsung ditampilkan agar
+   tidak ada yang tersembunyi permanen.
+   ========================================================================== */
 @media (prefers-reduced-motion: reduce) {
-  .animate-in {
-    animation: none;
+  .animate-in,
+  .animate-float,
+  .animate-float-slow,
+  .animate-float-delayed,
+  .animate-ring,
+  .animate-drift,
+  .text-gradient-animated,
+  .marquee-track,
+  .art-scan,
+  .art-ping,
+  .art-sweep {
+    animation: none !important;
+  }
+  .art-anim {
+    transition: none !important;
+    transform: none !important;
+  }
+  .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .tilt-card {
+    transform: none !important;
   }
   html {
     scroll-behavior: auto;

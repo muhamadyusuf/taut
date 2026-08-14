@@ -11,6 +11,9 @@
 import type * as admin from "../admin.js";
 import type * as articles from "../articles.js";
 import type * as categories from "../categories.js";
+import type * as certificateActions from "../certificateActions.js";
+import type * as certificates from "../certificates.js";
+import type * as certificatesInternal from "../certificatesInternal.js";
 import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as links from "../links.js";
@@ -42,6 +45,9 @@ declare const fullApi: ApiFromModules<{
   admin: typeof admin;
   articles: typeof articles;
   categories: typeof categories;
+  certificateActions: typeof certificateActions;
+  certificates: typeof certificates;
+  certificatesInternal: typeof certificatesInternal;
   forms: typeof forms;
   http: typeof http;
   links: typeof links;

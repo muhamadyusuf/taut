@@ -244,6 +244,40 @@ export default defineSchema({
       })
     ),
     submittedAt: v.number(),
+    certificateUrl: v.optional(v.string()), // link Google Drive setelah sertifikat digenerate
+    certificateSentAt: v.optional(v.number()), // waktu terakhir email sertifikat terkirim
+  })
+    .index("by_formId", ["formId"]),
+
+  // ---------------------------------------------------------
+  // 8. TEMPLATE SERTIFIKAT (per formulir)
+  // ---------------------------------------------------------
+  certificate_templates: defineTable({
+    formId: v.id("forms"),
+    userId: v.string(),
+    backgroundImageUrl: v.string(), // gambar template dari Google Drive
+    width: v.number(), // ukuran asli gambar (px), dasar perhitungan posisi field
+    height: v.number(),
+    fields: v.array(
+      v.object({
+        id: v.string(),
+        variable: v.string(), // id pertanyaan, atau variabel khusus "_no" | "_date" | "_formTitle"
+        x: v.number(), // posisi dalam persen (0-100) dari lebar gambar
+        y: v.number(), // posisi dalam persen (0-100) dari tinggi gambar
+        fontSize: v.number(),
+        color: v.string(),
+        fontFamily: v.string(),
+        bold: v.boolean(),
+        align: v.string(), // "left" | "center" | "right"
+      })
+    ),
+    driveFolderId: v.optional(v.string()), // folder tujuan upload hasil sertifikat
+    driveFolderName: v.optional(v.string()),
+    emailQuestionId: v.optional(v.string()), // pertanyaan yang berisi alamat email penerima
+    emailSubject: v.optional(v.string()),
+    emailBody: v.optional(v.string()), // mendukung variabel {{label_pertanyaan}}
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_formId", ["formId"]),
 });
