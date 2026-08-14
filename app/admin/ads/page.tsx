@@ -109,14 +109,14 @@ export default function AdminAdsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-[#0b1736]">Manajemen Iklan</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold text-foreground">Manajemen Iklan</h1>
+          <p className="text-muted-foreground text-sm mt-1">
             Kelola iklan yang tampil di halaman redirect singkat.in
           </p>
         </div>
         <button
           onClick={openCreate}
-          className="flex items-center gap-2 bg-[#0193ff] hover:bg-[#0078d4] text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow transition-colors"
+          className="flex items-center gap-2 bg-brand hover:bg-brand-hover text-white text-sm font-semibold px-4 py-2.5 rounded-xl shadow transition-colors"
         >
           <Plus className="h-4 w-4" />
           Tambah Iklan
@@ -126,11 +126,11 @@ export default function AdminAdsPage() {
       {/* Ad list */}
       {ads === undefined ? (
         <div className="flex justify-center py-20">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-400" />
+          <Loader2 className="h-8 w-8 animate-spin text-brand" />
         </div>
       ) : ads.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 flex flex-col items-center justify-center py-20 gap-3 text-gray-400">
-          <Megaphone className="h-10 w-10 text-gray-300" />
+        <div className="bg-card rounded-2xl border border-dashed border-border flex flex-col items-center justify-center py-20 gap-3 text-subtle">
+          <Megaphone className="h-10 w-10 text-subtle" />
           <p className="font-medium">Belum ada iklan</p>
           <p className="text-sm">Klik &quot;Tambah Iklan&quot; untuk membuat iklan pertama</p>
         </div>
@@ -139,11 +139,11 @@ export default function AdminAdsPage() {
           {ads.map((ad) => (
             <div
               key={ad._id}
-              className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col"
+              className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden flex flex-col"
             >
               {/* Preview Image */}
               {ad.imageUrl ? (
-                <div className="relative h-44 w-full bg-gray-100">
+                <div className="relative h-44 w-full bg-muted">
                   <Image
                     src={ad.imageUrl}
                     alt={ad.title ?? "Ad"}
@@ -161,11 +161,11 @@ export default function AdminAdsPage() {
               <div className="p-5 flex flex-col gap-3 flex-1">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="font-semibold text-[#0b1736] text-sm leading-tight">
-                      {ad.title || <span className="italic text-gray-400">Tanpa judul</span>}
+                    <p className="font-semibold text-foreground text-sm leading-tight">
+                      {ad.title || <span className="italic text-subtle">Tanpa judul</span>}
                     </p>
                     {ad.description && (
-                      <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
                         {ad.description}
                       </p>
                     )}
@@ -176,9 +176,9 @@ export default function AdminAdsPage() {
                     className="shrink-0"
                   >
                     {ad.isActive ? (
-                      <ToggleRight className="h-7 w-7 text-green-500" />
+                      <ToggleRight className="h-7 w-7 text-success" />
                     ) : (
-                      <ToggleLeft className="h-7 w-7 text-gray-400" />
+                      <ToggleLeft className="h-7 w-7 text-subtle" />
                     )}
                   </button>
                 </div>
@@ -188,18 +188,18 @@ export default function AdminAdsPage() {
                     href={ad.linkUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-[#0193ff] hover:underline truncate"
+                    className="text-xs text-brand hover:underline truncate"
                   >
                     {ad.linkUrl}
                   </a>
                 )}
 
-                <div className="mt-auto flex items-center gap-2 pt-3 border-t border-gray-100">
+                <div className="mt-auto flex items-center gap-2 pt-3 border-t border-border">
                   <span
                     className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
                       ad.isActive
-                        ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-500"
+                        ? "bg-success-soft text-success"
+                        : "bg-muted text-muted-foreground"
                     }`}
                   >
                     {ad.isActive ? "Aktif" : "Nonaktif"}
@@ -207,14 +207,14 @@ export default function AdminAdsPage() {
                   <div className="ml-auto flex items-center gap-1">
                     <button
                       onClick={() => openEdit(ad)}
-                      className="p-2 rounded-lg text-gray-400 hover:text-[#0193ff] hover:bg-blue-50 transition-colors"
+                      className="p-2 rounded-lg text-subtle hover:text-brand hover:bg-brand-soft transition-colors"
                       title="Edit"
                     >
                       <Pencil className="h-4 w-4" />
                     </button>
                     <button
                       onClick={() => setDeleteTarget(ad._id)}
-                      className="p-2 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                      className="p-2 rounded-lg text-subtle hover:text-danger hover:bg-danger-soft transition-colors"
                       title="Hapus"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -230,14 +230,14 @@ export default function AdminAdsPage() {
       {/* ── Create / Edit Modal ── */}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <h2 className="font-bold text-[#0b1736]">
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-border">
+              <h2 className="font-bold text-foreground">
                 {editingId ? "Edit Iklan" : "Buat Iklan Baru"}
               </h2>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                className="p-1.5 rounded-lg text-subtle hover:text-foreground hover:bg-muted"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -245,7 +245,7 @@ export default function AdminAdsPage() {
 
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Judul
                 </label>
                 <input
@@ -253,12 +253,12 @@ export default function AdminAdsPage() {
                   value={form.title}
                   onChange={(e) => setForm({ ...form, title: e.target.value })}
                   placeholder="Judul iklan"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0193ff]/50"
+                  className="w-full bg-input text-foreground border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-ring focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   Deskripsi
                 </label>
                 <textarea
@@ -268,12 +268,12 @@ export default function AdminAdsPage() {
                   }
                   placeholder="Deskripsi singkat iklan"
                   rows={3}
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0193ff]/50 resize-none"
+                  className="w-full bg-input text-foreground border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-ring focus:border-brand resize-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   URL Gambar
                 </label>
                 <input
@@ -283,12 +283,12 @@ export default function AdminAdsPage() {
                     setForm({ ...form, imageUrl: e.target.value })
                   }
                   placeholder="https://example.com/banner.jpg"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0193ff]/50"
+                  className="w-full bg-input text-foreground border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-ring focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-semibold text-gray-600 block mb-1">
+                <label className="text-xs font-semibold text-muted-foreground block mb-1">
                   URL Tujuan Klik
                 </label>
                 <input
@@ -298,7 +298,7 @@ export default function AdminAdsPage() {
                     setForm({ ...form, linkUrl: e.target.value })
                   }
                   placeholder="https://example.com"
-                  className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#0193ff]/50"
+                  className="w-full bg-input text-foreground border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-4 focus:ring-ring focus:border-brand"
                 />
               </div>
 
@@ -309,9 +309,9 @@ export default function AdminAdsPage() {
                   onChange={(e) =>
                     setForm({ ...form, isActive: e.target.checked })
                   }
-                  className="w-4 h-4 rounded accent-[#0193ff]"
+                  className="w-4 h-4 rounded accent-brand"
                 />
-                <span className="text-sm text-gray-700 font-medium">
+                <span className="text-sm text-foreground font-medium">
                   Jadikan iklan aktif (iklan lain akan dinonaktifkan)
                 </span>
               </label>
@@ -320,14 +320,14 @@ export default function AdminAdsPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 border border-gray-300 text-gray-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
+                  className="flex-1 border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl hover:bg-muted transition-colors"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-[#0193ff] hover:bg-[#0078d4] disabled:bg-gray-300 text-white font-semibold text-sm py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-brand hover:bg-brand-hover disabled:bg-border-strong text-brand-contrast font-semibold text-sm py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingId ? "Simpan Perubahan" : "Buat Iklan"}
@@ -341,24 +341,24 @@ export default function AdminAdsPage() {
       {/* ── Delete Confirm Modal ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4">
-            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center mx-auto">
-              <Trash2 className="h-6 w-6 text-red-500" />
+          <div className="bg-card rounded-2xl shadow-2xl w-full max-w-sm p-6 text-center space-y-4">
+            <div className="h-12 w-12 rounded-full bg-danger-soft flex items-center justify-center mx-auto">
+              <Trash2 className="h-6 w-6 text-danger" />
             </div>
-            <h3 className="font-bold text-[#0b1736]">Hapus Iklan?</h3>
-            <p className="text-sm text-gray-500">
+            <h3 className="font-bold text-foreground">Hapus Iklan?</h3>
+            <p className="text-sm text-muted-foreground">
               Iklan ini akan dihapus permanen dan tidak bisa dikembalikan.
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="flex-1 border border-gray-300 text-gray-700 font-semibold text-sm py-2.5 rounded-xl hover:bg-gray-50"
+                className="flex-1 border border-border text-foreground font-semibold text-sm py-2.5 rounded-xl hover:bg-muted"
               >
                 Batal
               </button>
               <button
                 onClick={() => handleDelete(deleteTarget)}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold text-sm py-2.5 rounded-xl"
+                className="flex-1 bg-danger hover:opacity-90 text-white font-semibold text-sm py-2.5 rounded-xl"
               >
                 Hapus
               </button>

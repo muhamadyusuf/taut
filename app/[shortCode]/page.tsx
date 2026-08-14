@@ -49,8 +49,8 @@ export default function RedirectPage() {
   // masih loading
   if (link === undefined) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     );
   }
@@ -69,12 +69,12 @@ export default function RedirectPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       {/* Top bar */}
-      <header className="bg-white border-b border-gray-200 px-6 py-3 flex items-center gap-3 shadow-sm">
+      <header className="bg-card border-b border-border px-6 py-3 flex items-center gap-3 shadow-sm">
         <Image src="/logo.svg" alt="Logo" width={28} height={28} />
-        <span className="font-bold text-[#0b1736] text-lg">
-          singkat<span className="text-[#0193ff]">.in</span>
+        <span className="font-bold text-foreground text-lg">
+          singkat<span className="text-brand">.in</span>
         </span>
       </header>
 
@@ -88,7 +88,7 @@ export default function RedirectPage() {
               href={activeAd.linkUrl ?? "#"}
               target="_blank"
               rel="noopener noreferrer sponsored"
-              className="block w-full h-full min-h-100 rounded-2xl overflow-hidden shadow-sm border border-gray-200 relative group"
+              className="block w-full h-full min-h-100 rounded-2xl overflow-hidden shadow-sm border border-border relative group"
             >
               {activeAd.imageUrl ? (
                 <div className="relative w-full h-full min-h-100">
@@ -123,7 +123,7 @@ export default function RedirectPage() {
                     <p className="text-white/70 max-w-sm">{activeAd.description}</p>
                   )}
                   {activeAd.linkUrl && (
-                    <span className="mt-2 bg-[#0193ff] hover:bg-[#0078d4] text-white font-semibold px-6 py-2.5 rounded-xl text-sm">
+                    <span className="mt-2 bg-brand hover:bg-brand-hover text-brand-contrast font-semibold px-6 py-2.5 rounded-xl text-sm">
                       Kunjungi
                     </span>
                   )}
@@ -132,8 +132,8 @@ export default function RedirectPage() {
             </a>
           ) : (
             /* No active ad — placeholder */
-            <div className="w-full h-full min-h-100 rounded-2xl border-2 border-dashed border-gray-300 bg-white flex flex-col items-center justify-center text-gray-400 gap-3">
-              <ShieldCheck className="h-12 w-12 text-gray-300" />
+            <div className="w-full h-full min-h-100 rounded-2xl border-2 border-dashed border-border bg-card flex flex-col items-center justify-center text-muted-foreground gap-3">
+              <ShieldCheck className="h-12 w-12 text-subtle" />
               <p className="text-sm font-medium">Ruang Iklan</p>
               <p className="text-xs">Belum ada iklan aktif</p>
             </div>
@@ -143,7 +143,7 @@ export default function RedirectPage() {
 
         {/* ── LEFT PANEL (30%) ── */}
         <aside className="w-full md:w-[50%] shrink-0">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
             {/* Header */}
             <div className="bg-linear-to-br from-[#0b1736] to-[#0a2970] px-6 py-5 text-white">
               <h1 className="text-lg font-bold leading-snug">
@@ -157,14 +157,14 @@ export default function RedirectPage() {
             <div className="px-6 py-5 space-y-5">
               {/* Destination info */}
               <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">
                   Tujuan
                 </p>
                 <a
                   href={link.originalUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-start gap-2 text-[#0193ff] text-sm font-medium break-all hover:underline"
+                  className="flex items-start gap-2 text-brand text-sm font-medium break-all hover:underline"
                 >
                   <ExternalLink className="h-4 w-4 shrink-0 mt-0.5" />
                   {destinationHost}
@@ -172,9 +172,9 @@ export default function RedirectPage() {
               </div>
 
               {/* Note */}
-              <div className="flex items-start gap-2.5 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700 leading-relaxed">
+              <div className="flex items-start gap-2.5 bg-warning-soft border border-warning/25 rounded-xl px-4 py-3">
+                <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <p className="text-xs text-warning leading-relaxed">
                   Kami tidak dapat mengambil informasi tentang tujuan Anda. Namun
                   tidak perlu khawatir — kami memeriksa tautan ini untuk menjaga
                   keamanan Anda.
@@ -184,8 +184,8 @@ export default function RedirectPage() {
               {/* Security check */}
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <ShieldCheck className="h-5 w-5 text-green-500" />
-                  <p className="text-sm font-semibold text-gray-800">
+                  <ShieldCheck className="h-5 w-5 text-success" />
+                  <p className="text-sm font-semibold text-foreground">
                     Pemeriksaan keamanan
                   </p>
                 </div>
@@ -195,9 +195,8 @@ export default function RedirectPage() {
                     "Tautan dipantau dari perilaku mencurigakan",
                     "Tidak ada ancaman yang terdeteksi saat ini",
                   ].map((item) => (
-                    <li key={item} className="flex items-start gap-2 text-xs text-gray-600">
-                      <span className="mt-0.5 h-4 w-4 rounded-full bg-green-100 flex items-center justify-center shrink-0">
-                        <svg className="h-2.5 w-2.5 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                    <li key={item} className="flex items-start gap-2 text-xs text-muted-foreground">                      <span className="mt-0.5 h-4 w-4 rounded-full bg-success-soft flex items-center justify-center shrink-0">
+                        <svg className="h-2.5 w-2.5 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                           <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                         </svg>
                       </span>
@@ -211,7 +210,7 @@ export default function RedirectPage() {
               <button
                 onClick={handleContinue}
                 disabled={isRedirecting}
-                className="w-full bg-[#0193ff] hover:bg-[#0078d4] disabled:bg-gray-300 text-white font-semibold py-3 px-4 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                className="w-full bg-brand hover:bg-brand-hover disabled:bg-border-strong text-brand-contrast font-semibold py-3 px-4 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
               >
                 {isRedirecting ? (
                   <>
@@ -231,7 +230,7 @@ export default function RedirectPage() {
                 )}
               </button>
 
-              <p className="text-[11px] text-gray-400 text-center">
+              <p className="text-[11px] text-subtle text-center">
                 Anda akan diarahkan secara otomatis dalam {countdown} detik
               </p>
             </div>

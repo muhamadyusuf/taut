@@ -209,17 +209,17 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
   };
 
   return (
-    <div className={`space-y-3 p-4 border rounded-xl transition-all duration-300 ${status === 'invalid' ? 'bg-red-50 border-red-300 shadow-sm' : 'bg-gray-50 border-gray-200'}`}>
+    <div className={`space-y-3 p-4 border rounded-xl transition-all duration-300 ${status === 'invalid' ? 'bg-danger-soft border-danger/40 shadow-sm' : 'bg-muted border-border'}`}>
       <div className="flex justify-between items-center">
-        <label className="text-xs font-bold text-gray-500 uppercase flex items-center gap-2">
-            {label} {status === 'invalid' && <span className="animate-pulse w-2 h-2 bg-red-500 rounded-full"></span>}
+        <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
+            {label} {status === 'invalid' && <span className="animate-pulse w-2 h-2 bg-danger rounded-full"></span>}
         </label>
-        {status === 'checking' && <span className="text-[10px] bg-blue-100 text-blue-700 px-2 py-1 rounded-full flex items-center gap-1 font-bold"><Loader2 size={10} className="animate-spin"/> Cek Izin...</span>}
-        {status === 'valid' && <span className="text-[10px] bg-green-100 text-green-700 px-2 py-1 rounded-full flex items-center gap-1 font-bold"><CheckCircle size={12}/> Publik</span>}
+        {status === 'checking' && <span className="text-[10px] bg-brand-soft text-brand-soft-fg px-2 py-1 rounded-full flex items-center gap-1 font-bold"><Loader2 size={10} className="animate-spin"/> Cek Izin...</span>}
+        {status === 'valid' && <span className="text-[10px] bg-success-soft text-success px-2 py-1 rounded-full flex items-center gap-1 font-bold"><CheckCircle size={12}/> Publik</span>}
       </div>
 
       <div className="flex gap-4 items-start">
-        <div className={`w-20 h-20 bg-white rounded-lg overflow-visible border shrink-0 relative group ${status === 'invalid' ? 'border-red-400 opacity-80' : ''}`}>
+        <div className={`w-20 h-20 bg-card rounded-lg overflow-visible border shrink-0 relative group ${status === 'invalid' ? 'border-danger opacity-80' : ''}`}>
           
           {currentUrl ? (
             <>
@@ -236,31 +236,31 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
                 <button 
                     type="button"
                     onClick={handleRemove}
-                    className="absolute -top-2 -right-2 bg-white text-gray-500 hover:text-red-500 border border-gray-200 rounded-full p-1 shadow-md hover:bg-red-50 hover:border-red-200 transition-all z-10 opacity-100 scale-100"
+                    className="absolute -top-2 -right-2 bg-card text-muted-foreground hover:text-danger border border-border rounded-full p-1 shadow-md hover:bg-danger-soft hover:border-danger/30 transition-all z-10 opacity-100 scale-100"
                     title="Hapus gambar"
                 >
                     <X size={12} strokeWidth={3} />
                 </button>
             </>
           ) : (
-            <ImageIcon className="m-auto mt-6 text-gray-300" />
+            <ImageIcon className="m-auto mt-6 text-subtle" />
           )}
         </div>
 
         <div className="flex-1 space-y-2">
-            <button type="button" onClick={handleOpenPicker} className="w-full bg-white border border-gray-300 hover:border-blue-500 hover:bg-blue-50 text-gray-700 font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition text-xs">
+            <button type="button" onClick={handleOpenPicker} className="w-full bg-card border border-border hover:border-brand hover:bg-brand-soft text-foreground font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition text-xs">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive"/>
                 {currentUrl ? "Ganti File" : "Pilih dari Drive"}
             </button>
             
             {status === 'invalid' && (
-                <div className="text-[10px] text-red-700 bg-white p-2.5 rounded-lg border border-red-200 shadow-sm animate-in slide-in-from-top-2">
+                <div className="text-[10px] text-danger bg-card p-2.5 rounded-lg border border-danger/30 shadow-sm animate-in slide-in-from-top-2">
                     <div className="flex gap-2 mb-2">
-                        <AlertTriangle size={16} className="shrink-0 text-red-600"/>
+                        <AlertTriangle size={16} className="shrink-0 text-danger"/>
                         <div><p className="font-bold">Gambar Tidak Muncul?</p><p className="leading-tight opacity-80">File ini masih Private.</p></div>
                     </div>
                     {accessToken ? (
-                        <button type="button" onClick={makePublic} disabled={isFixing} className="w-full bg-red-600 hover:bg-red-700 text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-bold transition shadow-sm disabled:opacity-50">
+                        <button type="button" onClick={makePublic} disabled={isFixing} className="w-full bg-danger hover:opacity-90 text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-bold transition shadow-sm disabled:opacity-50">
                             {isFixing ? <><Loader2 size={12} className="animate-spin"/> Memproses...</> : <><Wrench size={12}/> Ubah ke Publik Sekarang</>}
                         </button>
                     ) : (

@@ -7,10 +7,10 @@ export default function MarketingLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col bg-[#f8faff]">
+    <div className="min-h-screen flex flex-col bg-background text-foreground">
       {/* Navbar nempel di atas */}
       <Navbar />
-      
+
       {/* Isi Halaman (Home/About/Contact) */}
       <main className="flex-1">
         {children}

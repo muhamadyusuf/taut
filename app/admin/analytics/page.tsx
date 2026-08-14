@@ -21,8 +21,8 @@ import { BarChart3, MousePointerClick, TrendingUp, Users2 } from "lucide-react";
 import { getUserInfoBatch, type ClerkUserInfo } from "../users/actions";
 
 const COLORS = [
-  "#0193ff", "#ee6123", "#0b1736", "#10b981", "#8b5cf6",
-  "#f59e0b", "#ef4444", "#14b8a6", "#f97316", "#6366f1",
+  "#0193ff", "#f97316", "#8b5cf6", "#10b981", "#f43f5e",
+  "#eab308", "#14b8a6", "#6366f1", "#ec4899", "#84cc16",
 ];
 
 function shortName(info: ClerkUserInfo | undefined, userId: string): string {
@@ -53,19 +53,19 @@ export default function AdminAnalyticsPage() {
     <div className="space-y-8 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#0b1736]">Statistik Platform</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Statistik Platform</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Analitik mendalam penggunaan link dan pengakses platform
         </p>
       </div>
 
       {/* Section 1: Grafik Penggunaan Link (trend creation) */}
-      <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <section className="bg-card rounded-2xl p-6 shadow-sm border border-border">
         <div className="flex items-center gap-2 mb-6">
-          <TrendingUp className="h-5 w-5 text-[#0193ff]" />
+          <TrendingUp className="h-5 w-5 text-brand" />
           <div>
-            <h2 className="font-bold text-[#0b1736]">Grafik Penggunaan Link</h2>
-            <p className="text-xs text-gray-400">Jumlah tautan baru dibuat per hari (30 hari terakhir)</p>
+            <h2 className="font-bold text-foreground">Grafik Penggunaan Link</h2>
+            <p className="text-xs text-subtle">Jumlah tautan baru dibuat per hari (30 hari terakhir)</p>
           </div>
         </div>
         <div className="h-75">
@@ -75,24 +75,23 @@ export default function AdminAnalyticsPage() {
                 data={linksPerDay}
                 margin={{ top: 5, right: 20, left: -20, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis
                   dataKey="label"
-                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   interval={4}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   axisLine={false}
                   allowDecimals={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "10px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                    boxShadow: "var(--shadow-card-hover)",
                     fontSize: "13px",
                   }}
                     formatter={(val) => [val ?? 0, "Tautan dibuat"] as [number, string]}
@@ -100,9 +99,9 @@ export default function AdminAnalyticsPage() {
                 <Line
                   type="monotone"
                   dataKey="count"
-                  stroke="#0193ff"
+                  stroke="var(--brand)"
                   strokeWidth={2.5}
-                  dot={{ r: 3, fill: "#0193ff", strokeWidth: 0 }}
+                  dot={{ r: 3, fill: "var(--brand)", strokeWidth: 0 }}
                   activeDot={{ r: 6 }}
                 />
               </LineChart>
@@ -114,12 +113,12 @@ export default function AdminAnalyticsPage() {
       </section>
 
       {/* Section 2: Grafik Pengakses Link (clicks) */}
-      <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+      <section className="bg-card rounded-2xl p-6 shadow-sm border border-border">
         <div className="flex items-center gap-2 mb-6">
-          <MousePointerClick className="h-5 w-5 text-orange-500" />
+          <MousePointerClick className="h-5 w-5 text-warning" />
           <div>
-            <h2 className="font-bold text-[#0b1736]">Grafik Pengakses Link</h2>
-            <p className="text-xs text-gray-400">Top 15 link berdasarkan jumlah klik</p>
+            <h2 className="font-bold text-foreground">Grafik Pengakses Link</h2>
+            <p className="text-xs text-subtle">Top 15 link berdasarkan jumlah klik</p>
           </div>
         </div>
         <div className="h-105">
@@ -134,10 +133,10 @@ export default function AdminAnalyticsPage() {
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 10, bottom: 5 }}
               >
-                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                 <XAxis
                   type="number"
-                  tick={{ fontSize: 11, fill: "#9ca3af" }}
+                  tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
                   tickLine={false}
                   axisLine={false}
                 />
@@ -145,14 +144,13 @@ export default function AdminAnalyticsPage() {
                   dataKey="name"
                   type="category"
                   width={110}
-                  tick={{ fontSize: 11, fill: "#374151" }}
+                  tick={{ fontSize: 11, fill: "var(--foreground)" }}
                   tickLine={false}
                 />
                 <Tooltip
                   contentStyle={{
-                    borderRadius: "10px",
-                    border: "none",
-                    boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                    borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                    boxShadow: "var(--shadow-card-hover)",
                     fontSize: "13px",
                   }}
                   formatter={(val) => [(val as number ?? 0).toLocaleString("id-ID"), "Klik"] as [string, string]}
@@ -180,12 +178,12 @@ export default function AdminAnalyticsPage() {
 
       {/* Section 3: Distribusi Klik per Pengguna */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <section className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <Users2 className="h-5 w-5 text-purple-500" />
+            <Users2 className="h-5 w-5 text-info" />
             <div>
-              <h2 className="font-bold text-[#0b1736]">Distribusi Klik per Pengguna</h2>
-              <p className="text-xs text-gray-400">Top 10 pengguna berdasarkan total klik</p>
+              <h2 className="font-bold text-foreground">Distribusi Klik per Pengguna</h2>
+              <p className="text-xs text-subtle">Top 10 pengguna berdasarkan total klik</p>
             </div>
           </div>
           <div className="h-75">
@@ -216,9 +214,8 @@ export default function AdminAnalyticsPage() {
                   </Pie>
                   <Tooltip
                     contentStyle={{
-                      borderRadius: "10px",
-                      border: "none",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                      boxShadow: "var(--shadow-card-hover)",
                       fontSize: "12px",
                     }}
                     formatter={(val) => [(val as number ?? 0).toLocaleString("id-ID"), "Klik"] as [string, string]}
@@ -234,12 +231,12 @@ export default function AdminAnalyticsPage() {
           </div>
         </section>
 
-        <section className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <section className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <BarChart3 className="h-5 w-5 text-green-500" />
+            <BarChart3 className="h-5 w-5 text-success" />
             <div>
-              <h2 className="font-bold text-[#0b1736]">Klik per Pengguna</h2>
-              <p className="text-xs text-gray-400">Bar chart top 10 pengguna</p>
+              <h2 className="font-bold text-foreground">Klik per Pengguna</h2>
+              <p className="text-xs text-subtle">Bar chart top 10 pengguna</p>
             </div>
           </div>
           <div className="h-75">
@@ -253,23 +250,22 @@ export default function AdminAnalyticsPage() {
                   }))}
                   margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis
                     dataKey="name"
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickLine={false}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
                     contentStyle={{
-                      borderRadius: "10px",
-                      border: "none",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                      boxShadow: "var(--shadow-card-hover)",
                       fontSize: "12px",
                     }}
                     formatter={(val) => [(val as number ?? 0).toLocaleString("id-ID"), "Klik"] as [string, string]}
@@ -300,7 +296,7 @@ export default function AdminAnalyticsPage() {
 function Skeleton() {
   return (
     <div className="h-full flex items-center justify-center">
-      <div className="animate-pulse text-gray-200 text-sm">Memuat data...</div>
+      <div className="animate-pulse text-subtle text-sm">Memuat data...</div>
     </div>
   );
 }

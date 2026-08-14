@@ -14,6 +14,7 @@ import {
   Line,
   Cell,
 } from "recharts";
+import { CHART_COLORS } from "@/app/_components/chartStyles";
 import {
   Link as LinkIcon,
   Users,
@@ -36,43 +37,43 @@ export default function AdminOverviewPage() {
       label: "Total Pengguna",
       value: stats?.totalUsers ?? "-",
       icon: Users,
-      color: "text-blue-600",
-      bg: "bg-blue-50",
+      color: "text-brand",
+      bg: "bg-brand-soft",
     },
     {
       label: "Total Link",
       value: stats?.totalLinks ?? "-",
       icon: LinkIcon,
-      color: "text-indigo-600",
-      bg: "bg-indigo-50",
+      color: "text-info",
+      bg: "bg-info-soft",
     },
     {
       label: "Total Klik",
       value: stats?.totalClicks ?? "-",
       icon: MousePointerClick,
-      color: "text-orange-500",
-      bg: "bg-orange-50",
+      color: "text-warning",
+      bg: "bg-warning-soft",
     },
     {
       label: "Total Microsite",
       value: stats?.totalMicrosites ?? "-",
       icon: Smartphone,
-      color: "text-purple-600",
-      bg: "bg-purple-50",
+      color: "text-info",
+      bg: "bg-info-soft",
     },
     {
       label: "Total Toko",
       value: stats?.totalShops ?? "-",
       icon: ShoppingBag,
-      color: "text-green-600",
-      bg: "bg-green-50",
+      color: "text-success",
+      bg: "bg-success-soft",
     },
     {
       label: "Total Pesanan",
       value: stats?.totalOrders ?? "-",
       icon: ShoppingCart,
-      color: "text-rose-600",
-      bg: "bg-rose-50",
+      color: "text-danger",
+      bg: "bg-danger-soft",
     },
   ];
 
@@ -80,8 +81,8 @@ export default function AdminOverviewPage() {
     <div className="space-y-8 pb-10">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-[#0b1736]">Dashboard Admin</h1>
-        <p className="text-gray-500 text-sm mt-1">
+        <h1 className="text-2xl font-bold text-foreground">Dashboard Admin</h1>
+        <p className="text-muted-foreground text-sm mt-1">
           Ringkasan seluruh aktivitas platform singkat.in
         </p>
       </div>
@@ -91,14 +92,14 @@ export default function AdminOverviewPage() {
         {statCards.map((card) => (
           <div
             key={card.label}
-            className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex flex-col gap-3"
+            className="bg-card rounded-2xl p-5 shadow-sm border border-border flex flex-col gap-3"
           >
             <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
               <card.icon className={`h-5 w-5 ${card.color}`} />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium">{card.label}</p>
-              <p className={`text-2xl font-bold mt-0.5 ${isLoading ? "animate-pulse text-gray-200" : "text-[#0b1736]"}`}>
+              <p className="text-xs text-muted-foreground font-medium">{card.label}</p>
+              <p className={`text-2xl font-bold mt-0.5 ${isLoading ? "animate-pulse text-subtle" : "text-foreground"}`}>
                 {isLoading ? "..." : card.value.toLocaleString("id-ID")}
               </p>
             </div>
@@ -109,11 +110,11 @@ export default function AdminOverviewPage() {
       {/* Charts Row */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Links Created Per Day */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <TrendingUp className="h-5 w-5 text-[#0193ff]" />
-            <h2 className="font-bold text-[#0b1736]">Tautan Dibuat per Hari</h2>
-            <span className="ml-auto text-xs text-gray-400">30 hari terakhir</span>
+            <TrendingUp className="h-5 w-5 text-brand" />
+            <h2 className="font-bold text-foreground">Tautan Dibuat per Hari</h2>
+            <span className="ml-auto text-xs text-subtle">30 hari terakhir</span>
           </div>
           <div className="h-65">
             {linksPerDay ? (
@@ -122,24 +123,23 @@ export default function AdminOverviewPage() {
                   data={linksPerDay}
                   margin={{ top: 5, right: 10, left: -20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                   <XAxis
                     dataKey="label"
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickLine={false}
                     interval={4}
                   />
                   <YAxis
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                     allowDecimals={false}
                   />
                   <Tooltip
                     contentStyle={{
-                      borderRadius: "10px",
-                      border: "none",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                      boxShadow: "var(--shadow-card-hover)",
                       fontSize: "12px",
                     }}
                     formatter={(val) => [val ?? 0, "Tautan"] as [number, string]}
@@ -148,26 +148,26 @@ export default function AdminOverviewPage() {
                   <Line
                     type="monotone"
                     dataKey="count"
-                    stroke="#0193ff"
+                    stroke="var(--brand)"
                     strokeWidth={2.5}
                     dot={false}
-                    activeDot={{ r: 5, fill: "#0193ff" }}
+                    activeDot={{ r: 5, fill: "var(--brand)" }}
                   />
                 </LineChart>
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <div className="animate-pulse text-gray-300">Memuat...</div>
+                <div className="animate-pulse text-subtle">Memuat...</div>
               </div>
             )}
           </div>
         </div>
 
         {/* Top Links by Clicks */}
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+        <div className="bg-card rounded-2xl p-6 shadow-sm border border-border">
           <div className="flex items-center gap-2 mb-6">
-            <MousePointerClick className="h-5 w-5 text-orange-500" />
-            <h2 className="font-bold text-[#0b1736]">Top 10 Link Terbanyak Diklik</h2>
+            <MousePointerClick className="h-5 w-5 text-warning" />
+            <h2 className="font-bold text-foreground">Top 10 Link Terbanyak Diklik</h2>
           </div>
           <div className="h-65">
             {topLinks ? (
@@ -180,10 +180,10 @@ export default function AdminOverviewPage() {
                   layout="vertical"
                   margin={{ top: 5, right: 20, left: 10, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f0f0f0" />
+                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="var(--border)" />
                   <XAxis
                     type="number"
-                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
                     tickLine={false}
                     axisLine={false}
                   />
@@ -191,14 +191,13 @@ export default function AdminOverviewPage() {
                     dataKey="name"
                     type="category"
                     width={90}
-                    tick={{ fontSize: 10, fill: "#374151" }}
+                    tick={{ fontSize: 10, fill: "var(--foreground)" }}
                     tickLine={false}
                   />
                   <Tooltip
                     contentStyle={{
-                      borderRadius: "10px",
-                      border: "none",
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                      borderRadius: "12px", border: "1px solid var(--border)", background: "var(--card-elevated)", color: "var(--foreground)",
+                      boxShadow: "var(--shadow-card-hover)",
                       fontSize: "12px",
                     }}
                     formatter={(val) => [(val as number ?? 0).toLocaleString("id-ID"), "Klik"] as [string, string]}
@@ -207,7 +206,7 @@ export default function AdminOverviewPage() {
                     {topLinks.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={index === 0 ? "#ee6123" : index < 3 ? "#0193ff" : "#0b1736"}
+                        fill={CHART_COLORS[index % CHART_COLORS.length]}
                       />
                     ))}
                   </Bar>
@@ -215,7 +214,7 @@ export default function AdminOverviewPage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center">
-                <div className="animate-pulse text-gray-300">Memuat...</div>
+                <div className="animate-pulse text-subtle">Memuat...</div>
               </div>
             )}
           </div>

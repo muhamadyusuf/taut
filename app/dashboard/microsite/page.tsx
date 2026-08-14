@@ -20,13 +20,13 @@ export default function MicrositeListPage() {
     if (!slug) return;
     setIsCreating(true);
     try {
-        const id = await createMicrosite({ slug, title: "Halaman Baru" });
-        router.push(`/dashboard/microsite/${id}`); // Redirect ke Editor
+      const id = await createMicrosite({ slug, title: "Halaman Baru" });
+      router.push(`/dashboard/microsite/${id}`); // Redirect ke Editor
     } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
-        alert("Gagal: " + errorMessage);
+      const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
+      alert("Gagal: " + errorMessage);
     } finally {
-        setIsCreating(false);
+      setIsCreating(false);
     }
   };
 
@@ -42,55 +42,68 @@ export default function MicrositeListPage() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-6">
+    <div className="max-w-5xl mx-auto">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-[#2d3748]">Bio Link Saya</h1>
-        <button onClick={handleCreate} disabled={isCreating} className="bg-[#0193ff] text-white px-6 py-2 rounded-full font-bold flex items-center gap-2 hover:bg-[#007acc]">
-            <Plus size={18}/> {isCreating ? "Membuat..." : "Buat Baru"}
+        <h1 className="text-2xl font-bold text-foreground">Bio Link Saya</h1>
+        <button
+          onClick={handleCreate}
+          disabled={isCreating}
+          className="btn-saweria px-6 py-2 flex items-center gap-2"
+        >
+          <Plus size={18} /> {isCreating ? "Membuat..." : "Buat Baru"}
         </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {microsites?.map((site) => (
-            <div key={site._id} className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition group relative overflow-hidden">
-                <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4">
-                        <div className="bg-blue-50 p-3 rounded-full text-[#0193ff]">
-                            <Smartphone size={24}/>
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-lg truncate max-w-[120px]">{site.title}</h3>
-                            <p className="text-xs text-gray-500 truncate max-w-[120px]">/{site.slug}</p>
-                        </div>
-                    </div>
-                    
-                    {/* TOMBOL HAPUS POJOK KANAN ATAS */}
-                    <button 
-                        onClick={() => handleDelete(site._id, site.title)}
-                        className="text-gray-300 hover:text-red-500 p-2 hover:bg-red-50 rounded-full transition"
-                        title="Hapus Halaman"
-                    >
-                        <Trash2 size={18}/>
-                    </button>
+          <div key={site._id} className="card-saweria p-6 group relative overflow-hidden">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="bg-brand-soft p-3 rounded-full text-brand shrink-0">
+                  <Smartphone size={24} />
                 </div>
-                
-                <div className="flex gap-2 mt-4">
-                    <Link href={`/dashboard/microsite/${site._id}`} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
-                        <Edit size={14}/> Edit
-                    </Link>
-                    <a href={`/bio/${site.slug}`} target="_blank" className="flex-1 border border-gray-200 hover:border-[#0193ff] hover:text-[#0193ff] py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2">
-                         Lihat <ExternalLink size={14}/>
-                    </a>
+                <div className="min-w-0">
+                  <h3 className="font-bold text-lg text-foreground truncate">{site.title}</h3>
+                  <p className="text-xs text-muted-foreground truncate">/{site.slug}</p>
                 </div>
+              </div>
+
+              {/* TOMBOL HAPUS POJOK KANAN ATAS */}
+              <button
+                onClick={() => handleDelete(site._id, site.title)}
+                className="text-subtle hover:text-danger p-2 hover:bg-danger-soft rounded-full transition shrink-0"
+                title="Hapus Halaman"
+              >
+                <Trash2 size={18} />
+              </button>
             </div>
+
+            <div className="flex gap-2 mt-4">
+              <Link
+                href={`/dashboard/microsite/${site._id}`}
+                className="flex-1 bg-muted hover:bg-brand-soft text-muted-foreground hover:text-brand py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition"
+              >
+                <Edit size={14} /> Edit
+              </Link>
+              <a
+                href={`/bio/${site.slug}`}
+                target="_blank"
+                className="flex-1 border border-border hover:border-brand hover:text-brand text-muted-foreground py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition"
+              >
+                Lihat <ExternalLink size={14} />
+              </a>
+            </div>
+          </div>
         ))}
-        
+
         {/* Empty State */}
         {microsites?.length === 0 && (
-            <div className="col-span-full text-center py-20 bg-gray-50 rounded-2xl border border-dashed">
-                <p className="text-gray-400 mb-4">Belum ada Bio Link</p>
-                <button onClick={handleCreate} className="text-[#0193ff] font-bold hover:underline">Buat yang pertama</button>
-            </div>
+          <div className="col-span-full text-center py-20 bg-muted rounded-2xl border border-dashed border-border">
+            <p className="text-muted-foreground mb-4">Belum ada Bio Link</p>
+            <button onClick={handleCreate} className="text-brand font-bold hover:underline">
+              Buat yang pertama
+            </button>
+          </div>
         )}
       </div>
     </div>

@@ -9,32 +9,30 @@ import { Id } from "@/convex/_generated/dataModel";
 interface CreateLinkModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialCategoryId?: string; // Prop Opsiional
+  initialCategoryId?: string; // Prop Opsional
 }
 
-// Update komponen
 export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: CreateLinkModalProps) {
   const createLink = useMutation(api.links.createLink);
-  
+
   // Ambil data kategori untuk ditampilkan
   const categories = useQuery(api.categories.getMyCategories);
-  
+
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
-  
-  // State baru untuk menyimpan BANYAK kategori
+
+  // State untuk menyimpan BANYAK kategori
   const [selectedCats, setSelectedCats] = useState<Id<"categories">[]>([]);
-  
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-
-  // Gunakan useEffect untuk set kategori awal saat modal dibuka
+  // Set kategori awal saat modal dibuka
   useEffect(() => {
     if (isOpen && initialCategoryId) {
       // @ts-expect-error - Memaksa string ke Id convex (aman di sisi client asal valid)
-      setSelectedCats([initialCategoryId]); 
+      setSelectedCats([initialCategoryId]);
     } else if (isOpen && !initialCategoryId) {
       setSelectedCats([]); // Reset jika tidak ada initial
     }
@@ -57,43 +55,48 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
     setError("");
 
     try {
-      await createLink({ 
-        originalUrl: url, 
-        title: title || "Untitled Link", 
+      await createLink({
+        originalUrl: url,
+        title: title || "Untitled Link",
         customSlug: slug,
         categoryIds: selectedCats // Kirim array kategori
       });
-      
+
       // Reset form
       setUrl(""); setTitle(""); setSlug(""); setSelectedCats([]);
       onClose();
     } catch (err: unknown) {
       console.log(err);
-      const msg = err instanceof Error && err.message.includes("already taken") 
-        ? "Link custom ini sudah dipakai orang lain." 
-        : "Terjadi kesalahan sistem.";
-      setError("Link custom ini sudah dipakai orang lain.");
+      setError(
+        err instanceof Error && err.message.includes("already taken")
+          ? "Link custom ini sudah dipakai orang lain."
+          : "Terjadi kesalahan sistem."
+      );
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div 
-        className="bg-white w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--overlay)] backdrop-blur-sm p-4 animate-in fade-in duration-200">
+      <div
+        className="bg-card border border-border w-full max-w-lg rounded-[24px] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-8 py-5 border-b border-gray-100 flex justify-between items-center bg-[#f8faff] flex-shrink-0">
+        <div className="px-8 py-5 border-b border-border flex justify-between items-center bg-muted flex-shrink-0">
           <div className="flex items-center gap-3">
-             <div className="bg-blue-100 p-2 rounded-full text-[#0193ff]">
-                <LinkIcon size={20} />
-             </div>
-             <h3 className="font-bold text-lg text-[#2d3748]">Buat Link Baru</h3>
+            <div className="bg-brand-soft p-2 rounded-full text-brand">
+              <LinkIcon size={20} />
+            </div>
+            <h3 className="font-bold text-lg text-foreground">Buat Link Baru</h3>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 hover:bg-gray-200 p-2 rounded-full transition">
-            <X size={20}/>
+          <button
+            onClick={onClose}
+            className="text-muted-foreground hover:text-foreground hover:bg-border p-2 rounded-full transition"
+            aria-label="Tutup"
+          >
+            <X size={20} />
           </button>
         </div>
 
@@ -101,68 +104,93 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
         <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto">
           {/* Destination URL */}
           <div>
-            <label className="block text-xs font-bold text-[#718096] uppercase mb-2 tracking-wide">Destination URL <span className="text-red-500">*</span></label>
-            <input required type="url" placeholder="https://..." value={url} onChange={e => setUrl(e.target.value)} 
-              className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0193ff] focus:ring-4 focus:ring-blue-500/10 transition text-sm text-[#2d3748]"
+            <label className="form-label">
+              Destination URL <span className="text-danger">*</span>
+            </label>
+            <input
+              required
+              type="url"
+              placeholder="https://..."
+              value={url}
+              onChange={e => setUrl(e.target.value)}
+              className="input-field"
             />
           </div>
 
           {/* Title */}
           <div>
-            <label className="block text-xs font-bold text-[#718096] uppercase mb-2 tracking-wide">Judul (Opsional)</label>
-            <input type="text" placeholder="Misal: Promo Januari" value={title} onChange={e => setTitle(e.target.value)} 
-              className="w-full p-4 border border-gray-200 rounded-xl focus:outline-none focus:border-[#0193ff] focus:ring-4 focus:ring-blue-500/10 transition text-sm text-[#2d3748]"
+            <label className="form-label">Judul (Opsional)</label>
+            <input
+              type="text"
+              placeholder="Misal: Promo Januari"
+              value={title}
+              onChange={e => setTitle(e.target.value)}
+              className="input-field"
             />
           </div>
 
           {/* KATEGORI MULTI SELECT */}
           <div>
-            <label className="block text-xs font-bold text-[#718096] uppercase mb-2 tracking-wide">Kategori (Bisa pilih &gt; 1)</label>
-            
+            <label className="form-label">Kategori (Bisa pilih &gt; 1)</label>
+
             {(!categories || categories.length === 0) ? (
-                <p className="text-sm text-gray-400 italic">Belum ada kategori. Buat di menu Kategori.</p>
+              <p className="text-sm text-subtle italic">Belum ada kategori. Buat di menu Kategori.</p>
             ) : (
-                <div className="flex flex-wrap gap-2">
-                    {categories.map((cat) => {
-                        const isSelected = selectedCats.includes(cat._id);
-                        return (
-                            <button
-                                key={cat._id}
-                                type="button"
-                                onClick={() => toggleCategory(cat._id)}
-                                className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
-                                    isSelected 
-                                    ? "bg-[#0193ff] text-white border-[#0193ff] shadow-md shadow-blue-200" 
-                                    : "bg-white text-[#718096] border-gray-200 hover:border-[#0193ff] hover:text-[#0193ff]"
-                                }`}
-                            >
-                                {isSelected && <Check size={14} strokeWidth={3} />}
-                                {cat.name}
-                            </button>
-                        )
-                    })}
-                </div>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => {
+                  const isSelected = selectedCats.includes(cat._id);
+                  return (
+                    <button
+                      key={cat._id}
+                      type="button"
+                      onClick={() => toggleCategory(cat._id)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border flex items-center gap-2 ${
+                        isSelected
+                          ? "bg-brand text-brand-contrast border-brand shadow-[var(--shadow-brand)]"
+                          : "bg-card text-muted-foreground border-border hover:border-brand hover:text-brand"
+                      }`}
+                    >
+                      {isSelected && <Check size={14} strokeWidth={3} />}
+                      {cat.name}
+                    </button>
+                  );
+                })}
+              </div>
             )}
           </div>
 
           {/* Custom Slug */}
           <div>
-            <label className="block text-xs font-bold text-[#718096] uppercase mb-2 tracking-wide">Custom Link (Opsional)</label>
-            <div className="flex items-center border border-gray-200 rounded-xl bg-[#f8faff] focus-within:border-[#0193ff] focus-within:ring-4 focus-within:ring-blue-500/10 transition overflow-hidden">
-              <span className="px-4 text-[#718096] text-sm border-r border-gray-200 h-full py-4 font-medium">
+            <label className="form-label">Custom Link (Opsional)</label>
+            <div className="flex items-center border border-border rounded-xl bg-input focus-within:border-brand focus-within:ring-4 focus-within:ring-ring transition overflow-hidden">
+              <span className="px-4 text-muted-foreground text-sm border-r border-border py-4 font-medium whitespace-nowrap">
                 {process.env.NEXT_PUBLIC_APP_URL}/
               </span>
-              <input type="text" placeholder="nama-unik" value={slug} onChange={e => setSlug(e.target.value.replace(/\s+/g, '-'))} 
-                className="w-full p-4 bg-transparent focus:outline-none text-sm font-bold text-[#0193ff]"
+              <input
+                type="text"
+                placeholder="nama-unik"
+                value={slug}
+                onChange={e => setSlug(e.target.value.replace(/\s+/g, '-'))}
+                className="w-full p-4 bg-transparent focus:outline-none text-sm font-bold text-brand"
               />
             </div>
           </div>
 
-          {error && <div className="text-red-500 text-sm bg-red-50 p-4 rounded-xl border border-red-100">⚠️ {error}</div>}
+          {error && (
+            <div className="text-danger text-sm bg-danger-soft p-4 rounded-xl border border-danger/25">
+              ⚠️ {error}
+            </div>
+          )}
 
-          <div className="pt-4 flex gap-3 justify-end border-t border-gray-50 mt-2">
-            <button type="button" onClick={onClose} className="px-6 py-3 text-[#718096] font-bold text-sm hover:bg-gray-100 rounded-full transition">Batal</button>
-            <button disabled={loading} type="submit" className="bg-[#0193ff] hover:bg-[#007acc] text-white font-bold py-3 px-8 rounded-full shadow-[0_4px_14px_0_rgba(1,147,255,0.39)] hover:shadow-[0_6px_20px_rgba(1,147,255,0.23)] transition-all duration-300 active:scale-95 disabled:opacity-70 disabled:cursor-not-allowed">
+          <div className="pt-4 flex gap-3 justify-end border-t border-border mt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-6 py-3 text-muted-foreground font-bold text-sm hover:bg-muted hover:text-foreground rounded-full transition"
+            >
+              Batal
+            </button>
+            <button disabled={loading} type="submit" className="btn-saweria py-3 px-8 font-bold">
               {loading ? "Memproses..." : "Buat Link"}
             </button>
           </div>

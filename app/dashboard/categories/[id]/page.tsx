@@ -23,7 +23,7 @@ export default function CategoryDetailPage() {
 
   // Ambil link di kategori ini
   const links = useQuery(api.links.getLinksByCategory, { categoryId });
-  
+
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const copyToClipboard = (text: string) => {
@@ -33,86 +33,97 @@ export default function CategoryDetailPage() {
 
   const handleDeleteLink = async (id: Id<"links">) => {
     if (confirm("Hapus link ini selamanya?")) {
-        await deleteLink({ id });
+      await deleteLink({ id });
     }
   };
 
-  if (!categories) return <div className="p-8 text-center text-gray-500">Memuat Kategori...</div>;
-  if (!currentCategory) return <div className="p-8 text-center text-red-500">Kategori tidak ditemukan.</div>;
+  if (!categories) return <div className="p-8 text-center text-muted-foreground">Memuat Kategori...</div>;
+  if (!currentCategory) return <div className="p-8 text-center text-danger">Kategori tidak ditemukan.</div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <CreateLinkModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
+      <CreateLinkModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
         initialCategoryId={categoryId} // <-- FITUR UTAMA: Kirim ID kategori ke modal
       />
 
       {/* Header Halaman Detail */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <Link href="/dashboard/categories" className="text-sm text-gray-400 hover:text-[#0193ff] flex items-center gap-1 mb-2">
-                <ArrowLeft size={16}/> Kembali ke Kategori
-            </Link>
-            <div className="flex items-center gap-3">
-                <div className="bg-yellow-100 p-2 rounded-lg text-yellow-700">
-                    <Tag size={24} />
-                </div>
-                <h1 className="text-2xl font-bold text-[#2d3748]">{currentCategory.name}</h1>
-                <span className="bg-blue-50 text-[#0193ff] text-xs px-2 py-1 rounded-full font-bold">
-                    {links?.length || 0} Link
-                </span>
+          <Link
+            href="/dashboard/categories"
+            className="text-sm text-muted-foreground hover:text-brand flex items-center gap-1 mb-2 transition-colors"
+          >
+            <ArrowLeft size={16} /> Kembali ke Kategori
+          </Link>
+          <div className="flex items-center gap-3">
+            <div className="bg-warning-soft p-2 rounded-lg text-warning">
+              <Tag size={24} />
             </div>
+            <h1 className="text-2xl font-bold text-foreground">{currentCategory.name}</h1>
+            <span className="bg-brand-soft text-brand-soft-fg text-xs px-2 py-1 rounded-full font-bold">
+              {links?.length || 0} Link
+            </span>
+          </div>
         </div>
 
         {/* Tombol Buat Link KHUSUS di Kategori Ini */}
-        <button 
-            onClick={() => setIsModalOpen(true)}
-            className="btn-saweria flex items-center gap-2 pl-4 pr-6 py-3"
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="btn-saweria flex items-center gap-2 pl-4 pr-6 py-3"
         >
-            <div className="bg-white/20 p-1 rounded-full"><Plus size={18} strokeWidth={3} /></div>
-            <span>Tambah Link di Sini</span>
+          <div className="bg-white/20 p-1 rounded-full"><Plus size={18} strokeWidth={3} /></div>
+          <span>Tambah Link di Sini</span>
         </button>
       </div>
 
-      {/* List Link (Copy paste style dari halaman Links, disederhanakan) */}
+      {/* List Link */}
       {!links || links.length === 0 ? (
-        <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-[30px] bg-white/50">
-            <p className="text-gray-500 font-medium">Belum ada link di kategori ini.</p>
+        <div className="text-center py-16 border-2 border-dashed border-border rounded-[30px] bg-card/50">
+          <p className="text-muted-foreground font-medium">Belum ada link di kategori ini.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
-            {links.map((link) => (
-                <div key={link._id} className="card-saweria p-5 flex flex-col md:flex-row gap-4 items-center">
-                    <div className="bg-blue-50 p-3 rounded-full text-[#0193ff]">
-                        <LinkIcon size={20}/>
-                    </div>
-                    <div className="flex-1 min-w-0 w-full">
-                        <h3 className="font-bold text-[#2d3748] truncate">{link.title || "Untitled"}</h3>
-                        <div className="flex items-center gap-2 text-sm">
-                            <a href={`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`} target="_blank" className="text-[#0193ff] font-bold hover:underline truncate">
-                                /{link.shortCode}
-                            </a>
-                            <span className="text-gray-300">|</span>
-                            <span className="text-gray-400 truncate max-w-[150px]">{link.originalUrl}</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-4 text-xs text-gray-400 w-full md:w-auto justify-between md:justify-end">
-                         <span className="flex items-center gap-1"><BarChart2 size={14}/> {link.clicks}</span>
-                         <span className="flex items-center gap-1"><Calendar size={14}/> {format(link.createdAt, 'd MMM', { locale: localeId })}</span>
-                         <button onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`)} className="bg-gray-100 hover:bg-gray-200 p-2 rounded-full text-gray-600 transition">
-                            <Copy size={14}/>
-                         </button>
-                         <button 
-                          onClick={() => handleDeleteLink(link._id)}
-                          className="text-gray-300 hover:text-red-500 hover:bg-red-50 p-2 rounded-full transition"
-                          title="Hapus Link"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                    </div>
+          {links.map((link) => (
+            <div key={link._id} className="card-saweria p-5 flex flex-col md:flex-row gap-4 items-center">
+              <div className="bg-brand-soft p-3 rounded-full text-brand">
+                <LinkIcon size={20} />
+              </div>
+              <div className="flex-1 min-w-0 w-full">
+                <h3 className="font-bold text-foreground truncate">{link.title || "Untitled"}</h3>
+                <div className="flex items-center gap-2 text-sm">
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`}
+                    target="_blank"
+                    className="text-brand font-bold hover:underline truncate"
+                  >
+                    /{link.shortCode}
+                  </a>
+                  <span className="text-subtle">|</span>
+                  <span className="text-muted-foreground truncate max-w-[150px]">{link.originalUrl}</span>
                 </div>
-            ))}
+              </div>
+              <div className="flex items-center gap-4 text-xs text-muted-foreground w-full md:w-auto justify-between md:justify-end">
+                <span className="flex items-center gap-1"><BarChart2 size={14} /> {link.clicks}</span>
+                <span className="flex items-center gap-1"><Calendar size={14} /> {format(link.createdAt, 'd MMM', { locale: localeId })}</span>
+                <button
+                  onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`)}
+                  className="bg-muted hover:bg-brand-soft p-2 rounded-full text-muted-foreground hover:text-brand transition"
+                  title="Salin Link"
+                >
+                  <Copy size={14} />
+                </button>
+                <button
+                  onClick={() => handleDeleteLink(link._id)}
+                  className="text-subtle hover:text-danger hover:bg-danger-soft p-2 rounded-full transition"
+                  title="Hapus Link"
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

@@ -93,9 +93,18 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" suppressHydrationWarning>
-      <meta name="google-adsense-account" content="ca-pub-1728956538753705"></meta>
-      <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1728956538753705" crossOrigin="anonymous"></script>
-      <body>
+      <head>
+        <meta name="google-adsense-account" content="ca-pub-1728956538753705" />
+        {/* Beritahu browser bahwa kedua skema didukung, agar kontrol native
+            (scrollbar, date picker, dsb) ikut menyesuaikan tema. */}
+        <meta name="color-scheme" content="light dark" />
+        <script
+          async
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1728956538753705"
+          crossOrigin="anonymous"
+        />
+      </head>
+      <body className="bg-background text-foreground antialiased">
         <ConvexClientProvider>{children}</ConvexClientProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />

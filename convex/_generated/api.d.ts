@@ -9,11 +9,26 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as articles from "../articles.js";
 import type * as categories from "../categories.js";
+import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as links from "../links.js";
 import type * as microsites from "../microsites.js";
 import type * as midtransActions from "../midtransActions.js";
+import type * as seed from "../seed.js";
+import type * as seedData_batch01 from "../seedData/batch01.js";
+import type * as seedData_batch02 from "../seedData/batch02.js";
+import type * as seedData_batch03 from "../seedData/batch03.js";
+import type * as seedData_batch04 from "../seedData/batch04.js";
+import type * as seedData_batch05 from "../seedData/batch05.js";
+import type * as seedData_batch06 from "../seedData/batch06.js";
+import type * as seedData_batch07 from "../seedData/batch07.js";
+import type * as seedData_batch08 from "../seedData/batch08.js";
+import type * as seedData_batch09 from "../seedData/batch09.js";
+import type * as seedData_batch10 from "../seedData/batch10.js";
+import type * as seedData_index from "../seedData/index.js";
+import type * as seedData_types from "../seedData/types.js";
 import type * as shop from "../shop.js";
 import type * as shopActions from "../shopActions.js";
 
@@ -25,11 +40,26 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  articles: typeof articles;
   categories: typeof categories;
+  forms: typeof forms;
   http: typeof http;
   links: typeof links;
   microsites: typeof microsites;
   midtransActions: typeof midtransActions;
+  seed: typeof seed;
+  "seedData/batch01": typeof seedData_batch01;
+  "seedData/batch02": typeof seedData_batch02;
+  "seedData/batch03": typeof seedData_batch03;
+  "seedData/batch04": typeof seedData_batch04;
+  "seedData/batch05": typeof seedData_batch05;
+  "seedData/batch06": typeof seedData_batch06;
+  "seedData/batch07": typeof seedData_batch07;
+  "seedData/batch08": typeof seedData_batch08;
+  "seedData/batch09": typeof seedData_batch09;
+  "seedData/batch10": typeof seedData_batch10;
+  "seedData/index": typeof seedData_index;
+  "seedData/types": typeof seedData_types;
   shop: typeof shop;
   shopActions: typeof shopActions;
 }>;

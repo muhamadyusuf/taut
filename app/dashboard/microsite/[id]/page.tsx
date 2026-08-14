@@ -75,7 +75,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
       setIsDirty(true);
   };
 
-  if (!formData || !isMounted) return <div className="p-10 text-center animate-pulse text-gray-500">Memuat Editor...</div>;
+  if (!formData || !isMounted) return <div className="p-10 text-center animate-pulse text-muted-foreground">Memuat Editor...</div>;
 
   // ... (LOGIC CRUD: addLink, addHeader, updateItem, deleteItem, handleOnDragEnd tetap sama) ...
   const addLink = () => {
@@ -159,12 +159,12 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
       <div className="flex-1 overflow-y-auto pr-2 space-y-8 no-scrollbar pb-20">
         
         {/* Header Actions */}
-        <div className="flex justify-between items-center sticky top-0 bg-[#f8faff]/95 backdrop-blur z-20 py-4 border-b">
+        <div className="flex justify-between items-center sticky top-0 glass z-20 py-4 border-b border-border">
             <div className="flex items-center gap-2">
-                <Link href="/dashboard/microsite" className="text-gray-400 hover:text-gray-600 transition">← Kembali</Link>
+                <Link href="/dashboard/microsite" className="text-subtle hover:text-muted-foreground transition">← Kembali</Link>
                 <h1 className="text-xl font-bold flex items-center gap-2">
                     Edit: {formData.title}
-                    {isDirty && <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" title="Perubahan belum disimpan"></span>}
+                    {isDirty && <span className="w-2 h-2 bg-warning rounded-full animate-pulse" title="Perubahan belum disimpan"></span>}
                 </h1>
             </div>
             <button 
@@ -172,16 +172,16 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                 disabled={loading || !isDirty} 
                 className={`px-6 py-2 rounded-full font-bold flex items-center gap-2 transition shadow-sm
                     ${isDirty 
-                        ? 'bg-[#0193ff] text-white hover:bg-[#007acc]' 
-                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'}`}
+                        ? 'bg-brand text-brand-contrast hover:bg-brand-hover' 
+                        : 'bg-muted text-subtle cursor-not-allowed'}`}
             >
                 <Save size={18}/> {loading ? "Menyimpan..." : "Simpan"}
             </button>
         </div>
 
         {/* 1. Appearance Section */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border space-y-6">
-            <div className="flex items-center gap-2 text-gray-700 font-bold border-b pb-2"><Palette size={18}/> Tampilan</div>
+        <div className="bg-card p-6 rounded-2xl shadow-sm border border-border space-y-6">
+            <div className="flex items-center gap-2 text-foreground font-bold border-b border-border pb-2"><Palette size={18}/> Tampilan</div>
             
             <div className="grid md:grid-cols-2 gap-4">
                 {/* Catatan: DrivePicker tetap menampilkan formData.imageUrl (nilai asli database).
@@ -202,13 +202,13 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
             {/* Theme Selector, Basic Info, Textarea Bio tetap sama ... */}
             <div>
-                <label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Pilih Tema</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Pilih Tema</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {Object.entries(THEMES).map(([key, style]) => (
                         <button 
                             key={key} 
                             onClick={() => handleInputChange(prev => ({...prev, theme: key}))}
-                            className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${formData.theme === key ? 'border-[#0193ff] ring-2 ring-blue-100 scale-105 shadow-md' : 'border-transparent hover:border-gray-200'}`}
+                            className={`relative aspect-square rounded-xl overflow-hidden border-2 transition-all group ${formData.theme === key ? 'border-brand ring-2 ring-ring scale-105 shadow-md' : 'border-transparent hover:border-border'}`}
                         >
                             <div className={`w-full h-full ${style.bg}`}></div>
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -222,23 +222,23 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label className="text-xs font-bold text-gray-400 block mb-1">Nama Tampilan</label>
+                    <label className="text-xs font-bold text-subtle block mb-1">Nama Tampilan</label>
                     <input 
                         type="text" 
                         value={formData.title} 
                         onChange={e => handleInputChange(prev => ({...prev, title: e.target.value}))} 
-                        className="w-full p-3 border border-gray-200 rounded-xl font-bold focus:ring-2 focus:ring-[#0193ff]/20 focus:border-[#0193ff] outline-none transition"
+                        className="w-full p-3 bg-input text-foreground border border-border rounded-xl font-bold focus:ring-4 focus:ring-ring focus:border-brand outline-none transition"
                     />
                 </div>
                 <div>
-                     <label className="text-xs font-bold text-gray-400 block mb-1">URL Bio (Slug)</label>
-                     <div className="flex items-center border border-gray-200 rounded-xl bg-gray-50 overflow-hidden focus-within:ring-2 focus-within:ring-[#0193ff]/20 focus-within:border-[#0193ff] transition">
-                        <span className="pl-3 text-gray-400 text-sm">/</span>
+                     <label className="text-xs font-bold text-subtle block mb-1">URL Bio (Slug)</label>
+                     <div className="flex items-center border border-border rounded-xl bg-muted overflow-hidden focus-within:ring-4 focus-within:ring-ring focus-within:border-brand transition">
+                        <span className="pl-3 text-subtle text-sm">/</span>
                         <input 
                             type="text" 
                             value={formData.slug} 
                             onChange={e => handleInputChange(prev => ({...prev, slug: e.target.value}))} 
-                            className="w-full p-3 bg-transparent font-mono text-[#0193ff] outline-none"
+                            className="w-full p-3 bg-transparent font-mono text-brand outline-none"
                         />
                      </div>
                 </div>
@@ -247,18 +247,18 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                 placeholder="Bio / Deskripsi singkat..." 
                 value={formData.bio || ""} 
                 onChange={e => handleInputChange(prev => ({...prev, bio: e.target.value}))} 
-                className="w-full p-3 border border-gray-200 rounded-xl h-24 text-sm focus:ring-2 focus:ring-[#0193ff]/20 focus:border-[#0193ff] outline-none transition resize-none"
+                className="w-full p-3 bg-input text-foreground border border-border rounded-xl h-24 text-sm focus:ring-4 focus:ring-ring focus:border-brand outline-none transition resize-none"
             />
         </div>
 
         {/* Link Builder Section tetap sama... */}
         <div className="space-y-4">
              {/* ... Kode drag and drop ... */}
-             <div className="flex justify-between items-center sticky top-[72px] bg-[#f8faff] z-10 py-2">
-                <h3 className="font-bold text-gray-700 flex items-center gap-2"><LinkIcon size={18}/> Konten Link</h3>
+             <div className="flex justify-between items-center sticky top-[72px] glass z-10 py-2">
+                <h3 className="font-bold text-foreground flex items-center gap-2"><LinkIcon size={18}/> Konten Link</h3>
                 <div className="flex gap-2">
-                    <button onClick={addHeader} className="text-xs font-bold bg-white border hover:bg-gray-50 text-gray-600 px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Type size={14}/> Header</button>
-                    <button onClick={addLink} className="text-xs font-bold bg-[#0193ff] hover:bg-blue-600 text-white px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Plus size={14}/> Link</button>
+                    <button onClick={addHeader} className="text-xs font-bold bg-card border hover:bg-muted text-muted-foreground px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Type size={14}/> Header</button>
+                    <button onClick={addLink} className="text-xs font-bold bg-brand hover:bg-brand-hover text-brand-contrast px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Plus size={14}/> Link</button>
                 </div>
             </div>
 
@@ -272,18 +272,18 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                         <div 
                                             ref={provided.innerRef} 
                                             {...provided.draggableProps} 
-                                            className={`bg-white border rounded-xl p-4 flex gap-3 items-center transition-all ${
+                                            className={`bg-card border rounded-xl p-4 flex gap-3 items-center transition-all ${
                                                 snapshot.isDragging ? 'shadow-lg rotate-1 scale-[1.02] z-50' : 'shadow-sm'
-                                            } ${item.type === 'header' ? 'border-l-4 border-l-gray-300 bg-gray-50/50' : 'border-l-4 border-l-[#0193ff]'}`}
+                                            } ${item.type === 'header' ? 'border-l-4 border-l-border-strong bg-muted/50' : 'border-l-4 border-l-brand'}`}
                                         >
-                                            <div {...provided.dragHandleProps} className="text-gray-300 cursor-grab active:cursor-grabbing hover:text-gray-500 p-1"><GripVertical size={20}/></div>
+                                            <div {...provided.dragHandleProps} className="text-subtle cursor-grab active:cursor-grabbing hover:text-muted-foreground p-1"><GripVertical size={20}/></div>
                                             
                                             <div className="flex-1 space-y-1">
                                                 <input 
                                                     type="text" 
                                                     value={item.label} 
                                                     onChange={e => updateItem(index, 'label', e.target.value)}
-                                                    className={`w-full bg-transparent font-bold focus:outline-none placeholder:text-gray-300 ${item.type === 'header' ? 'text-sm uppercase tracking-wider text-gray-600' : 'text-gray-800'}`}
+                                                    className={`w-full bg-transparent font-bold focus:outline-none placeholder:text-subtle ${item.type === 'header' ? 'text-sm uppercase tracking-wider text-muted-foreground' : 'text-foreground'}`}
                                                     placeholder={item.type === 'header' ? "JUDUL KATEGORI" : "Label Tombol"}
                                                     autoFocus={item.label === ""}
                                                 />
@@ -294,7 +294,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                         <div className="relative">
                                                             <button 
                                                                 onClick={() => setActiveIconPicker(activeIconPicker === item.id ? null : item.id)}
-                                                                className="w-10 h-10 border rounded-lg flex items-center justify-center bg-gray-50 hover:bg-gray-100 text-gray-600 transition"
+                                                                className="w-10 h-10 border rounded-lg flex items-center justify-center bg-muted hover:bg-muted text-muted-foreground transition"
                                                                 title="Pilih Icon"
                                                             >
                                                                 {getIcon(item.icon)}
@@ -302,7 +302,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
                                                             {/* POPOVER PILIHAN ICON */}
                                                             {activeIconPicker === item.id && (
-                                                                <div className="absolute top-12 left-0 z-50 bg-white border shadow-xl rounded-xl p-3 w-64 grid grid-cols-5 gap-2 animate-in fade-in slide-in-from-top-2">
+                                                                <div className="absolute top-12 left-0 z-50 bg-card border shadow-xl rounded-xl p-3 w-64 grid grid-cols-5 gap-2 animate-in fade-in slide-in-from-top-2">
                                                                     {Object.keys(ICONS).filter(k => k !== 'default').map((iconKey) => (
                                                                         <button
                                                                             key={iconKey}
@@ -310,7 +310,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                                                 updateItem(index, 'icon', iconKey);
                                                                                 setActiveIconPicker(null);
                                                                             }}
-                                                                            className={`p-2 rounded-lg flex items-center justify-center hover:bg-blue-50 hover:text-blue-600 transition ${item.icon === iconKey ? 'bg-blue-100 text-blue-600' : 'text-gray-500'}`}
+                                                                            className={`p-2 rounded-lg flex items-center justify-center hover:bg-brand-soft hover:text-brand transition ${item.icon === iconKey ? 'bg-brand-soft text-brand' : 'text-muted-foreground'}`}
                                                                             title={iconKey}
                                                                         >
                                                                             {ICONS[iconKey]}
@@ -319,7 +319,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                                     {/* Tombol Hapus Icon */}
                                                                     <button 
                                                                         onClick={() => { updateItem(index, 'icon', ""); setActiveIconPicker(null); }}
-                                                                        className="p-2 rounded-lg flex items-center justify-center text-red-500 hover:bg-red-50 col-span-5 text-xs font-bold mt-2 border-t pt-3"
+                                                                        className="p-2 rounded-lg flex items-center justify-center text-danger hover:bg-danger-soft col-span-5 text-xs font-bold mt-2 border-t pt-3"
                                                                     >
                                                                         <X size={14} className="mr-1"/> Hapus Icon
                                                                     </button>
@@ -337,16 +337,16 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                                 type="text" 
                                                                 value={item.label} 
                                                                 onChange={e => updateItem(index, 'label', e.target.value)}
-                                                                className="w-full bg-transparent font-bold focus:outline-none text-gray-800"
+                                                                className="w-full bg-transparent font-bold focus:outline-none text-foreground"
                                                                 placeholder="Label Link (cth: Instagram)"
                                                             />
                                                             <div className="flex items-center gap-2">
-                                                                <ExternalLink size={12} className="text-gray-300"/>
+                                                                <ExternalLink size={12} className="text-subtle"/>
                                                                 <input 
                                                                     type="text" 
                                                                     value={item.url || ""} 
                                                                     onChange={e => updateItem(index, 'url', e.target.value)}
-                                                                    className="w-full text-xs text-gray-500 bg-transparent py-1 rounded focus:outline-none focus:text-[#0193ff]"
+                                                                    className="w-full text-xs text-muted-foreground bg-transparent py-1 rounded focus:outline-none focus:text-brand"
                                                                     placeholder="https://..."
                                                                 />
                                                             </div>
@@ -355,7 +355,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                 )}
                                             </div>
 
-                                            <button onClick={() => deleteItem(index)} className="text-gray-300 hover:text-red-500 p-2 rounded-full hover:bg-red-50 transition group" title="Hapus">
+                                            <button onClick={() => deleteItem(index)} className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition group" title="Hapus">
                                                 <Trash2 size={16} className="group-hover:scale-110 transition"/>
                                             </button>
                                         </div>
@@ -369,7 +369,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
             </DragDropContext>
             
             {formData.links.length === 0 && (
-                <div className="text-center p-12 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 flex flex-col items-center gap-2">
+                <div className="text-center p-12 border-2 border-dashed border-border rounded-xl text-subtle flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="opacity-20"/>
                     <p>Belum ada tautan.</p>
                     <p className="text-xs">Klik tombol di atas untuk menambah konten.</p>
@@ -380,7 +380,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
       {/* --- RIGHT: LIVE PREVIEW --- */}
       <div className="w-[340px] hidden lg:block pt-4 h-full sticky top-4">
-         <div className="border-[10px] border-gray-800 rounded-[3rem] h-[680px] overflow-hidden shadow-2xl bg-gray-100 relative ring-1 ring-gray-950/50">
+         <div className="border-[10px] border-gray-800 rounded-[3rem] h-[680px] overflow-hidden shadow-2xl bg-muted relative ring-1 ring-gray-950/50">
              
              {/* Dynamic Background */}
              <div className={`absolute inset-0 z-0 transition-colors duration-500 ${currentTheme.bg}`}>
@@ -401,7 +401,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                      {displayImage ? (
                         <img src={displayImage} className="w-full h-full object-cover" alt="profile" />
                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-gray-400 text-xs">No img</div>
+                        <div className="w-full h-full flex items-center justify-center text-subtle text-xs">No img</div>
                      )}
 
                  </div>
@@ -432,7 +432,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                  </div>
              </div>
          </div>
-         <div className="text-center mt-6 text-xs font-medium text-gray-400 flex items-center justify-center gap-2">
+         <div className="text-center mt-6 text-xs font-medium text-subtle flex items-center justify-center gap-2">
             <Smartphone size={14}/> Live Preview
          </div>
       </div>

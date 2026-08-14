@@ -98,7 +98,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto bg-white p-6 rounded-xl border shadow-sm">
+    <div className="max-w-2xl mx-auto bg-card p-6 rounded-xl border shadow-sm">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold">
                 {mode === "create" ? "Tambah Produk Baru" : "Edit Produk"}
@@ -108,7 +108,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                     type="button" 
                     onClick={handleDelete}
                     disabled={isDeleting}
-                    className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 border border-red-200 hover:border-red-300 transition"
+                    className="flex items-center gap-1.5 text-sm text-danger hover:text-danger px-3 py-1.5 rounded-lg hover:bg-danger-soft border border-danger/30 hover:border-danger transition"
                     title="Hapus Produk"
                 >
                     {isDeleting ? <Loader2 className="animate-spin" size={16}/> : <Trash2 size={16}/>}
@@ -120,13 +120,13 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* NAMA PRODUK */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Nama Produk</label>
+                <label className="block text-sm font-bold text-foreground mb-1">Nama Produk</label>
                 <input 
                     name="title" 
                     defaultValue={initialData?.title}
                     required 
                     type="text" 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
                     placeholder="Contoh: Ebook Belajar Coding" 
                 />
             </div>
@@ -134,20 +134,20 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
             <div className="grid grid-cols-2 gap-4">
                 {/* HARGA */}
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Harga (Rp)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Harga (Rp)</label>
                     <input 
                         name="price" 
                         defaultValue={initialData?.price}
                         required 
                         type="number" 
                         min="1000" 
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
+                        className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
                         placeholder="100000" 
                     />
                 </div>
                 {/* STOK */}
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Stok Barang</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Stok Barang</label>
                     <input 
                         name="stock" 
                         defaultValue={initialData?.stock ?? 1}
@@ -155,29 +155,29 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         type="number" 
                         min="0" 
                         step="1"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
+                        className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
                         placeholder="Jumlah stok" 
                     />
-                    <p className="text-xs text-gray-400 mt-1">Stok akan otomatis berkurang saat ada transaksi pending.</p>
+                    <p className="text-xs text-subtle mt-1">Stok akan otomatis berkurang saat ada transaksi pending.</p>
                 </div>
             </div>
 
             {/* DESKRIPSI */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Produk</label>
+                <label className="block text-sm font-bold text-foreground mb-1">Deskripsi Produk</label>
                 <textarea 
                     name="description" 
                     defaultValue={initialData?.description}
                     required 
                     rows={4} 
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none" 
+                    className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
                     placeholder="Jelaskan isi produk Anda..." 
                 />
             </div>
 
             {/* GAMBAR PRODUK — Google Drive Picker */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Gambar Produk (Opsional)</label>
+                <label className="block text-sm font-bold text-foreground mb-2">Gambar Produk (Opsional)</label>
                 <DrivePicker
                     label="Pilih Gambar dari Google Drive"
                     currentUrl={imageUrl || null}
@@ -194,11 +194,11 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                         />
                         <div className="flex-1">
-                            <p className="text-xs text-gray-500 break-all line-clamp-2">{imageUrl}</p>
+                            <p className="text-xs text-muted-foreground break-all line-clamp-2">{imageUrl}</p>
                             <button
                                 type="button"
                                 onClick={() => setImageUrl("")}
-                                className="mt-1 text-xs text-red-500 hover:text-red-700"
+                                className="mt-1 text-xs text-danger hover:text-danger"
                             >
                                 Hapus gambar
                             </button>
@@ -209,25 +209,25 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
 
             {/* LINK FILE — Google Drive Picker */}
             <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">Link File / Konten (Opsional)</label>
+                <label className="block text-sm font-bold text-foreground mb-2">Link File / Konten (Opsional)</label>
                 <DrivePicker
                     label="Pilih File dari Google Drive"
                     currentUrl={fileUrl || null}
                     onSelect={(url) => setFileUrl(url)}
                 />
                 {fileUrl && (
-                    <div className="mt-2 flex items-center justify-between gap-2 bg-gray-50 rounded-lg px-3 py-2 border">
-                        <p className="text-xs text-gray-600 break-all line-clamp-1 flex-1">{fileUrl}</p>
+                    <div className="mt-2 flex items-center justify-between gap-2 bg-muted rounded-lg px-3 py-2 border">
+                        <p className="text-xs text-muted-foreground break-all line-clamp-1 flex-1">{fileUrl}</p>
                         <button
                             type="button"
                             onClick={() => setFileUrl("")}
-                            className="text-xs text-red-500 hover:text-red-700 shrink-0"
+                            className="text-xs text-danger hover:text-danger shrink-0"
                         >
                             Hapus
                         </button>
                     </div>
                 )}
-                <p className="text-xs text-gray-500 mt-1">Link ini akan diberikan ke pembeli setelah pembayaran sukses.</p>
+                <p className="text-xs text-muted-foreground mt-1">Link ini akan diberikan ke pembeli setelah pembayaran sukses.</p>
             </div>
 
             {/* TOMBOL SIMPAN */}
@@ -235,7 +235,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                 <button 
                     disabled={loading} 
                     type="submit" 
-                    className="w-full bg-blue-600 text-white py-3 rounded-xl font-bold hover:bg-blue-700 disabled:opacity-50 flex justify-center items-center gap-2 shadow-lg shadow-blue-500/30 transition active:scale-95"
+                    className="w-full bg-brand text-brand-contrast py-3 rounded-xl font-bold hover:bg-brand-hover disabled:opacity-50 flex justify-center items-center gap-2 shadow-[var(--shadow-brand)] transition active:scale-95"
                 >
                     {loading ? <Loader2 className="animate-spin"/> : <><Save size={18}/> Simpan Produk</>}
                 </button>

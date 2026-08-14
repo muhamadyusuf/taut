@@ -159,4 +159,90 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.number(),
   }),
+
+  // ---------------------------------------------------------
+  // 6. ARTIKEL / BLOG (diposting oleh admin)
+  // ---------------------------------------------------------
+  articles: defineTable({
+    title: v.string(),
+    slug: v.string(), // permalink: singkat.in/blog/<slug>
+    excerpt: v.optional(v.string()), // ringkasan (kutipan)
+    content: v.string(), // HTML dari editor
+
+    coverImage: v.optional(v.string()), // featured image (URL)
+    category: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+
+    // "draft" = konsep, "published" = terbit
+    status: v.string(),
+
+    authorId: v.string(), // Clerk user id penulis (admin)
+    authorName: v.optional(v.string()),
+
+    publishedAt: v.optional(v.number()), // tanggal post (bisa dijadwalkan ke depan)
+    createdAt: v.number(),
+    updatedAt: v.number(),
+
+    views: v.number(),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"]),
+
+  // ---------------------------------------------------------
+  // 7. FORMULIR (GOOGLE FORMS-LIKE)
+  // ---------------------------------------------------------
+  forms: defineTable({
+    userId: v.string(),
+    slug: v.string(), // permalink: singkat.in/forms/<slug>
+    title: v.string(),
+    description: v.optional(v.string()),
+
+    // "draft" = belum siap dipublikasikan, "published" = bisa diisi publik
+    status: v.string(),
+    acceptingResponses: v.boolean(), // saklar terima jawaban baru
+    confirmationMessage: v.optional(v.string()), // pesan setelah submit
+    theme: v.optional(v.string()), // key preset dari lib/formThemeConfig.ts
+
+    // Formulir dibagi jadi beberapa bagian (step/page), seperti "Section" di Google Form
+    sections: v.array(
+      v.object({
+        id: v.string(),
+        title: v.optional(v.string()),
+        description: v.optional(v.string()),
+        questions: v.array(
+          v.object({
+            id: v.string(),
+            // "short_answer" | "paragraph" | "multiple_choice" | "checkboxes" | "dropdown" | "linear_scale"
+            type: v.string(),
+            label: v.string(),
+            description: v.optional(v.string()),
+            required: v.boolean(),
+            options: v.optional(v.array(v.string())), // untuk multiple_choice/checkboxes/dropdown
+            scaleMin: v.optional(v.number()), // untuk linear_scale
+            scaleMax: v.optional(v.number()),
+            scaleMinLabel: v.optional(v.string()),
+            scaleMaxLabel: v.optional(v.string()),
+          })
+        ),
+      })
+    ),
+
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+
+    .index("by_userId", ["userId"])
+    .index("by_slug", ["slug"]),
+
+  form_responses: defineTable({
+    formId: v.id("forms"),
+    answers: v.array(
+      v.object({
+        questionId: v.string(),
+        value: v.array(v.string()), // single jawaban = 1 elemen, checkbox bisa banyak
+      })
+    ),
+    submittedAt: v.number(),
+  })
+    .index("by_formId", ["formId"]),
 });

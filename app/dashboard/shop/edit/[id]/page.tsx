@@ -15,11 +15,11 @@ export default function EditProductPage() {
   const product = useQuery(api.shop.getProductById, { id: productId });
 
   if (product === undefined) {
-    return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-blue-600"/></div>;
+    return <div className="p-10 flex justify-center"><Loader2 className="animate-spin text-brand"/></div>;
   }
 
   if (product === null) {
-    return <div className="p-10 text-center text-red-500">Produk tidak ditemukan.</div>;
+    return <div className="p-10 text-center text-danger">Produk tidak ditemukan.</div>;
   }
 
   // Render Form dengan mode "edit" dan data awal

@@ -6,50 +6,63 @@ export const metadata: Metadata = {
   description: "Platform manajemen tautan modern untuk semua kebutuhan digital.",
 };
 
+const VALUES = [
+  {
+    icon: ShieldCheck,
+    tone: "bg-brand-soft text-brand",
+    title: "Aman & Privat",
+    body: "Kami memprioritaskan keamanan data pengguna. Sistem kami dirancang untuk mencegah spam dan tautan berbahaya.",
+  },
+  {
+    icon: Zap,
+    tone: "bg-warning-soft text-warning",
+    title: "Infrastruktur Global",
+    body: "Server berkinerja tinggi yang memastikan tautan Anda dapat diakses dengan cepat dari seluruh dunia.",
+  },
+  {
+    icon: BarChart3,
+    tone: "bg-success-soft text-success",
+    title: "Analitik Real-time",
+    body: "Pantau performa tautan Anda, ketahui dari mana audiens berasal, dan optimalkan strategi digital Anda.",
+  },
+  {
+    icon: Globe,
+    tone: "bg-info-soft text-info",
+    title: "Terbuka untuk Umum",
+    body: "Siapapun bisa mendaftar. Mulai dari pelajar, UMKM, hingga korporasi. Tidak ada batasan eksklusif.",
+  },
+];
+
 export default function AboutPage() {
   return (
-    <div className="max-w-6xl mx-auto px-6 py-12 text-[#2d3748]">
-        <h1 className="text-6xl md:text-5xl font-extrabold mb-6">
-          Solusi Link Pendek yang <span className="text-[#0193ff]">Simpel & Powerful.</span>
-        </h1>
-        <p className="text-xl text-gray-500 leading-relaxed mb-12">
-          Singkat.in adalah inisiatif teknologi dari Prodi Teknologi Informasi ITTS untuk mempermudah distribusi informasi, materi akademik, dan presensi digital dalam satu tautan yang aman dan terpercaya.
-        </p>
+    <div className="max-w-6xl mx-auto px-6 py-12 text-foreground">
+      <h1 className="text-4xl md:text-5xl font-extrabold mb-6 leading-tight">
+        Solusi Link Pendek yang{" "}
+        <span className="text-gradient-brand">Simpel &amp; Powerful.</span>
+      </h1>
+      <p className="text-xl text-muted-foreground leading-relaxed mb-12 max-w-3xl">
+        Singkat.in adalah inisiatif teknologi dari Prodi Teknologi Informasi ITTS
+        untuk mempermudah distribusi informasi, materi akademik, dan presensi
+        digital dalam satu tautan yang aman dan terpercaya.
+      </p>
 
-        {/* Values Grid */}
-        <div className="grid md:grid-cols-2 gap-6 mb-16">
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center text-[#0193ff] mb-4">
-              <ShieldCheck size={24} />
+      {/* Values Grid */}
+      <div className="grid md:grid-cols-2 gap-6 mb-16">
+        {VALUES.map((value) => (
+          <div
+            key={value.title}
+            className="card-saweria p-8 hover:-translate-y-1 transition-transform"
+          >
+            <div
+              className={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${value.tone}`}
+            >
+              <value.icon size={24} />
             </div>
-            <h3 className="text-xl font-bold mb-2">Aman & Privat</h3>
-            <p className="text-gray-500">Kami memprioritaskan keamanan data pengguna. Sistem kami dirancang untuk mencegah spam dan tautan berbahaya.</p>
+            <h3 className="text-xl font-bold mb-2">{value.title}</h3>
+            <p className="text-muted-foreground">{value.body}</p>
           </div>
-
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <div className="bg-yellow-50 w-12 h-12 rounded-xl flex items-center justify-center text-yellow-600 mb-4">
-              <Zap size={24} />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Infrastruktur Global</h3>
-            <p className="text-gray-500">Server berkinerja tinggi yang memastikan tautan Anda dapat diakses dengan cepat dari seluruh dunia.</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <div className="bg-green-50 w-12 h-12 rounded-xl flex items-center justify-center text-green-600 mb-4">
-              <BarChart3 size={24} />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Analitik Real-time</h3>
-            <p className="text-gray-500">Pantau performa tautan Anda, ketahui dari mana audiens berasal, dan optimalkan strategi digital Anda.</p>
-          </div>
-
-          <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <div className="bg-purple-50 w-12 h-12 rounded-xl flex items-center justify-center text-purple-600 mb-4">
-              <Globe size={24} />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Terbuka untuk Umum</h3>
-            <p className="text-gray-500">Siapapun bisa mendaftar. Mulai dari pelajar, UMKM, hingga korporasi. Tidak ada batasan eksklusif.</p>
-          </div>
-        </div>
+        ))}
+      </div>
     </div>
   );
 }

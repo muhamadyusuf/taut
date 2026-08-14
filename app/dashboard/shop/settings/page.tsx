@@ -25,12 +25,14 @@ const SHOP_THEMES = [
     key: "classic",
     name: "Classic Blue",
     description: "Bersih & profesional, aksen biru cerah.",
+    // Warna preview sengaja literal (bukan token tema aplikasi), karena yang
+    // digambarkan adalah tampilan HALAMAN TOKO PUBLIK — bukan dashboard ini.
     preview: {
-      bg: "bg-gray-100",
-      header: "bg-white border border-gray-200",
-      card: "bg-white border border-gray-200",
-      btn: "bg-blue-600",
-      accent: "text-blue-600",
+      bg: "bg-slate-100",
+      header: "bg-white border border-slate-200",
+      card: "bg-white border border-slate-200",
+      btn: "bg-blue-500",
+      accent: "text-blue-500",
     },
   },
   {
@@ -52,7 +54,7 @@ const SHOP_THEMES = [
     preview: {
       bg: "bg-stone-100",
       header: "bg-stone-50 border border-stone-200",
-      card: "bg-white border border-stone-100",
+      card: "bg-white border border-stone-200",
       btn: "bg-stone-900",
       accent: "text-stone-900",
     },
@@ -124,7 +126,7 @@ export default function ShopSettingsPage() {
   // Loading State saat fetch awal
   if (settings === undefined) {
     return (
-        <div className="flex flex-col items-center justify-center h-64 gap-2 text-gray-500">
+        <div className="flex flex-col items-center justify-center h-64 gap-2 text-muted-foreground">
             <Loader2 className="animate-spin" />
             <span className="text-sm">Memuat pengaturan...</span>
         </div>
@@ -136,91 +138,91 @@ export default function ShopSettingsPage() {
       
       {/* HEADER */}
       <div>
-        <h2 className="text-xl font-bold text-gray-900">Pengaturan Toko</h2>
-        <p className="text-sm text-gray-500">Kelola identitas toko dan konfigurasi pembayaran Anda.</p>
+        <h2 className="text-xl font-bold text-foreground">Pengaturan Toko</h2>
+        <p className="text-sm text-muted-foreground">Kelola identitas toko dan konfigurasi pembayaran Anda.</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-8">
         
         {/* --- BAGIAN 1: IDENTITAS TOKO --- */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b pb-4 mb-4">
-                <Store className="text-blue-600" size={20} />
-                <h3 className="font-bold text-gray-800">Identitas Toko</h3>
+        <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
+            <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
+                <Store className="text-brand" size={20} />
+                <h3 className="font-bold text-foreground">Identitas Toko</h3>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Nama Toko */}
                 <div className="col-span-2 md:col-span-1">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Nama Toko</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Nama Toko</label>
                     <input 
                         required 
                         value={form.shopName} 
                         onChange={e => setForm({...form, shopName: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none transition" 
+                        className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand focus:outline-none transition" 
                         placeholder="Contoh: Toko Berkah Abadi"
                     />
                 </div>
 
                 {/* Slug URL */}
                 <div className="col-span-2 md:col-span-1">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">URL Toko (Slug)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">URL Toko (Slug)</label>
                     <div className="flex items-center">
-                        <span className="bg-gray-100 border border-gray-300 border-r-0 rounded-l-lg px-3 py-2 text-gray-500 text-sm font-mono whitespace-nowrap">
+                        <span className="bg-muted border border-border border-r-0 rounded-l-lg px-3 py-2 text-muted-foreground text-sm font-mono whitespace-nowrap">
                             singkat.in/s/
                         </span>
                         <input 
                             required 
                             value={form.slug} 
                             onChange={handleSlugChange}
-                            className="w-full border border-gray-300 rounded-r-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition" 
+                            className="w-full border border-border rounded-r-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-brand focus:outline-none transition" 
                             placeholder="toko-berkah"
                         />
                     </div>
-                    <p className="text-[10px] text-gray-400 mt-1">Hanya huruf kecil, angka, dan tanda strip (-).</p>
+                    <p className="text-[10px] text-subtle mt-1">Hanya huruf kecil, angka, dan tanda strip (-).</p>
                 </div>
 
                 {/* Logo URL */}
                 <div className="col-span-2">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Logo URL (Opsional)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Logo URL (Opsional)</label>
                     <div className="flex gap-4 items-start">
                         <input 
                             value={form.logoUrl} 
                             onChange={e => setForm({...form, logoUrl: e.target.value})}
-                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition" 
+                            className="flex-1 bg-input text-foreground border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:outline-none transition" 
                             placeholder="https://i.imgur.com/..."
                         />
                         {form.logoUrl && (
-                            <div className="w-10 h-10 rounded-full border bg-gray-50 overflow-hidden shrink-0">
+                            <div className="w-10 h-10 rounded-full border bg-muted overflow-hidden shrink-0">
                                 <img src={form.logoUrl} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                         )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Masukkan link gambar langsung (Direct Link).</p>
+                    <p className="text-xs text-muted-foreground mt-1">Masukkan link gambar langsung (Direct Link).</p>
                 </div>
 
                 {/* Deskripsi Toko */}
                 <div className="col-span-2">
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi Toko <span className="font-normal text-gray-400">(Opsional)</span></label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Deskripsi Toko <span className="font-normal text-subtle">(Opsional)</span></label>
                     <textarea
                         rows={3}
                         value={form.description}
                         onChange={e => setForm({ ...form, description: e.target.value })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition resize-none"
+                        className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:outline-none transition resize-none"
                         placeholder="Ceritakan sedikit tentang toko Anda. Teks ini akan tampil di halaman toko publik."
                     />
-                    <p className="text-xs text-gray-400 mt-1">{form.description.length}/300 karakter</p>
+                    <p className="text-xs text-subtle mt-1">{form.description.length}/300 karakter</p>
                 </div>
             </div>
         </div>
 
         {/* --- BAGIAN 1b: TAMPILAN TOKO --- */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b pb-4 mb-4">
-                <Palette className="text-purple-600" size={20} />
-                <h3 className="font-bold text-gray-800">Template Tampilan</h3>
+        <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
+            <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
+                <Palette className="text-info" size={20} />
+                <h3 className="font-bold text-foreground">Template Tampilan</h3>
             </div>
-            <p className="text-sm text-gray-500 -mt-2">Pilih tema visual untuk halaman toko publik Anda.</p>
+            <p className="text-sm text-muted-foreground -mt-2">Pilih tema visual untuk halaman toko publik Anda.</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {SHOP_THEMES.map((theme) => {
@@ -232,13 +234,13 @@ export default function ShopSettingsPage() {
                             onClick={() => setForm({ ...form, theme: theme.key })}
                             className={`relative text-left rounded-xl border-2 p-4 transition-all ${
                                 isSelected
-                                    ? "border-blue-500 bg-blue-50 shadow-md"
-                                    : "border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                                    ? "border-brand bg-brand-soft shadow-md"
+                                    : "border-border hover:border-border-strong hover:shadow-sm"
                             }`}
                         >
                             {/* Check badge */}
                             {isSelected && (
-                                <span className="absolute top-2 right-2 bg-blue-600 text-white rounded-full p-0.5">
+                                <span className="absolute top-2 right-2 bg-brand text-brand-contrast rounded-full p-0.5">
                                     <Check size={10} />
                                 </span>
                             )}
@@ -253,8 +255,8 @@ export default function ShopSettingsPage() {
                                 </div>
                             </div>
 
-                            <div className={`text-xs font-bold mb-0.5 ${isSelected ? "text-blue-700" : "text-gray-800"}`}>{theme.name}</div>
-                            <div className="text-xs text-gray-500 leading-snug">{theme.description}</div>
+                            <div className={`text-xs font-bold mb-0.5 ${isSelected ? "text-brand-soft-fg" : "text-foreground"}`}>{theme.name}</div>
+                            <div className="text-xs text-muted-foreground leading-snug">{theme.description}</div>
 
                             {/* Accent dot */}
                             <div className={`mt-2 w-5 h-1.5 rounded-full ${theme.preview.btn}`}></div>
@@ -265,12 +267,12 @@ export default function ShopSettingsPage() {
         </div>
 
         {/* --- BAGIAN 1c: WARNA PRIMER --- */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-5">
-            <div className="flex items-center gap-2 border-b pb-4 mb-4">
-                <Paintbrush className="text-pink-500" size={20} />
-                <h3 className="font-bold text-gray-800">Warna Primer</h3>
+        <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-5">
+            <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
+                <Paintbrush className="text-info" size={20} />
+                <h3 className="font-bold text-foreground">Warna Primer</h3>
             </div>
-            <p className="text-sm text-gray-500 -mt-2">
+            <p className="text-sm text-muted-foreground -mt-2">
                 Kustomisasi warna aksen tombol, harga, dan link di halaman toko publik.
                 Biarkan &quot;Auto&quot; untuk mengikuti warna default tema.
             </p>
@@ -284,11 +286,11 @@ export default function ShopSettingsPage() {
                     onClick={() => setForm({ ...form, primaryColor: "" })}
                     className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
                         !form.primaryColor
-                            ? "border-gray-900 shadow-md scale-110"
-                            : "border-gray-300 hover:border-gray-500"
+                            ? "border-foreground shadow-md scale-110"
+                            : "border-border hover:border-border-strong"
                     }`}
                 >
-                    <span className="text-[9px] font-bold text-gray-500 leading-none">Auto</span>
+                    <span className="text-[9px] font-bold text-muted-foreground leading-none">Auto</span>
                 </button>
 
                 {PRESET_COLORS.map((color) => (
@@ -300,7 +302,7 @@ export default function ShopSettingsPage() {
                         style={{ backgroundColor: color }}
                         className={`w-9 h-9 rounded-full border-2 transition-all ${
                             form.primaryColor === color
-                                ? "border-gray-900 scale-110 shadow-md"
+                                ? "border-foreground scale-110 shadow-md"
                                 : "border-transparent hover:scale-105 hover:shadow-sm"
                         }`}
                     />
@@ -310,12 +312,12 @@ export default function ShopSettingsPage() {
             {/* Custom color input */}
             <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
-                    <label className="text-sm font-bold text-gray-700">Warna Kustom:</label>
+                    <label className="text-sm font-bold text-foreground">Warna Kustom:</label>
                     <input
                         type="color"
                         value={form.primaryColor || "#3B82F6"}
                         onChange={e => setForm({ ...form, primaryColor: e.target.value })}
-                        className="w-10 h-10 rounded-lg border border-gray-300 cursor-pointer p-0.5"
+                        className="w-10 h-10 rounded-lg border border-border cursor-pointer p-0.5"
                     />
                 </div>
                 <input
@@ -327,7 +329,7 @@ export default function ShopSettingsPage() {
                             setForm({ ...form, primaryColor: val.startsWith("#") || val === "" ? val : "#" + val });
                         }
                     }}
-                    className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:outline-none transition"
+                    className="w-32 bg-input text-foreground border border-border rounded-lg px-3 py-2 text-sm font-mono focus:ring-2 focus:ring-brand focus:outline-none transition"
                     placeholder="#3B82F6"
                     maxLength={7}
                 />
@@ -335,7 +337,7 @@ export default function ShopSettingsPage() {
                     <button
                         type="button"
                         onClick={() => setForm({ ...form, primaryColor: "" })}
-                        className="text-xs text-gray-400 hover:text-red-500 transition"
+                        className="text-xs text-subtle hover:text-danger transition"
                     >
                         Reset ke default
                     </button>
@@ -344,7 +346,7 @@ export default function ShopSettingsPage() {
 
             {/* Live preview */}
             {form.primaryColor && /^#[0-9A-Fa-f]{6}$/.test(form.primaryColor) && (
-                <div className="flex items-center gap-4 p-3 bg-gray-50 rounded-xl border border-gray-100 flex-wrap">
+                <div className="flex items-center gap-4 p-3 bg-muted rounded-xl border border-border flex-wrap">
                     <button
                         type="button"
                         style={{ backgroundColor: form.primaryColor }}
@@ -355,37 +357,37 @@ export default function ShopSettingsPage() {
                     <span className="text-base font-extrabold" style={{ color: form.primaryColor }}>
                         Rp 150.000
                     </span>
-                    <span className="text-xs text-gray-400 italic">← Preview warna primer</span>
+                    <span className="text-xs text-subtle italic">← Preview warna primer</span>
                 </div>
             )}
         </div>
 
         {/* --- BAGIAN 2: INTEGRASI MIDTRANS --- */}
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm space-y-6">
-            <div className="flex items-center gap-2 border-b pb-4 mb-4">
-                <LinkIcon className="text-green-600" size={20} />
-                <h3 className="font-bold text-gray-800">Pembayaran (Midtrans)</h3>
+        <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
+            <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
+                <LinkIcon className="text-success" size={20} />
+                <h3 className="font-bold text-foreground">Pembayaran (Midtrans)</h3>
             </div>
 
             {/* Environment Toggle */}
-            <div className="p-4 bg-blue-50 rounded-lg border border-blue-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="p-4 bg-brand-soft rounded-lg border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h4 className="font-bold text-blue-900 text-sm">Mode Environment</h4>
-                    <p className="text-xs text-blue-700">Pilih &apos;Sandbox&apos; untuk testing, &apos;Production&apos; untuk menerima uang asli.</p>
+                    <h4 className="font-bold text-brand-soft-fg text-sm">Mode Environment</h4>
+                    <p className="text-xs text-muted-foreground">Pilih &apos;Sandbox&apos; untuk testing, &apos;Production&apos; untuk menerima uang asli.</p>
                 </div>
-                <div className="flex bg-white rounded-md border shadow-sm overflow-hidden shrink-0">
+                <div className="flex bg-card rounded-md border shadow-sm overflow-hidden shrink-0">
                     <button 
                         type="button"
                         onClick={() => setForm({ ...form, isProduction: false })}
-                        className={`px-4 py-2 text-xs font-bold transition-colors ${!form.isProduction ? 'bg-orange-100 text-orange-700' : 'text-gray-500 hover:bg-gray-50'}`}
+                        className={`px-4 py-2 text-xs font-bold transition-colors ${!form.isProduction ? 'bg-warning-soft text-warning' : 'text-muted-foreground hover:bg-muted'}`}
                     >
                         SANDBOX
                     </button>
-                    <div className="w-px bg-gray-200"></div>
+                    <div className="w-px bg-border"></div>
                     <button 
                         type="button"
                         onClick={() => setForm({ ...form, isProduction: true })}
-                        className={`px-4 py-2 text-xs font-bold transition-colors ${form.isProduction ? 'bg-green-100 text-green-700' : 'text-gray-500 hover:bg-gray-50'}`}
+                        className={`px-4 py-2 text-xs font-bold transition-colors ${form.isProduction ? 'bg-success-soft text-success' : 'text-muted-foreground hover:bg-muted'}`}
                     >
                         PRODUCTION
                     </button>
@@ -394,36 +396,36 @@ export default function ShopSettingsPage() {
 
             <div className="grid gap-6">
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Client Key</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Client Key</label>
                     <input 
                         required 
                         value={form.clientKey} 
                         onChange={e => setForm({...form, clientKey: e.target.value})}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-green-500 focus:outline-none transition" 
+                        className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-brand focus:outline-none transition" 
                         placeholder={form.isProduction ? "Mid-client-..." : "SB-Mid-client-..."}
                     />
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-gray-700 mb-1">Server Key</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">Server Key</label>
                     <div className="relative">
                         <input 
                             required 
                             type={showKey ? "text" : "password"}
                             value={form.serverKey} 
                             onChange={e => setForm({...form, serverKey: e.target.value})}
-                            className="w-full border border-gray-300 rounded-lg px-3 py-2 font-mono text-sm pr-10 focus:ring-2 focus:ring-green-500 focus:outline-none transition" 
+                            className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 font-mono text-sm pr-10 focus:ring-2 focus:ring-brand focus:outline-none transition" 
                             placeholder={form.isProduction ? "Mid-server-..." : "SB-Mid-server-..."}
                         />
                         <button 
                             type="button" 
                             onClick={() => setShowKey(!showKey)} 
-                            className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 transition"
+                            className="absolute right-3 top-2.5 text-subtle hover:text-muted-foreground transition"
                         >
                             {showKey ? <EyeOff size={16}/> : <Eye size={16}/>}
                         </button>
                     </div>
-                    <div className="flex items-start gap-2 mt-2 text-xs text-amber-600 bg-amber-50 p-2 rounded border border-amber-100">
+                    <div className="flex items-start gap-2 mt-2 text-xs text-warning bg-warning-soft p-2 rounded border border-warning/25">
                         <AlertCircle size={14} className="mt-0.5 shrink-0"/>
                         <p>Server Key bersifat <b>RAHASIA</b>. Jangan pernah membagikannya kepada siapa pun selain di panel ini.</p>
                     </div>
@@ -436,7 +438,7 @@ export default function ShopSettingsPage() {
             <button 
                 disabled={isSaving} 
                 type="submit" 
-                className="w-full sm:w-auto bg-black text-white px-8 py-3 rounded-xl font-bold hover:bg-gray-800 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2 transition transform active:scale-95 shadow-lg"
+                className="btn-saweria w-full sm:w-auto px-8 py-3 rounded-xl flex justify-center items-center gap-2"
             >
                 {isSaving ? <Loader2 className="animate-spin" size={20}/> : <Save size={20}/>} 
                 Simpan Perubahan
