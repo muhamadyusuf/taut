@@ -1,6 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { assertWithinLimit, countOwned } from "./entitlements";
+import { assertWithinLimit, countOwned, userHasFeature } from "./entitlements";
 
 // ---------------------------------------------------------
 // 1. READ: AMBIL LIST MICROSITE (Untuk Dashboard Utama)
@@ -176,10 +176,22 @@ export const deleteMicrosite = mutation({
 export const getPublicMicrosite = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const microsite = await ctx.db
       .query("microsites")
       .withIndex("by_slug", q => q.eq("slug", args.slug))
       .first();
+
+    if (!microsite) return null;
+
+    // Badge "Powered by singkat.in" mengikuti paket pemilik halaman, bukan
+    // paket pengunjung — halaman ini dibuka orang yang tidak login.
+    const showBranding = !(await userHasFeature(
+      ctx,
+      microsite.userId,
+      "remove_branding"
+    ));
+
+    return { ...microsite, showBranding };
   },
 });
 

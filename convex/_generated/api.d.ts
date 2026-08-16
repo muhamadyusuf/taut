@@ -12,6 +12,7 @@ import type * as admin from "../admin.js";
 import type * as articles from "../articles.js";
 import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
+import type * as brand from "../brand.js";
 import type * as categories from "../categories.js";
 import type * as certificateActions from "../certificateActions.js";
 import type * as certificates from "../certificates.js";
@@ -52,6 +53,7 @@ declare const fullApi: ApiFromModules<{
   articles: typeof articles;
   billing: typeof billing;
   billingActions: typeof billingActions;
+  brand: typeof brand;
   categories: typeof categories;
   certificateActions: typeof certificateActions;
   certificates: typeof certificates;

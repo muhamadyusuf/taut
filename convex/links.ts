@@ -1,38 +1,78 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { getEntitlementsForUser } from "./entitlements";
+import { planHasFeature } from "./plans";
 
-// 1. DAFTAR KATA TERLARANG (RESERVED KEYWORDS)
-// Tambahkan semua route sistem Anda di sini
-const RESERVED_SLUGS = [
-  "dashboard", 
-  "dashboard/links", 
-  "dashboard/categories", 
-  "dashboard/qr-codes", 
-  "dashboard/analytics", 
-  "dashboard/settings", 
-  "sign-in", 
-  "sign-up", 
-  "login", 
-  "register", 
-  "api", 
-  "about", 
-  "contact", 
-  "terms", 
-  "privacy", 
-  "404", 
-  "500",
-  "app",
+/**
+ * Slug yang tidak boleh dipakai sebagai tautan pendek.
+ *
+ * Bukan sekadar soal rapi: shortcode hidup di route paling atas (/[shortCode]),
+ * jadi slug yang bertabrakan dengan route statis Next.js akan kalah dan tautan
+ * itu tersimpan di database tapi tidak pernah bisa dibuka. Sebelum daftar ini
+ * dirapikan, "bio", "s", "f", dan "blog" masih bisa didaftarkan orang.
+ *
+ * Hanya berisi segmen pertama URL — pengecekannya memang membandingkan satu
+ * segmen, sehingga entri seperti "dashboard/links" dulu tidak pernah cocok
+ * dengan apa pun.
+ */
+const RESERVED_SLUGS = new Set([
+  // Route aplikasi
+  "dashboard",
   "admin",
-  "static",
-  "public",
+  "app",
+  "api",
+  "bio",
+  "s",
+  "f",
+  "blog",
+  "pricing",
+  "harga",
+
+  // Autentikasi
+  "sign-in",
+  "sign-up",
+  "signin",
+  "signup",
+  "login",
+  "logout",
+  "register",
+
+  // Halaman statis
   "about",
   "contact",
-  "privacy",
   "terms",
+  "privacy",
   "kebijakan",
   "syarat",
-  "legal"
-];
+  "legal",
+  "help",
+  "support",
+  "status",
+  "docs",
+
+  // Berkas & konvensi yang dilayani di akar domain
+  "favicon.ico",
+  "robots.txt",
+  "sitemap.xml",
+  "manifest.json",
+  "apple-touch-icon.jpg",
+  "static",
+  "public",
+  "_next",
+  "404",
+  "500",
+
+  // Cadangan untuk fitur yang sudah direncanakan
+  "billing",
+  "settings",
+  "go",
+  "qr",
+  "v", // verifikasi sertifikat publik
+]);
+
+function isReservedSlug(slug: string): boolean {
+  return RESERVED_SLUGS.has(slug.trim().toLowerCase());
+}
 
 export const createLink = mutation({
   args: { 
@@ -49,7 +89,7 @@ export const createLink = mutation({
     let shortCode: string;
 
     // 2. CEK APAKAH SLUG MASUK DAFTAR TERLARANG
-    if (args.customSlug && RESERVED_SLUGS.includes(args.customSlug.toLowerCase())) {
+    if (args.customSlug && isReservedSlug(args.customSlug)) {
         throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
     }
 
@@ -98,7 +138,7 @@ export const updateLink = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    if (args.customSlug && RESERVED_SLUGS.includes(args.customSlug.toLowerCase())) {
+    if (args.customSlug && isReservedSlug(args.customSlug)) {
       throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
     }
     
@@ -160,12 +200,70 @@ export const getMyLinks = query({
   },
 });
 
+/**
+ * Data yang dibutuhkan halaman antara, lengkap dengan cara ia harus berperilaku.
+ *
+ * Perilaku ditentukan oleh paket PEMILIK tautan, bukan pengunjung — pengunjung
+ * bahkan tidak login. Paket dibaca lewat satu pembacaan ber-index tambahan,
+ * bukan disalin ke tabel links: menyalinnya berarti setiap upgrade harus
+ * menulis ulang seluruh tautan milik user, dan satu tulisan yang meleset
+ * membuat pelanggan yang sudah membayar tetap melihat iklan.
+ */
 export const getUrlByCode = query({
-    args: { shortCode: v.string() },
-    handler: async (ctx, args) => {
-      return await ctx.db.query("links").withIndex("by_shortCode", (q) => q.eq("shortCode", args.shortCode)).first();
-    },
-  });
+  args: { shortCode: v.string() },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("links")
+      .withIndex("by_shortCode", (q) => q.eq("shortCode", args.shortCode))
+      .first();
+
+    if (!link) return null;
+
+    const owner = await getEntitlementsForUser(ctx, link.userId);
+
+    let mode: "skip" | "ads" | "branded" = "ads";
+    let brand: {
+      displayName: string;
+      logoUrl?: string;
+      primaryColor?: string;
+      tagline?: string;
+      ctaLabel?: string;
+      ctaUrl?: string;
+    } | null = null;
+
+    if (planHasFeature(owner.plan, "whitelabel_interstitial")) {
+      const settings = await ctx.db
+        .query("brand_settings")
+        .withIndex("by_userId", (q) => q.eq("userId", link.userId))
+        .first();
+
+      if (settings?.enabled) {
+        mode = "branded";
+        brand = {
+          displayName: settings.displayName,
+          logoUrl: settings.logoUrl,
+          primaryColor: settings.primaryColor,
+          tagline: settings.tagline,
+          ctaLabel: settings.ctaLabel,
+          ctaUrl: settings.ctaUrl,
+        };
+      }
+    }
+
+    // Belum memasang branding sendiri? Paket berbayar tetap melompat langsung.
+    if (mode !== "branded" && planHasFeature(owner.plan, "skip_interstitial")) {
+      mode = "skip";
+    }
+
+    return {
+      originalUrl: link.originalUrl,
+      shortCode: link.shortCode,
+      title: link.title,
+      mode,
+      brand,
+    };
+  },
+});
 
 // Ganti atau Tambahkan fungsi ini
 export const getLinkAndIncrement = mutation({

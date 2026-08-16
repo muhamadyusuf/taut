@@ -68,6 +68,25 @@ export default defineSchema({
     apiCalls: v.number(),
   }).index("by_userId_period", ["userId", "period"]),
 
+  /**
+   * Identitas merek pemilik tautan, dipakai di halaman antara paket Bisnis.
+   *
+   * Halaman antara tidak dihapus untuk paket tertinggi melainkan diserahkan:
+   * lima detik itu jadi kanal branding pemilik tautan, bukan pajak yang harus
+   * ditebus. Lihat docs/premium-strategy.md §8.
+   */
+  brand_settings: defineTable({
+    userId: v.string(),
+    enabled: v.boolean(), // matikan untuk kembali melompat langsung
+    displayName: v.string(),
+    logoUrl: v.optional(v.string()),
+    primaryColor: v.optional(v.string()), // hex, mis. "#0193ff"
+    tagline: v.optional(v.string()),
+    ctaLabel: v.optional(v.string()),
+    ctaUrl: v.optional(v.string()),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
   // ---------------------------------------------------------
   // 1. URL SHORTENER
   // ---------------------------------------------------------

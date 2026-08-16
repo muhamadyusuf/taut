@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
@@ -16,15 +16,54 @@ export default function RedirectPage() {
     api.links.getUrlByCode,
     shortCode ? { shortCode } : "skip"
   );
-  const activeAd = useQuery(api.admin.getActiveAd);
+
+  // Iklan hanya diambil kalau halaman ini memang akan menampilkannya. Pemilik
+  // berbayar tidak perlu membayar ongkos query yang hasilnya dibuang.
+  const activeAd = useQuery(
+    api.admin.getActiveAd,
+    link?.mode === "ads" ? {} : "skip"
+  );
+
   const incrementClick = useMutation(api.links.getLinkAndIncrement);
 
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [countdown, setCountdown] = useState(5);
+  const redirectingRef = useRef(false);
 
-  // Auto-redirect countdown
+  /**
+   * Mencatat klik lalu berpindah. Sengaja tidak menyentuh state apa pun supaya
+   * bisa dipanggil langsung dari efek pada mode lompat-langsung.
+   */
+  const performRedirect = useCallback(async () => {
+    // Penjaga pakai ref, bukan state: hitungan mundur yang habis bersamaan
+    // dengan klik tombol — dan efek ganda React StrictMode saat development —
+    // sama-sama akan menghitung satu klik menjadi dua.
+    if (!shortCode || !link || redirectingRef.current) return;
+    redirectingRef.current = true;
+    // Klik dicatat sebelum berpindah: navigasi memutus koneksi Convex, jadi
+    // mutation yang dilepas tanpa ditunggu akan sering hilang dan statistik
+    // pemilik tautan jadi bocor.
+    await incrementClick({ shortCode });
+    window.location.replace(link.originalUrl);
+  }, [shortCode, link, incrementClick]);
+
+  /** Dipakai halaman antara: tombolnya perlu berubah jadi status "mengalihkan". */
+  const handleContinue = useCallback(() => {
+    setIsRedirecting(true);
+    void performRedirect();
+  }, [performRedirect]);
+
   useEffect(() => {
-    if (link === undefined || link === null) return;
+    if (!link || isRedirecting) return;
+
+    // Paket berbayar tanpa branding sendiri: tidak ada halaman antara sama
+    // sekali, langsung diteruskan. Tidak ada state yang perlu diubah — layar
+    // "mengalihkan" sudah ditentukan oleh mode-nya.
+    if (link.mode === "skip") {
+      void performRedirect();
+      return;
+    }
+
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
@@ -35,18 +74,10 @@ export default function RedirectPage() {
         return prev - 1;
       });
     }, 1000);
+
     return () => clearInterval(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [link]);
+  }, [link, isRedirecting, handleContinue, performRedirect]);
 
-  const handleContinue = async () => {
-    if (!shortCode || isRedirecting || !link) return;
-    setIsRedirecting(true);
-    await incrementClick({ shortCode });
-    window.location.replace(link.originalUrl);
-  };
-
-  // masih loading
   if (link === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -55,7 +86,6 @@ export default function RedirectPage() {
     );
   }
 
-  // link tidak ditemukan
   if (link === null) {
     return <NotFoundPage />;
   }
@@ -68,22 +98,94 @@ export default function RedirectPage() {
     // fallback ke URL lengkap
   }
 
+  // ── MODE LOMPAT LANGSUNG (paket berbayar) ──
+  if (link.mode === "skip") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
+        <p className="text-sm text-muted-foreground">
+          Mengalihkan ke {destinationHost}…
+        </p>
+      </div>
+    );
+  }
+
+  const brand = link.mode === "branded" ? link.brand : null;
+  const accent = brand?.primaryColor;
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Top bar */}
+      {/* Top bar — memakai identitas pemilik tautan bila paketnya mengizinkan */}
       <header className="bg-card border-b border-border px-6 py-3 flex items-center gap-3 shadow-sm">
-        <Image src="/logo.svg" alt="Logo" width={28} height={28} />
-        <span className="font-bold text-foreground text-lg">
-          singkat<span className="text-brand">.in</span>
-        </span>
+        {brand ? (
+          <>
+            {brand.logoUrl && (
+              <Image
+                src={brand.logoUrl}
+                alt={brand.displayName}
+                width={28}
+                height={28}
+                className="rounded object-contain"
+                unoptimized
+              />
+            )}
+            <span className="font-bold text-foreground text-lg">
+              {brand.displayName}
+            </span>
+          </>
+        ) : (
+          <>
+            <Image src="/logo.svg" alt="Logo" width={28} height={28} />
+            <span className="font-bold text-foreground text-lg">
+              singkat<span className="text-brand">.in</span>
+            </span>
+          </>
+        )}
       </header>
 
       {/* Main layout */}
       <div className="flex flex-col md:flex-row flex-1 gap-0 md:gap-4 p-4 md:p-6 max-w-7xl mx-auto w-full">
 
-        {/* ── RIGHT PANEL (70%) — Ad space ── */}
+        {/* ── PANEL KIRI — iklan platform, atau panggung merek pemilik ── */}
         <main className="flex-1">
-          {activeAd ? (
+          {brand ? (
+            <div
+              className="w-full h-full min-h-100 rounded-2xl border border-border bg-card flex flex-col items-center justify-center gap-5 p-10 text-center"
+              style={
+                accent
+                  ? { borderColor: accent, background: `${accent}0d` }
+                  : undefined
+              }
+            >
+              {brand.logoUrl && (
+                <Image
+                  src={brand.logoUrl}
+                  alt={brand.displayName}
+                  width={96}
+                  height={96}
+                  className="rounded-2xl object-contain"
+                  unoptimized
+                />
+              )}
+              <h2 className="text-3xl font-bold text-foreground">
+                {brand.displayName}
+              </h2>
+              {brand.tagline && (
+                <p className="max-w-md text-muted-foreground">{brand.tagline}</p>
+              )}
+              {brand.ctaLabel && brand.ctaUrl && (
+                <a
+                  href={brand.ctaUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 rounded-xl px-6 py-2.5 text-sm font-semibold text-brand-contrast transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: accent ?? "var(--brand)" }}
+                >
+                  {brand.ctaLabel}
+                </a>
+              )}
+            </div>
+          ) : activeAd ? (
             <a
               href={activeAd.linkUrl ?? "#"}
               target="_blank"
@@ -141,7 +243,7 @@ export default function RedirectPage() {
         </main>
 
 
-        {/* ── LEFT PANEL (30%) ── */}
+        {/* ── PANEL KANAN ── */}
         <aside className="w-full md:w-[50%] shrink-0">
           <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
             {/* Header */}
@@ -211,6 +313,7 @@ export default function RedirectPage() {
                 onClick={handleContinue}
                 disabled={isRedirecting}
                 className="w-full bg-brand hover:bg-brand-hover disabled:bg-border-strong text-brand-contrast font-semibold py-3 px-4 rounded-xl transition-colors text-sm flex items-center justify-center gap-2"
+                style={accent && !isRedirecting ? { backgroundColor: accent } : undefined}
               >
                 {isRedirecting ? (
                   <>

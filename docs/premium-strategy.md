@@ -271,7 +271,8 @@ Beberapa hal yang cocok dengan posisi Anda tapi jarang dimiliki kompetitor:
 5. Grandfathering: user lama diberi flag `legacyFree` — fitur inti tetap tanpa batas selamanya.
 
 ### Konsekuensi teknis dari keputusan di atas
-- Tabel `ads` dan `app/[shortCode]/page.tsx` perlu tambahan konsep **pemilik halaman antara**: kalau link milik user Bisnis, tampilkan branding user; kalau Pro, langsung redirect; kalau Free, tampilkan iklan platform. Artinya query redirect harus ikut membawa plan pemilik link — pertimbangkan denormalisasi `ownerPlan` di tabel `links` agar tidak menambah round-trip di jalur redirect.
+- `app/[shortCode]/page.tsx` perlu konsep **pemilik halaman antara**: link milik user Bisnis menampilkan branding pemiliknya, Pro langsung diteruskan, Free melihat iklan platform. Artinya query redirect harus tahu paket pemilik link.
+- ~~Pertimbangkan denormalisasi `ownerPlan` di tabel `links` agar tidak menambah round-trip.~~ **Dikoreksi saat implementasi (16 Agustus 2026):** denormalisasi adalah pilihan yang salah di sini. Pembacaan paket terjadi di dalam query Convex yang sama, jadi bukan round-trip tambahan melainkan satu pembacaan ber-index yang ongkosnya nyaris nol. Sebaliknya, menyalin paket ke setiap baris tautan berarti setiap upgrade harus menulis ulang seluruh tautan milik user — dan satu tulisan yang meleset membuat pelanggan yang sudah membayar tetap melihat iklan. Yang dipakai: lookup langsung lewat `getEntitlementsForUser()`.
 - Karena subdomain masuk Pro (bukan Bisnis), volume pemakaiannya akan jauh lebih tinggi → anti-abuse (Fase 0) bukan opsional. Minimal: Safe Browsing check, rate limit, dan reserved list ketat sebelum Fase 4 dirilis.
 
 ### Langkah berikutnya

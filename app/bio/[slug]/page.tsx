@@ -176,14 +176,16 @@ export default async function PublicBioPage({ params }: Props) {
             })}
          </div>
 
-         {/* FOOTER */}
-         <Link 
-            href="/" 
-            className={`mt-auto opacity-60 hover:opacity-100 transition-opacity duration-300 items-center gap-2 text-[10px] font-bold tracking-widest py-4 ${theme.text}`}
-         >
-            <center className="py-2"><Image src="/logo.svg" alt="singkat.in logo" width={40} height={40} /></center>
-            <center>Powered by singkat.in</center>
-         </Link>
+         {/* FOOTER — disembunyikan untuk pemilik berpaket berbayar */}
+         {data.showBranding && (
+           <Link
+              href="/"
+              className={`mt-auto opacity-60 hover:opacity-100 transition-opacity duration-300 items-center gap-2 text-[10px] font-bold tracking-widest py-4 ${theme.text}`}
+           >
+              <center className="py-2"><Image src="/logo.svg" alt="singkat.in logo" width={40} height={40} /></center>
+              <center>Powered by singkat.in</center>
+           </Link>
+         )}
 
       </div>
     </div>
