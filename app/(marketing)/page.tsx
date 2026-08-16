@@ -166,7 +166,7 @@ export default async function Home() {
             </Reveal>
 
             <Reveal delay={90}>
-              <h1 className="mt-6 text-5xl font-bold leading-[1.08] tracking-tight text-foreground md:text-6xl xl:text-7xl">
+              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl xl:text-7xl">
                 Lebih Singkat, <br />
                 <span className="text-gradient-animated">Lebih Terhubung.</span>
               </h1>
@@ -180,10 +180,11 @@ export default async function Home() {
             </Reveal>
 
             <Reveal delay={260}>
-              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row lg:justify-start">
+              {/* Di mobile tombol dibuat selebar layar — target sentuh lebih besar dan barisnya rapi */}
+              <div className="mt-10 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4 lg:justify-start">
                 <SignedOut>
                   <SignInButton mode="modal">
-                    <button className="btn-saweria group flex items-center gap-2 px-10 py-4 text-lg">
+                    <button className="btn-saweria group flex w-full items-center justify-center gap-2 px-8 py-4 text-base sm:w-auto sm:px-10 sm:text-lg">
                       Mulai singkat.in
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
@@ -191,15 +192,18 @@ export default async function Home() {
                 </SignedOut>
 
                 <SignedIn>
-                  <Link href="/dashboard/links">
-                    <button className="btn-saweria group flex items-center gap-2 px-10 py-4 text-lg">
+                  <Link href="/dashboard/links" className="w-full sm:w-auto">
+                    <button className="btn-saweria group flex w-full items-center justify-center gap-2 px-8 py-4 text-base sm:w-auto sm:px-10 sm:text-lg">
                       Mulai singkat.in
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </Link>
                 </SignedIn>
 
-                <Link href="/about" className="btn-ghost px-8 py-4 text-base">
+                <Link
+                  href="/about"
+                  className="btn-ghost w-full px-8 py-4 text-center text-base sm:w-auto"
+                >
                   Pelajari dulu
                 </Link>
               </div>

@@ -77,7 +77,8 @@ export default function ContactPage() {
       </div>
 
       {/* Kolom Kanan: Peta */}
-      <div className="surface-panel h-[500px] flex-1 overflow-hidden p-2">
+      {/* Peta dipendekkan di mobile supaya tidak menghabiskan satu layar penuh */}
+      <div className="surface-panel h-80 flex-1 overflow-hidden p-2 sm:h-[420px] md:h-[500px]">
         <iframe
           title="Lokasi Institut Teknologi Tangerang Selatan"
           src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3965.918494597563!2d106.65412687555317!3d-6.274447193714322!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69e553aeca8d97%3A0xd3e5d04eb554abde!2sInstitut%20Teknologi%20Tangerang%20Selatan!5e0!3m2!1sid!2sid!4v1767846832389!5m2!1sid!2sid"

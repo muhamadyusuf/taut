@@ -96,7 +96,7 @@ export default function HeroMockup() {
         </div>
 
         {/* ── CHIP QR (melayang di depan) ── */}
-        <div className="depth-3 animate-float absolute -right-5 -top-7 rounded-2xl border border-border bg-card p-3 shadow-[var(--shadow-card-hover)] sm:-right-8">
+        <div className="depth-3 animate-float absolute -right-1 -top-5 rounded-2xl sm:-top-7 border border-border bg-card p-3 shadow-[var(--shadow-card-hover)] sm:-right-8">
           <div className="grid grid-cols-7 gap-[2px]" aria-hidden>
             {QR_PATTERN.map((on, i) => (
               <span
@@ -111,7 +111,7 @@ export default function HeroMockup() {
         </div>
 
         {/* ── CHIP STATISTIK ── */}
-        <div className="depth-2 animate-float-delayed absolute -bottom-7 -left-4 flex items-center gap-2.5 rounded-2xl border border-border bg-card px-3.5 py-2.5 shadow-[var(--shadow-card-hover)] sm:-left-8">
+        <div className="depth-2 animate-float-delayed absolute -bottom-5 -left-1 flex sm:-bottom-7 items-center gap-2.5 rounded-2xl border border-border bg-card px-3.5 py-2.5 shadow-[var(--shadow-card-hover)] sm:-left-8">
           <span className="relative grid h-8 w-8 place-items-center rounded-full bg-success-soft text-success">
             <MousePointerClick size={15} />
             <span className="animate-ring absolute inset-0 rounded-full border-2 border-success" aria-hidden />
@@ -125,7 +125,7 @@ export default function HeroMockup() {
         </div>
 
         {/* ── CHIP STATUS ── */}
-        <div className="depth-2 animate-float-slow absolute -right-2 bottom-16 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-[var(--shadow-card)] sm:-right-10">
+        <div className="depth-2 animate-float-slow absolute right-0 bottom-16 flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 shadow-[var(--shadow-card)] sm:-right-10">
           <Check size={11} strokeWidth={3} className="text-success" />
           <span className="text-[10px] font-bold text-muted-foreground">Aman dipindai</span>
         </div>

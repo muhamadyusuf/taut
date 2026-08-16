@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Monitor, Moon, Sun } from "lucide-react";
 
@@ -21,11 +21,28 @@ const MODES = [
 
 type Mode = (typeof MODES)[number]["value"];
 
+// Subscribe kosong yang stabil — nilainya tidak pernah berubah setelah mount.
+const noopSubscribe = () => () => {};
+
+/**
+ * Bernilai false saat render server & hidrasi, lalu true di klien.
+ *
+ * Ini menggantikan pola `useState(false)` + `useEffect(() => setMounted(true))`.
+ * Hasilnya sama, tapi tanpa setState di dalam effect — React memang menyediakan
+ * useSyncExternalStore untuk kasus "snapshot server berbeda dari klien".
+ */
+function useMounted() {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
+}
+
 /** Hook kecil: mode tersimpan + status mount (untuk cegah mismatch hidrasi). */
 function useThemeMode() {
   const { theme, resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   // Sebelum mount kita belum tahu isi localStorage. Pakai "system" (nilai
   // default provider) agar markup server & client identik.

@@ -160,27 +160,27 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
 
       {/* MAIN CONTENT */}
       <div className="flex-1 md:ml-72 flex flex-col min-h-screen">
-        <header className="h-24 glass flex items-center justify-between px-6 md:px-10 sticky top-0 z-30 border-b border-border">
-          <div className="flex items-center gap-4">
+        <header className="h-20 md:h-24 glass flex items-center justify-between gap-2 px-4 md:px-10 sticky top-0 z-30 border-b border-border">
+          {/* min-w-0 wajib: tanpa itu judul panjang menolak menyusut dan mendorong tombol kanan keluar layar */}
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="md:hidden text-muted-foreground bg-card border border-border p-2 rounded-xl"
+              className="md:hidden shrink-0 text-muted-foreground bg-card border border-border p-2 rounded-xl"
               aria-label="Buka menu"
             >
               <Menu />
             </button>
-            <div>
-              <h1 className="font-bold text-2xl text-foreground capitalize">
-                {pathname.split("/").pop()?.replace("-", " ")}
-              </h1>
-            </div>
+            <h1 className="truncate font-bold text-lg sm:text-xl md:text-2xl text-foreground capitalize">
+              {pathname.split("/").pop()?.replace("-", " ")}
+            </h1>
           </div>
 
-          <div className="flex items-center gap-3 md:gap-4">
+          <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
             <ThemeToggle />
             <button
               onClick={() => setIsModalOpen(true)}
-              className="btn-saweria flex items-center gap-2 pl-4 pr-4 md:pr-6 py-3"
+              aria-label="Tautkan link baru"
+              className="btn-saweria flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 md:pr-6"
             >
               <div className="bg-white/20 p-1 rounded-full"><Plus size={18} strokeWidth={3} /></div>
               <span className="hidden sm:inline">Tautkan Link</span>
