@@ -41,6 +41,23 @@ export function planErrorOf(error: unknown): PlanErrorData | null {
  * fungsi dan jejak internal — tidak untuk dibaca orang. Ambil pesan yang kita
  * tulis sendiri lebih dulu.
  */
+/**
+ * Pesan siap tampil untuk dialog sederhana (alert/toast).
+ *
+ * Penolakan karena paket diberi petunjuk ke mana harus pergi — tanpa itu user
+ * hanya tahu dirinya ditolak, tidak tahu cara menyelesaikannya.
+ */
+export function alertMessageFor(
+  error: unknown,
+  fallback = "Terjadi kesalahan"
+): string {
+  const planError = planErrorOf(error);
+  if (planError) {
+    return `${planError.message}\n\nBuka menu "Paket & Tagihan" untuk mengubah paket.`;
+  }
+  return errorMessage(error, fallback);
+}
+
 export function errorMessage(
   error: unknown,
   fallback = "Terjadi kesalahan"

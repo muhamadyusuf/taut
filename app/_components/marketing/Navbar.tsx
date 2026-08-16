@@ -10,6 +10,7 @@ import ThemeToggle, { ThemeSwitcher } from "../ThemeToggle";
 
 const NAV_LINKS = [
   { href: "/", label: "Home" },
+  { href: "/pricing", label: "Harga" },
   { href: "/blog", label: "Blog" },
   { href: "/about", label: "Tentang" },
   { href: "/contact", label: "Kontak" },

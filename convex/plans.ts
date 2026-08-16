@@ -345,6 +345,71 @@ export function cheapestPlanWith(feature: FeatureKey): PlanId | null {
   return null;
 }
 
+/**
+ * Poin-poin yang ditampilkan di kartu harga.
+ *
+ * Diturunkan dari limits + features supaya kartu harga tidak pernah berbeda
+ * dari yang benar-benar ditegakkan backend. Menambah fitur ke sebuah paket
+ * cukup dilakukan di satu tempat, dan halaman harga ikut berubah sendiri.
+ */
+export function planHighlights(planId: PlanId): string[] {
+  const limits = PLANS[planId].limits;
+  const out: string[] = ["Tautan pendek tanpa batas"];
+
+  const countLine = (limit: number, satuan: string) =>
+    isUnlimited(limit) ? `${satuan} tanpa batas` : `${limit} ${satuan}`;
+
+  out.push(countLine(limits.microsites, "halaman bio"));
+  out.push(countLine(limits.forms, "formulir"));
+  out.push(
+    isUnlimited(limits.formResponsesPerForm)
+      ? "Respons formulir tanpa batas"
+      : `${limits.formResponsesPerForm.toLocaleString("id-ID")} respons per formulir`
+  );
+  out.push(
+    isUnlimited(limits.certificatesPerMonth)
+      ? "Sertifikat tanpa batas"
+      : `${limits.certificatesPerMonth} sertifikat per bulan`
+  );
+  out.push(
+    isUnlimited(limits.analyticsRetentionDays)
+      ? "Riwayat statistik tanpa batas"
+      : `Riwayat statistik ${limits.analyticsRetentionDays} hari`
+  );
+
+  if (limits.subdomains > 0) {
+    out.push(`${limits.subdomains} subdomain nama.singkat.in`);
+  }
+  if (limits.customDomains > 0) {
+    out.push(`${limits.customDomains} domain sendiri`);
+  }
+  if (limits.teamSeats > 1) {
+    out.push(`${limits.teamSeats} anggota tim`);
+  }
+
+  // Fitur yang paling menentukan keputusan beli, diurutkan sengaja.
+  const HIGHLIGHTED: FeatureKey[] = [
+    "skip_interstitial",
+    "whitelabel_interstitial",
+    "detailed_analytics",
+    "dynamic_qr",
+    "branded_qr",
+    "link_password",
+    "link_expiry",
+    "remove_branding",
+    "certificate_verification",
+    "geo_targeting",
+    "ab_rotator",
+    "api_access",
+  ];
+
+  for (const feature of HIGHLIGHTED) {
+    if (planHasFeature(planId, feature)) out.push(FEATURE_LABELS[feature]);
+  }
+
+  return out;
+}
+
 export function formatIDR(amount: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",

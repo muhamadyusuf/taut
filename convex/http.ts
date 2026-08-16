@@ -22,4 +22,26 @@ http.route({
   }),
 });
 
+/**
+ * Webhook pembelian paket langganan.
+ *
+ * Sengaja terpisah dari /midtrans-webhook milik toko: keduanya memverifikasi
+ * tanda tangan dengan server key yang berbeda (platform vs penjual), jadi
+ * menyatukannya hanya akan membuat salah satu notifikasi ditolak diam-diam.
+ */
+http.route({
+  path: "/midtrans-subscription-webhook",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const body = await request.json();
+
+    const result = await ctx.runAction(
+      internal.billingActions.verifyAndProcessSubscriptionWebhook,
+      { body }
+    );
+
+    return new Response(result.message, { status: result.status });
+  }),
+});
+
 export default http;
