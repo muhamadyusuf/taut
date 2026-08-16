@@ -53,7 +53,6 @@ export type FeatureKey =
   | "skip_interstitial"
   | "whitelabel_interstitial"
   // QR
-  | "dynamic_qr"
   | "branded_qr"
   | "vector_qr"
   | "bulk_qr"
@@ -145,7 +144,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "link_password",
       "bulk_import",
       "skip_interstitial",
-      "dynamic_qr",
       "branded_qr",
       "vector_qr",
       "detailed_analytics",
@@ -186,7 +184,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       // Bisnis tidak sekadar bebas iklan: halaman antara dipakai jadi kanal
       // branding sendiri (logo, warna, pesan). Lihat docs/premium-strategy.md §8.
       "whitelabel_interstitial",
-      "dynamic_qr",
       "branded_qr",
       "vector_qr",
       "bulk_qr",
@@ -304,7 +301,6 @@ export const FEATURE_LABELS: Record<FeatureKey, string> = {
   retargeting_pixel: "Pixel retargeting",
   skip_interstitial: "Tanpa halaman iklan",
   whitelabel_interstitial: "Halaman antara bermerek sendiri",
-  dynamic_qr: "QR dinamis",
   branded_qr: "QR berlogo & berwarna",
   vector_qr: "Unduh QR vektor (SVG/PDF)",
   bulk_qr: "QR massal",
@@ -392,7 +388,6 @@ export function planHighlights(planId: PlanId): string[] {
     "skip_interstitial",
     "whitelabel_interstitial",
     "detailed_analytics",
-    "dynamic_qr",
     "branded_qr",
     "link_password",
     "link_expiry",

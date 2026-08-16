@@ -87,6 +87,24 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_userId", ["userId"]),
 
+  /**
+   * Gaya QR milik satu akun, dipakai untuk semua kode QR-nya.
+   *
+   * Disimpan per akun, bukan per tautan: yang dijual adalah konsistensi merek
+   * di seluruh materi cetak, dan mengatur ulang warna di tiap tautan justru
+   * melawan tujuan itu.
+   */
+  qr_settings: defineTable({
+    userId: v.string(),
+    fgColor: v.string(), // warna modul QR
+    bgColor: v.string(),
+    logoUrl: v.optional(v.string()), // kosong = tanpa logo
+    logoSizeRatio: v.number(), // 0.15–0.3 dari lebar QR
+    dotStyle: v.string(), // "squares" | "dots" | "fluid"
+    quietZone: v.number(),
+    updatedAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
   // ---------------------------------------------------------
   // 1. URL SHORTENER
   // ---------------------------------------------------------

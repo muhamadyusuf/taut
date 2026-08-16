@@ -25,6 +25,7 @@ import type * as links from "../links.js";
 import type * as microsites from "../microsites.js";
 import type * as midtransActions from "../midtransActions.js";
 import type * as plans from "../plans.js";
+import type * as qr from "../qr.js";
 import type * as seed from "../seed.js";
 import type * as seedData_batch01 from "../seedData/batch01.js";
 import type * as seedData_batch02 from "../seedData/batch02.js";
@@ -66,6 +67,7 @@ declare const fullApi: ApiFromModules<{
   microsites: typeof microsites;
   midtransActions: typeof midtransActions;
   plans: typeof plans;
+  qr: typeof qr;
   seed: typeof seed;
   "seedData/batch01": typeof seedData_batch01;
   "seedData/batch02": typeof seedData_batch02;
