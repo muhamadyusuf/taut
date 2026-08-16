@@ -7,6 +7,7 @@ import { Plus, Smartphone, ExternalLink, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
+import { errorMessage } from "@/lib/planError";
 
 export default function MicrositeListPage() {
   const microsites = useQuery(api.microsites.getMyMicrosites);
@@ -23,8 +24,7 @@ export default function MicrositeListPage() {
       const id = await createMicrosite({ slug, title: "Halaman Baru" });
       router.push(`/dashboard/microsite/${id}`); // Redirect ke Editor
     } catch (e) {
-      const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
-      alert("Gagal: " + errorMessage);
+      alert("Gagal: " + errorMessage(e));
     } finally {
       setIsCreating(false);
     }
@@ -35,8 +35,7 @@ export default function MicrositeListPage() {
       try {
         await deleteMicrosite({ id });
       } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
-        alert("Gagal menghapus: " + errorMessage);
+        alert("Gagal menghapus: " + errorMessage(e));
       }
     }
   };

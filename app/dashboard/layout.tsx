@@ -10,17 +10,21 @@ import {
   ShoppingBag, ShieldCheck, ClipboardList
 } from "lucide-react";
 import Image from "next/image";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import CreateLinkModal from "./_components/CreateLinkModal";
 import ThemeToggle from "../_components/ThemeToggle";
+import { useEnsureUser } from "../_components/useEnsureUser";
 
 export function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { isSignedIn, isLoaded, user } = useUser();
+  const { isSignedIn, isLoaded } = useUser();
 
-  const ADMIN_EMAIL = "muhamadyusuf0012@gmail.com";
-  const isAdmin = user?.primaryEmailAddress?.emailAddress === ADMIN_EMAIL;
+  useEnsureUser();
+  const me = useQuery(api.users.getMe);
+  const isAdmin = me?.isAdmin ?? false;
 
   if (!isLoaded) {
     return (

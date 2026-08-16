@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { assertWithinLimit, countOwned } from "./entitlements";
 
 // ---------------------------------------------------------
 // 1. READ: AMBIL LIST MICROSITE (Untuk Dashboard Utama)
@@ -40,6 +41,12 @@ export const createMicrosite = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
+
+    // Kuota paket: Gratis 1 halaman, Pro 5, Bisnis tanpa batas.
+    // Dicek sebelum validasi slug supaya user tidak sempat memilih nama dulu
+    // baru ditolak.
+    const existingCount = await countOwned(ctx, "microsites", identity.subject);
+    await assertWithinLimit(ctx, "microsites", existingCount);
 
     // Validasi Slug: Pastikan hanya huruf kecil, angka, dan strip
     const cleanSlug = args.slug.toLowerCase().replace(/[^a-z0-9-]/g, "");

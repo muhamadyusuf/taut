@@ -3,6 +3,72 @@ import { v } from "convex/values";
 
 export default defineSchema({
   // ---------------------------------------------------------
+  // 0. IDENTITAS USER & LANGGANAN
+  // ---------------------------------------------------------
+
+  /**
+   * Cermin data Clerk + status paket.
+   *
+   * Sebelum tabel ini ada, identitas user hanya berupa string `identity.subject`
+   * yang tersebar di setiap tabel, sehingga tidak ada satu tempat pun untuk
+   * menyimpan "user ini Pro sampai tanggal X". Baris dibuat malas (lazy) lewat
+   * users.ensureCurrent saat user pertama kali membuka dasbor.
+   */
+  users: defineTable({
+    clerkId: v.string(), // sama dengan identity.subject
+    email: v.optional(v.string()),
+    name: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+
+    role: v.string(), // "user" | "admin"
+
+    // Paket yang dibeli. Kebenaran yang dipakai aplikasi adalah hasil
+    // resolvePlan() di convex/plans.ts — langganan lewat tanggal otomatis
+    // dihitung sebagai "free" walau kolom ini masih berisi "pro".
+    plan: v.string(), // "free" | "pro" | "business"
+    planExpiresAt: v.optional(v.number()),
+
+    // Akun yang terdaftar sebelum peluncuran paket berbayar: kuota inti tetap
+    // tanpa batas, sesuai janji "gratis selamanya" di landing page.
+    legacyFree: v.boolean(),
+
+    createdAt: v.number(),
+    lastSeenAt: v.optional(v.number()),
+  })
+    .index("by_clerkId", ["clerkId"])
+    .index("by_plan", ["plan"]),
+
+  /** Riwayat pembelian paket (Midtrans akun platform, bukan akun penjual). */
+  subscriptions: defineTable({
+    userId: v.string(), // clerkId pembeli
+    plan: v.string(),
+    billingCycle: v.string(), // "monthly" | "yearly" | "event"
+    status: v.string(), // "pending" | "active" | "expired" | "failed"
+
+    amount: v.number(),
+    provider: v.string(), // "midtrans"
+    providerOrderId: v.string(), // SUB-<timestamp>-<acak>
+    snapToken: v.optional(v.string()),
+
+    startedAt: v.optional(v.number()),
+    expiresAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_providerOrderId", ["providerOrderId"]),
+
+  /**
+   * Pemakaian kuota yang dihitung per bulan (bukan total sepanjang masa).
+   * `period` berformat "YYYY-MM" mengikuti zona Asia/Jakarta.
+   */
+  usage_counters: defineTable({
+    userId: v.string(),
+    period: v.string(),
+    certificatesSent: v.number(),
+    apiCalls: v.number(),
+  }).index("by_userId_period", ["userId", "period"]),
+
+  // ---------------------------------------------------------
   // 1. URL SHORTENER
   // ---------------------------------------------------------
   links: defineTable({

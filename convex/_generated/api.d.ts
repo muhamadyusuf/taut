@@ -14,11 +14,13 @@ import type * as categories from "../categories.js";
 import type * as certificateActions from "../certificateActions.js";
 import type * as certificates from "../certificates.js";
 import type * as certificatesInternal from "../certificatesInternal.js";
+import type * as entitlements from "../entitlements.js";
 import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as links from "../links.js";
 import type * as microsites from "../microsites.js";
 import type * as midtransActions from "../midtransActions.js";
+import type * as plans from "../plans.js";
 import type * as seed from "../seed.js";
 import type * as seedData_batch01 from "../seedData/batch01.js";
 import type * as seedData_batch02 from "../seedData/batch02.js";
@@ -34,6 +36,7 @@ import type * as seedData_index from "../seedData/index.js";
 import type * as seedData_types from "../seedData/types.js";
 import type * as shop from "../shop.js";
 import type * as shopActions from "../shopActions.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -48,11 +51,13 @@ declare const fullApi: ApiFromModules<{
   certificateActions: typeof certificateActions;
   certificates: typeof certificates;
   certificatesInternal: typeof certificatesInternal;
+  entitlements: typeof entitlements;
   forms: typeof forms;
   http: typeof http;
   links: typeof links;
   microsites: typeof microsites;
   midtransActions: typeof midtransActions;
+  plans: typeof plans;
   seed: typeof seed;
   "seedData/batch01": typeof seedData_batch01;
   "seedData/batch02": typeof seedData_batch02;
@@ -68,6 +73,7 @@ declare const fullApi: ApiFromModules<{
   "seedData/types": typeof seedData_types;
   shop: typeof shop;
   shopActions: typeof shopActions;
+  users: typeof users;
 }>;
 
 /**

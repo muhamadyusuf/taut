@@ -13,6 +13,7 @@ import {
   Copy, ExternalLink, FileText,
 } from "lucide-react";
 import { getFormTheme } from "@/lib/formThemeConfig";
+import { errorMessage } from "@/lib/planError";
 
 export default function FormsClient() {
   const forms = useQuery(api.forms.getMyForms);
@@ -30,6 +31,10 @@ export default function FormsClient() {
     try {
       const formId = await createForm({ title: newTitle });
       router.push(`/dashboard/forms/${formId}`);
+    } catch (err) {
+      // Tanpa catch, penolakan kuota paket hanya jadi promise yang gagal diam-diam
+      // dan user melihat tombol yang seolah tidak berfungsi.
+      alert(errorMessage(err, "Gagal membuat formulir."));
     } finally {
       setLoading(false);
     }

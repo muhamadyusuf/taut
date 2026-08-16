@@ -1,5 +1,10 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import {
+  assertWithinLimit,
+  countOwned,
+  isWithinLimitForUser,
+} from "./entitlements";
 
 const questionValidator = v.object({
   id: v.string(),
@@ -36,6 +41,10 @@ export const createForm = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
+
+    // Kuota paket: Gratis 3 formulir, Pro 20, Bisnis tanpa batas.
+    const existingCount = await countOwned(ctx, "forms", identity.subject);
+    await assertWithinLimit(ctx, "forms", existingCount);
 
     const base = slugify(args.title) || "form";
     let slug = base;
@@ -194,6 +203,27 @@ export const submitResponse = mutation({
     const form = await ctx.db.get(args.formId);
     if (!form || form.status !== "published" || !form.acceptingResponses) {
       throw new Error("Formulir ini tidak lagi menerima jawaban.");
+    }
+
+    // Kuota respons mengikuti paket PEMILIK formulir, bukan paket pengisi —
+    // pengisi bahkan tidak login. Pesannya juga sengaja tidak berisi ajakan
+    // upgrade: yang membaca layar ini adalah responden, bukan pelanggan.
+    const responses = await ctx.db
+      .query("form_responses")
+      .withIndex("by_formId", (q) => q.eq("formId", args.formId))
+      .collect();
+
+    const stillHasRoom = await isWithinLimitForUser(
+      ctx,
+      form.userId,
+      "formResponsesPerForm",
+      responses.length
+    );
+
+    if (!stillHasRoom) {
+      throw new Error(
+        "Formulir ini sudah mencapai batas jumlah jawaban dan tidak bisa menerima kiriman baru."
+      );
     }
 
     // Validasi pertanyaan wajib di semua bagian

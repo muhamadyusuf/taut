@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { consumeMonthlyQuota } from "./entitlements";
 
 const fieldValidator = v.object({
   id: v.string(),
@@ -94,6 +95,13 @@ export const markCertificateGenerated = mutation({
 
     const form = await ctx.db.get(response.formId);
     if (!form || form.userId !== identity.subject) throw new Error("Tidak diizinkan");
+
+    // Kuota sertifikat dihitung per bulan, dan hanya untuk sertifikat BARU.
+    // Membuat ulang sertifikat yang sama (misal karena salah ketik nama lalu
+    // digenerate lagi) tidak boleh memotong kuota dua kali.
+    if (!response.certificateUrl) {
+      await consumeMonthlyQuota(ctx, "certificatesPerMonth", "certificatesSent");
+    }
 
     await ctx.db.patch(args.responseId, { certificateUrl: args.certificateUrl });
   },

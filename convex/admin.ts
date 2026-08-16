@@ -1,21 +1,16 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-
-const ADMIN_EMAIL = "muhamadyusuf0012@gmail.com";
-
-function assertAdmin(email: string | undefined) {
-  if (email !== ADMIN_EMAIL) {
-    throw new Error("Unauthorized: Admin only");
-  }
-}
+// Peran admin dibaca dari kolom `role` di tabel users, bukan dicocokkan dengan
+// email yang ditulis di kode. Dengan begitu admin bisa ditambah atau dicabut
+// tanpa deploy ulang, dan hanya ada satu definisi "admin" di seluruh backend.
+import { assertAdmin } from "./entitlements";
 
 // -------------------------------------------------------
 // 1. OVERVIEW STATS
 // -------------------------------------------------------
 export const getAdminStats = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const [links, microsites, shops, orders] = await Promise.all([
       ctx.db.query("links").collect(),
@@ -48,8 +43,7 @@ export const getAdminStats = query({
 // -------------------------------------------------------
 export const getLinksCreatedPerDay = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
     const links = await ctx.db.query("links").collect();
@@ -81,8 +75,7 @@ export const getLinksCreatedPerDay = query({
 export const getTopLinksByClicks = query({
   args: { limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const links = await ctx.db.query("links").collect();
     return links
@@ -96,8 +89,7 @@ export const getTopLinksByClicks = query({
 // -------------------------------------------------------
 export const getAllLinksAdmin = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     return await ctx.db.query("links").order("desc").collect();
   },
@@ -108,8 +100,7 @@ export const getAllLinksAdmin = query({
 // -------------------------------------------------------
 export const getUserStats = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const [links, microsites, shops] = await Promise.all([
       ctx.db.query("links").collect(),
@@ -196,8 +187,7 @@ export const getUserStats = query({
 export const getLinksByUserId = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     return await ctx.db
       .query("links")
@@ -212,8 +202,7 @@ export const getLinksByUserId = query({
 // -------------------------------------------------------
 export const getClicksPerUser = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const links = await ctx.db.query("links").collect();
 
@@ -246,8 +235,7 @@ export const getActiveAd = query({
 // Admin: ambil semua iklan
 export const getAllAds = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
     return await ctx.db.query("ads").order("desc").collect();
   },
 });
@@ -262,8 +250,7 @@ export const createAd = mutation({
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     if (args.isActive) {
       const allAds = await ctx.db.query("ads").collect();
@@ -290,8 +277,7 @@ export const updateAd = mutation({
     isActive: v.boolean(),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const { id, ...data } = args;
 
@@ -311,8 +297,7 @@ export const updateAd = mutation({
 export const deleteAd = mutation({
   args: { id: v.id("ads") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
