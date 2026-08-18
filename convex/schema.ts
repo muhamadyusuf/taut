@@ -137,6 +137,56 @@ export default defineSchema({
   .index("by_categoryId", ["categoryId"]),
 
   // ---------------------------------------------------------
+  // 2b. STATISTIK KLIK
+  // ---------------------------------------------------------
+
+  /**
+   * Satu baris per klik.
+   *
+   * Sebelum tabel ini ada, statistik hanya berupa satu angka `links.clicks`,
+   * sehingga tidak mungkin menjawab "dari negara mana", "lewat perangkat apa",
+   * atau "naik-turunnya kapan" — padahal itu justru yang dicari pengguna serius.
+   *
+   * `userId` disalin dari pemilik tautan supaya penghapusan berkala dan query
+   * per akun tidak perlu menengok tabel links satu per satu.
+   */
+  click_events: defineTable({
+    linkId: v.id("links"),
+    userId: v.string(),
+    ts: v.number(),
+
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    device: v.optional(v.string()), // "mobile" | "tablet" | "desktop"
+    os: v.optional(v.string()),
+    browser: v.optional(v.string()),
+    referrerHost: v.optional(v.string()), // "langsung" bila tanpa perujuk
+  })
+    .index("by_linkId_ts", ["linkId", "ts"])
+    .index("by_userId_ts", ["userId", "ts"]),
+
+  /**
+   * Ringkasan harian, ditulis berbarengan dengan setiap klik.
+   *
+   * Grafik membaca tabel ini, bukan click_events. Tautan yang viral bisa
+   * mengumpulkan ratusan ribu baris peristiwa dalam sehari, dan memindai
+   * semuanya setiap kali dasbor dibuka akan menabrak batas ukuran query jauh
+   * sebelum menjadi lambat.
+   */
+  click_daily: defineTable({
+    userId: v.string(),
+    linkId: v.id("links"),
+    date: v.string(), // "YYYY-MM-DD" menurut WIB
+
+    count: v.number(),
+    byCountry: v.record(v.string(), v.number()),
+    byDevice: v.record(v.string(), v.number()),
+    byReferrer: v.record(v.string(), v.number()),
+  })
+    .index("by_userId_date", ["userId", "date"])
+    .index("by_linkId_date", ["linkId", "date"]),
+
+  // ---------------------------------------------------------
   // 3. MICROSITES (BIO LINK)
   // ---------------------------------------------------------
   microsites: defineTable({
