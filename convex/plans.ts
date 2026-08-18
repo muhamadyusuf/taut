@@ -405,6 +405,28 @@ export function planHighlights(planId: PlanId): string[] {
   return out;
 }
 
+
+// ---------------------------------------------------------------------------
+// PAKET ACARA (sekali bayar, di luar langganan)
+// ---------------------------------------------------------------------------
+
+/**
+ * Kuota sertifikat sekali bayar.
+ *
+ * Ada karena segmen terbesar pengguna sertifikat di Indonesia — panitia acara
+ * dan kepanitiaan kampus — bekerja per kegiatan, bukan per bulan. Mereka
+ * menolak langganan tapi mudah menyetujui anggaran sekali jalan.
+ *
+ * Kuotanya ditambahkan DI ATAS jatah paket, dan tidak menaikkan paket apa pun.
+ */
+export const EVENT_PASS = {
+  id: "event_1000",
+  name: "Paket Acara",
+  quota: 1000,
+  validDays: 30,
+  price: 149_000,
+} as const;
+
 export function formatIDR(amount: number): string {
   return new Intl.NumberFormat("id-ID", {
     style: "currency",

@@ -5,8 +5,9 @@ import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { format } from "date-fns";
 import { id as localeId } from "date-fns/locale";
-import { AlertCircle, CheckCircle2, Clock, Loader2, Receipt } from "lucide-react";
+import { AlertCircle, CheckCircle2, Clock, Loader2, Receipt, Ticket } from "lucide-react";
 import {
+  EVENT_PASS,
   PLANS,
   formatIDR,
   isUnlimited,
@@ -59,8 +60,13 @@ export default function BillingPage() {
   const me = useQuery(api.users.getMe);
   const invoices = useQuery(api.billing.myInvoices);
   const createCheckout = useAction(api.billingActions.createSubscriptionCheckout);
+  const createEventCheckout = useAction(api.billingActions.createEventPassCheckout);
+  const eventPasses = useQuery(api.billing.myEventPasses);
 
-  const [busyPlan, setBusyPlan] = useState<PlanId | null>(null);
+  // Paket acara bukan PlanId — ia pembelian sekali bayar, bukan langganan.
+  // Tipe state dilebarkan alih-alih dipaksa cast, supaya pembedaan itu tetap
+  // terbaca oleh pemeriksa tipe.
+  const [busyPlan, setBusyPlan] = useState<PlanId | "event" | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
   const handleSelect = async (plan: PlanId, cycle: BillingCycle) => {
@@ -82,6 +88,29 @@ export default function BillingPage() {
         onError: () => setNotice("Pembayaran gagal. Belum ada biaya yang ditagihkan."),
         onClose: () =>
           setNotice("Jendela pembayaran ditutup. Tagihan tersimpan dan bisa dilanjutkan."),
+      });
+    } catch (err) {
+      setNotice(errorMessage(err, "Gagal menyiapkan pembayaran."));
+    } finally {
+      setBusyPlan(null);
+    }
+  };
+
+  const handleEventPass = async () => {
+    setBusyPlan("event");
+    setNotice(null);
+    try {
+      const checkout = await createEventCheckout({});
+      const snap = await loadSnap(checkout.clientKey, checkout.isProduction);
+      snap.pay(checkout.token, {
+        onSuccess: () =>
+          setNotice(
+            `${EVENT_PASS.quota} kuota sertifikat aktif dalam beberapa detik setelah dikonfirmasi Midtrans.`
+          ),
+        onPending: () =>
+          setNotice("Pembayaran diproses. Kuota aktif otomatis begitu lunas."),
+        onError: () => setNotice("Pembayaran gagal. Belum ada biaya yang ditagihkan."),
+        onClose: () => setNotice("Jendela pembayaran ditutup."),
       });
     } catch (err) {
       setNotice(errorMessage(err, "Gagal menyiapkan pembayaran."));
@@ -170,13 +199,54 @@ export default function BillingPage() {
         )}
       </div>
 
+      {/* Paket Acara — sekali bayar, di luar langganan */}
+      <div className="card-saweria p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-2">
+              <Ticket size={18} className="text-brand" />
+              <h3 className="font-bold text-foreground">{EVENT_PASS.name}</h3>
+            </div>
+            <p className="mt-2 max-w-lg text-sm text-muted-foreground">
+              {EVENT_PASS.quota.toLocaleString("id-ID")} sertifikat, berlaku{" "}
+              {EVENT_PASS.validDays} hari. Sekali bayar, tanpa langganan — untuk
+              panitia yang menggarap satu kegiatan. Kuotanya ditambahkan di atas
+              jatah paket Anda.
+            </p>
+
+            {eventPasses && eventPasses.remaining > 0 && (
+              <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 text-xs font-bold text-success">
+                <CheckCircle2 size={13} />
+                Sisa kuota acara: {eventPasses.remaining.toLocaleString("id-ID")}
+              </p>
+            )}
+          </div>
+
+          <div className="text-right">
+            <p className="text-2xl font-bold text-foreground">
+              {formatIDR(EVENT_PASS.price)}
+            </p>
+            <button
+              onClick={handleEventPass}
+              disabled={busyPlan === "event"}
+              className="btn-saweria mt-3 flex items-center gap-2 px-6 py-2.5"
+            >
+              {busyPlan === "event" && (
+                <Loader2 size={16} className="animate-spin" />
+              )}
+              Beli sekarang
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Pilihan paket */}
       <div>
         <h3 className="mb-6 text-lg font-bold text-foreground">Ubah paket</h3>
         <PricingTable
           currentPlan={plan}
           onSelect={handleSelect}
-          busyPlan={busyPlan}
+          busyPlan={busyPlan === "event" ? null : busyPlan}
         />
       </div>
 

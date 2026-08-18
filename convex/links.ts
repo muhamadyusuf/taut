@@ -190,6 +190,20 @@ export const createLink = mutation({
       url: verdict.normalized,
     });
 
+    // Sama alasannya untuk webhook: endpoint pelanggan yang lambat tidak boleh
+    // memperlambat pembuatan tautan yang memicunya.
+    await ctx.scheduler.runAfter(0, internal.webhookActions.dispatch, {
+      userId: identity.subject,
+      event: "link.created",
+      payload: {
+        id: linkId,
+        short_code: shortCode,
+        namespace: subdomain ?? null,
+        original_url: verdict.normalized,
+        title: args.title || "Untitled Link",
+      },
+    });
+
     // 2. Simpan Relasi Kategori (Looping)
     if (args.categoryIds && args.categoryIds.length > 0) {
       for (const catId of args.categoryIds) {
@@ -424,6 +438,19 @@ export const getLinkAndIncrement = mutation({
     });
 
     await bumpDailyRollup(ctx, link, now, args);
+
+    await ctx.scheduler.runAfter(0, internal.webhookActions.dispatch, {
+      userId: link.userId,
+      event: "link.clicked",
+      payload: {
+        id: link._id,
+        short_code: link.shortCode,
+        country: args.country ?? null,
+        device: args.device ?? null,
+        referrer: args.referrerHost ?? null,
+        clicked_at: new Date(now).toISOString(),
+      },
+    });
 
     return link.originalUrl;
   },

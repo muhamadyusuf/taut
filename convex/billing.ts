@@ -10,7 +10,7 @@
 import { v } from "convex/values";
 import { internalMutation, internalQuery, query } from "./_generated/server";
 import { getEntitlements, getUserByClerkId } from "./entitlements";
-import { PLANS, type PlanId } from "./plans";
+import { EVENT_PASS, PLANS, type PlanId } from "./plans";
 
 /** Lama berlaku tiap siklus, dalam hari. */
 export const CYCLE_DAYS: Record<string, number> = {
@@ -131,6 +131,45 @@ export const activateSubscription = internalMutation({
   },
 });
 
+/**
+ * Menerbitkan kuota paket acara setelah pembayarannya lunas.
+ *
+ * Sengaja TIDAK menyentuh kolom plan pada users: paket acara menambah kuota
+ * sertifikat, bukan menaikkan langganan. Menaikkan paket di sini akan diam-diam
+ * memberi fitur premium lain yang tidak dibeli, lalu mencabutnya sebulan
+ * kemudian.
+ */
+export const activateEventPass = internalMutation({
+  args: { providerOrderId: v.string() },
+  handler: async (ctx, args) => {
+    const sub = await ctx.db
+      .query("subscriptions")
+      .withIndex("by_providerOrderId", (q) =>
+        q.eq("providerOrderId", args.providerOrderId)
+      )
+      .first();
+
+    if (!sub) return { ok: false, reason: "not_found" as const };
+    if (sub.status === "active") return { ok: true, reason: "already_active" as const };
+
+    const now = Date.now();
+    const expiresAt = now + EVENT_PASS.validDays * 24 * 60 * 60 * 1000;
+
+    await ctx.db.insert("event_passes", {
+      userId: sub.userId,
+      quota: EVENT_PASS.quota,
+      used: 0,
+      expiresAt,
+      providerOrderId: args.providerOrderId,
+      createdAt: now,
+    });
+
+    await ctx.db.patch(sub._id, { status: "active", startedAt: now, expiresAt });
+
+    return { ok: true, reason: "activated" as const, expiresAt };
+  },
+});
+
 export const markSubscriptionFailed = internalMutation({
   args: { providerOrderId: v.string(), status: v.string() },
   handler: async (ctx, args) => {
@@ -231,6 +270,27 @@ export const getRevenueSummary = query({
 // ---------------------------------------------------------------------------
 // PROFIL PEMBELI (dibaca action saat menyiapkan pembayaran)
 // ---------------------------------------------------------------------------
+
+/** Sisa kuota paket acara milik pengguna yang sedang login. */
+export const myEventPasses = query({
+  handler: async (ctx) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const now = Date.now();
+    const passes = await ctx.db
+      .query("event_passes")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .collect();
+
+    const active = passes.filter((p) => p.expiresAt > now);
+
+    return {
+      active,
+      remaining: active.reduce((acc, p) => acc + (p.quota - p.used), 0),
+    };
+  },
+});
 
 export const getBillingProfile = internalQuery({
   args: { userId: v.string() },

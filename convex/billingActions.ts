@@ -5,7 +5,7 @@ import { action, internalAction } from "./_generated/server";
 import { internal } from "./_generated/api";
 import Midtrans from "midtrans-client";
 import { CYCLE_DAYS, priceOf } from "./billing";
-import { PLANS, isPlanId } from "./plans";
+import { EVENT_PASS, PLANS, isPlanId } from "./plans";
 
 /**
  * Kunci Midtrans milik PLATFORM (singkat.in), bukan milik penjual.
@@ -134,6 +134,82 @@ export const createSubscriptionCheckout = action({
   },
 });
 
+
+/**
+ * Menyiapkan pembayaran Paket Acara (sekali bayar, bukan langganan).
+ *
+ * Memakai jalur Snap dan webhook yang sama, dibedakan lewat awalan order id.
+ * Menyatukannya lebih aman daripada membuat jalur kedua: satu tempat verifikasi
+ * tanda tangan berarti satu tempat yang bisa salah.
+ */
+export const createEventPassCheckout = action({
+  args: {},
+  handler: async (
+    ctx
+  ): Promise<{
+    token: string;
+    clientKey: string;
+    isProduction: boolean;
+    orderId: string;
+    amount: number;
+  }> => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Unauthorized");
+
+    const profile = await ctx.runQuery(internal.billing.getBillingProfile, {
+      userId: identity.subject,
+    });
+
+    const keys = platformKeys();
+    const snap = new Midtrans.Snap({
+      isProduction: keys.isProduction,
+      serverKey: keys.serverKey,
+      clientKey: keys.clientKey,
+    });
+
+    const orderId = `EVT-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const convexSiteUrl = process.env.CONVEX_SITE_URL;
+
+    const parameter = {
+      transaction_details: { order_id: orderId, gross_amount: EVENT_PASS.price },
+      item_details: [
+        {
+          id: EVENT_PASS.id,
+          price: EVENT_PASS.price,
+          quantity: 1,
+          name: `${EVENT_PASS.name} — ${EVENT_PASS.quota} sertifikat`.substring(0, 49),
+        },
+      ],
+      customer_details: {
+        first_name: profile?.name ?? identity.name ?? "Pengguna singkat.in",
+        email: profile?.email ?? identity.email ?? undefined,
+      },
+      ...(convexSiteUrl
+        ? { notification_url: `${convexSiteUrl}/midtrans-subscription-webhook` }
+        : {}),
+    };
+
+    const transaction: { token: string } = await snap.createTransaction(parameter);
+
+    await ctx.runMutation(internal.billing.createPendingSubscription, {
+      userId: identity.subject,
+      plan: "free", // paket acara tidak menaikkan langganan
+      billingCycle: "event",
+      amount: EVENT_PASS.price,
+      providerOrderId: orderId,
+      snapToken: transaction.token,
+    });
+
+    return {
+      token: transaction.token,
+      clientKey: keys.clientKey,
+      isProduction: keys.isProduction,
+      orderId,
+      amount: EVENT_PASS.price,
+    };
+  },
+});
+
 /**
  * Memproses notifikasi Midtrans untuk pembelian paket.
  *
@@ -148,8 +224,11 @@ export const verifyAndProcessSubscriptionWebhook = internalAction({
       const { body } = args;
       const orderId = body?.order_id;
 
-      if (typeof orderId !== "string" || !orderId.startsWith("SUB-")) {
-        return { success: false, status: 404, message: "Not a subscription order" };
+      const isSubscription = typeof orderId === "string" && orderId.startsWith("SUB-");
+      const isEventPass = typeof orderId === "string" && orderId.startsWith("EVT-");
+
+      if (!isSubscription && !isEventPass) {
+        return { success: false, status: 404, message: "Not a platform order" };
       }
 
       const sub = await ctx.runQuery(internal.billing.getSubscriptionByOrderId, {
@@ -194,9 +273,17 @@ export const verifyAndProcessSubscriptionWebhook = internalAction({
           return { success: false, status: 200, message: "Amount mismatch" };
         }
 
-        await ctx.runMutation(internal.billing.activateSubscription, {
-          providerOrderId: orderId,
-        });
+        // Dua jenis pembelian, dua akibat berbeda: langganan menaikkan paket,
+        // paket acara hanya menambah kuota sertifikat.
+        if (isEventPass) {
+          await ctx.runMutation(internal.billing.activateEventPass, {
+            providerOrderId: orderId,
+          });
+        } else {
+          await ctx.runMutation(internal.billing.activateSubscription, {
+            providerOrderId: orderId,
+          });
+        }
         return { success: true, status: 200, message: "OK" };
       }
 

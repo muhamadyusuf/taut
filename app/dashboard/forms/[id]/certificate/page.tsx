@@ -47,6 +47,7 @@ export default function CertificateBuilderPage({ params }: { params: Promise<{ i
 
   const saveTemplate = useMutation(api.certificates.saveTemplate);
   const markCertificateGenerated = useMutation(api.certificates.markCertificateGenerated);
+  const prepareCertificate = useMutation(api.certificates.prepareCertificate);
   const fetchImageAsBase64 = useAction(api.certificateActions.fetchImageAsBase64);
   const sendCertificateEmail = useAction(api.certificateActions.sendCertificateEmail);
 
@@ -166,9 +167,14 @@ export default function CertificateBuilderPage({ params }: { params: Promise<{ i
 
   // Render sertifikat untuk 1 respons -> kembalikan { dataUrl, base64 }
   const renderForResponse = async (response: NonNullable<typeof responses>[number], serial: number) => {
+    // Kuota dipotong dan kode verifikasi diterbitkan LEBIH DULU, karena kodenya
+    // ikut tercetak ke dalam gambar. Menerbitkannya setelah render berarti
+    // sertifikat yang diterima peserta tidak memuat kode apa pun.
+    const { code } = await prepareCertificate({ responseId: response._id });
+
     const { base64, mimeType } = await fetchImageAsBase64({ url: backgroundImageUrl });
     const imageDataUrl = `data:${mimeType};base64,${base64}`;
-    const values = computeCertificateValues(allQuestions, form?.title || "", response, serial);
+    const values = computeCertificateValues(allQuestions, form?.title || "", response, serial, code);
     const pngDataUrl = await renderCertificatePng(imageDataUrl, imageSize.width, imageSize.height, fields, values);
     return { pngDataUrl, values };
   };

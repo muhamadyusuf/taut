@@ -255,7 +255,16 @@ export async function consumeMonthlyQuota(
   const existing = await getUsage(ctx, ent.userId, period);
   const used = existing?.[meteredKey] ?? 0;
 
-  if (!isUnlimited(limit) && used + amount > limit) {
+  const overBudget = !isUnlimited(limit) && used + amount > limit;
+
+  // Jatah paket habis? Paket acara yang masih berlaku menanggung sisanya.
+  // Dijumlahkan di atas jatah bulanan, bukan menggantikannya, supaya panitia
+  // yang membeli paket acara tidak justru kehilangan kuota bawaannya.
+  if (overBudget && (await consumeEventPass(ctx, ent.userId, amount))) {
+    return;
+  }
+
+  if (overBudget) {
     const upgrade = nextPlanWithHigherLimit(ent.plan, limitKey, ent.legacyFree);
     throw new ConvexError({
       code: "QUOTA_EXCEEDED",
@@ -280,6 +289,60 @@ export async function consumeMonthlyQuota(
       apiCalls: meteredKey === "apiCalls" ? amount : 0,
     });
   }
+}
+
+
+/**
+ * Memakai kuota dari paket acara yang masih berlaku.
+ *
+ * Mengembalikan false bila tidak ada paket yang sanggup menanggung seluruh
+ * permintaan. Sengaja tidak memecah permintaan ke beberapa paket: pengiriman
+ * massal yang separuhnya berhasil jauh lebih merepotkan panitia daripada yang
+ * ditolak seluruhnya dengan pesan yang jelas.
+ */
+async function consumeEventPass(
+  ctx: MutationCtx,
+  userId: string,
+  amount: number
+): Promise<boolean> {
+  const now = Date.now();
+
+  const passes = await ctx.db
+    .query("event_passes")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  // Yang paling cepat kedaluwarsa dipakai lebih dulu supaya kuota tidak hangus
+  // percuma saat pengguna memegang lebih dari satu paket.
+  const usable = passes
+    .filter((p) => p.expiresAt > now && p.quota - p.used >= amount)
+    .sort((a, b) => a.expiresAt - b.expiresAt);
+
+  const pass = usable[0];
+  if (!pass) return false;
+
+  await ctx.db.patch(pass._id, { used: pass.used + amount });
+  return true;
+}
+
+/** Sisa kuota paket acara yang masih berlaku, untuk ditampilkan di dasbor. */
+export async function eventPassBalance(
+  ctx: Ctx,
+  userId: string
+): Promise<{ remaining: number; expiresAt: number | null }> {
+  const now = Date.now();
+  const passes = await ctx.db
+    .query("event_passes")
+    .withIndex("by_userId", (q) => q.eq("userId", userId))
+    .collect();
+
+  const active = passes.filter((p) => p.expiresAt > now);
+  const remaining = active.reduce((acc, p) => acc + (p.quota - p.used), 0);
+  const soonest = active
+    .map((p) => p.expiresAt)
+    .sort((a, b) => a - b)[0];
+
+  return { remaining, expiresAt: soonest ?? null };
 }
 
 // ---------------------------------------------------------------------------

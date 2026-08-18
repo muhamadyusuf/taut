@@ -22,18 +22,28 @@ export const SPECIAL_VARIABLES = [
   { value: "_no", label: "Nomor Sertifikat" },
   { value: "_date", label: "Tanggal Submit" },
   { value: "_formTitle", label: "Judul Formulir" },
+  { value: "_verifyCode", label: "Kode Verifikasi" },
+  { value: "_verifyUrl", label: "Alamat Verifikasi" },
 ];
 
 export function computeCertificateValues(
   allQuestions: { id: string; label: string }[],
   formTitle: string,
   response: FormResponseLike,
-  serialNumber: number
+  serialNumber: number,
+  /**
+   * Kode verifikasi publik. Harus sudah diterbitkan sebelum fungsi ini dipanggil
+   * — kode yang menyusul setelah gambar dirender tidak akan pernah muncul di
+   * sertifikat yang diterima peserta.
+   */
+  verifyCode?: string | null
 ): Record<string, string> {
   const map: Record<string, string> = {
     _no: String(serialNumber).padStart(4, "0"),
     _date: format(response.submittedAt, "d MMMM yyyy", { locale: localeId }),
     _formTitle: formTitle,
+    _verifyCode: verifyCode ?? "",
+    _verifyUrl: verifyCode ? `singkat.in/v/${verifyCode}` : "",
   };
   for (const q of allQuestions) {
     const answer = response.answers.find((a) => a.questionId === q.id);

@@ -12,6 +12,7 @@ import type * as abuse from "../abuse.js";
 import type * as abuseActions from "../abuseActions.js";
 import type * as admin from "../admin.js";
 import type * as analytics from "../analytics.js";
+import type * as apiKeys from "../apiKeys.js";
 import type * as articles from "../articles.js";
 import type * as billing from "../billing.js";
 import type * as billingActions from "../billingActions.js";
@@ -30,6 +31,7 @@ import type * as links from "../links.js";
 import type * as microsites from "../microsites.js";
 import type * as midtransActions from "../midtransActions.js";
 import type * as plans from "../plans.js";
+import type * as publicApi from "../publicApi.js";
 import type * as qr from "../qr.js";
 import type * as seed from "../seed.js";
 import type * as seedData_batch01 from "../seedData/batch01.js";
@@ -48,6 +50,9 @@ import type * as shop from "../shop.js";
 import type * as shopActions from "../shopActions.js";
 import type * as subdomains from "../subdomains.js";
 import type * as users from "../users.js";
+import type * as verification from "../verification.js";
+import type * as webhookActions from "../webhookActions.js";
+import type * as webhooks from "../webhooks.js";
 
 import type {
   ApiFromModules,
@@ -60,6 +65,7 @@ declare const fullApi: ApiFromModules<{
   abuseActions: typeof abuseActions;
   admin: typeof admin;
   analytics: typeof analytics;
+  apiKeys: typeof apiKeys;
   articles: typeof articles;
   billing: typeof billing;
   billingActions: typeof billingActions;
@@ -78,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   microsites: typeof microsites;
   midtransActions: typeof midtransActions;
   plans: typeof plans;
+  publicApi: typeof publicApi;
   qr: typeof qr;
   seed: typeof seed;
   "seedData/batch01": typeof seedData_batch01;
@@ -96,6 +103,9 @@ declare const fullApi: ApiFromModules<{
   shopActions: typeof shopActions;
   subdomains: typeof subdomains;
   users: typeof users;
+  verification: typeof verification;
+  webhookActions: typeof webhookActions;
+  webhooks: typeof webhooks;
 }>;
 
 /**

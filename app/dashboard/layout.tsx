@@ -7,7 +7,7 @@ import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import {
   Link as LinkIcon, BarChart3, Settings,
   Menu, X, QrCode, Plus, Layers, Smartphone,
-  ShoppingBag, ShieldCheck, ClipboardList, Sparkles, Palette, Globe, Link2
+  ShoppingBag, ShieldCheck, ClipboardList, Sparkles, Palette, Globe, Link2, Code2
 } from "lucide-react";
 import Image from "next/image";
 import { useQuery } from "convex/react";
@@ -56,6 +56,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
     { name: "Subdomain", href: "/dashboard/subdomains", icon: Globe },
     { name: "Domain Sendiri", href: "/dashboard/domains", icon: Link2 },
     { name: "Halaman Antara", href: "/dashboard/branding", icon: Palette },
+    { name: "Developer", href: "/dashboard/developer", icon: Code2 },
     { name: "Paket & Tagihan", href: "/dashboard/billing", icon: Sparkles },
     { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },
   ];

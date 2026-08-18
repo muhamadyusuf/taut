@@ -275,5 +275,37 @@ Beberapa hal yang cocok dengan posisi Anda tapi jarang dimiliki kompetitor:
 - ~~Pertimbangkan denormalisasi `ownerPlan` di tabel `links` agar tidak menambah round-trip.~~ **Dikoreksi saat implementasi (16 Agustus 2026):** denormalisasi adalah pilihan yang salah di sini. Pembacaan paket terjadi di dalam query Convex yang sama, jadi bukan round-trip tambahan melainkan satu pembacaan ber-index yang ongkosnya nyaris nol. Sebaliknya, menyalin paket ke setiap baris tautan berarti setiap upgrade harus menulis ulang seluruh tautan milik user — dan satu tulisan yang meleset membuat pelanggan yang sudah membayar tetap melihat iklan. Yang dipakai: lookup langsung lewat `getEntitlementsForUser()`.
 - Karena subdomain masuk Pro (bukan Bisnis), volume pemakaiannya akan jauh lebih tinggi → anti-abuse (Fase 0) bukan opsional. Minimal: Safe Browsing check, rate limit, dan reserved list ketat sebelum Fase 4 dirilis.
 
-### Langkah berikutnya
-Mulai **Fase 0 (bersih-bersih)**: perbaiki `RESERVED_SLUGS`, enkripsi `serverKey` Midtrans, pindahkan role admin ke Clerk, tambah rate limit dasar pembuatan link.
+### Status pengerjaan (per 18 Agustus 2026)
+
+| Fase | Status |
+|---|---|
+| 0. Bersih-bersih | Sebagian — `RESERVED_SLUGS` diperbaiki, peran admin pindah ke kolom `role`, batas laju terpasang. **Enkripsi `serverKey` Midtrans milik penjual masih tertunda.** |
+| 1. Fondasi | Selesai |
+| 2. Monetisasi | Selesai — halaman harga, checkout Midtrans platform, bebas iklan, hapus branding, QR bermerek |
+| 3. Analitik | Selesai |
+| 4. Subdomain | Selesai (butuh wildcard DNS + sertifikat wildcard di Vercel) |
+| 5. Custom domain | Selesai (butuh `VERCEL_API_TOKEN` + `VERCEL_PROJECT_ID`) |
+| 6. Kampus/acara | Selesai — verifikasi sertifikat publik & Paket Acara |
+| 7. Platform | Sebagian — API key & webhook selesai. **Tim/workspace sengaja belum dikerjakan.** |
+
+### Kenapa tim/workspace belum dikerjakan
+
+Bukan karena rumit secara teknis, melainkan karena ia mengubah hal paling
+mendasar dalam basis data ini: siapa pemilik sebuah baris.
+
+Saat ini setiap tabel menyimpan `userId` seorang individu, dan setiap query
+memfilter dengan itu. Tim berarti kepemilikan berpindah dari orang ke
+workspace, lalu keanggotaan dan peran menentukan siapa boleh membaca dan
+menulis apa. Konsekuensinya menyentuh hampir setiap fungsi yang sudah ada —
+links, microsites, forms, sertifikat, toko, domain, subdomain, kunci API —
+plus migrasi data untuk seluruh baris lama.
+
+Mengerjakannya setengah jalan lebih berbahaya daripada tidak mengerjakannya:
+model kepemilikan yang tercampur adalah sumber kebocoran data antar akun yang
+paling sulit ditemukan. Ini layak jadi pekerjaan tersendiri dengan
+perencanaan migrasi, bukan tempelan di akhir fase.
+
+Sementara itu, kolom `teamSeats` sudah ada di katalog paket, dan halaman harga
+masih menyebut "5 anggota tim" untuk paket Bisnis. **Hapus klaim itu dari
+halaman harga sampai fiturnya benar-benar ada**, atau tandai sebagai "segera
+hadir".

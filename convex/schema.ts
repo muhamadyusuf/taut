@@ -58,6 +58,24 @@ export default defineSchema({
     .index("by_providerOrderId", ["providerOrderId"]),
 
   /**
+   * Paket acara: kuota sertifikat sekali bayar, tanpa langganan.
+   *
+   * Panitia acara dan kepanitiaan kampus di Indonesia menolak langganan
+   * bulanan tapi mudah menyetujui anggaran sekali jalan per kegiatan. Kuota
+   * di sini dijumlahkan DI ATAS jatah paket, bukan menggantikannya, dan habis
+   * dengan sendirinya setelah masa berlakunya lewat.
+   */
+  event_passes: defineTable({
+    userId: v.string(),
+    label: v.optional(v.string()), // nama acara, untuk pengenal di dasbor
+    quota: v.number(),
+    used: v.number(),
+    expiresAt: v.number(),
+    providerOrderId: v.optional(v.string()),
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  /**
    * Pemakaian kuota yang dihitung per bulan (bukan total sepanjang masa).
    * `period` berformat "YYYY-MM" mengikuti zona Asia/Jakarta.
    */
@@ -142,6 +160,53 @@ export default defineSchema({
   // Kode pendek hanya wajib unik DI DALAM satu subdomain: dua penyewa berbeda
   // boleh sama-sama punya /promo tanpa bertabrakan.
   .index("by_subdomain_shortCode", ["subdomain", "shortCode"]),
+
+  /**
+   * Kunci API untuk akses program.
+   *
+   * Yang disimpan hanya sidik jari kuncinya, bukan kuncinya sendiri — sama
+   * seperti kata sandi. Basis data yang bocor tidak boleh langsung menjadi
+   * akses penuh ke akun setiap pelanggan.
+   */
+  api_keys: defineTable({
+    userId: v.string(),
+    name: v.string(), // label dari pengguna, mis. "Zapier"
+    prefix: v.string(), // delapan karakter awal, untuk dikenali di daftar
+    hash: v.string(), // SHA-256 dari kunci lengkap
+    createdAt: v.number(),
+    lastUsedAt: v.optional(v.number()),
+    revokedAt: v.optional(v.number()),
+  })
+    .index("by_userId", ["userId"])
+    .index("by_hash", ["hash"]),
+
+  /**
+   * Endpoint yang ingin diberi tahu saat sesuatu terjadi.
+   *
+   * Pengiriman dicatat di webhook_deliveries supaya kegagalan bisa dilihat
+   * pengguna sendiri — webhook yang diam-diam gagal adalah keluhan dukungan
+   * paling umum pada fitur semacam ini.
+   */
+  webhooks: defineTable({
+    userId: v.string(),
+    url: v.string(),
+    events: v.array(v.string()), // "link.created" | "link.clicked"
+    secret: v.string(), // untuk tanda tangan HMAC
+    active: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_userId", ["userId"]),
+
+  webhook_deliveries: defineTable({
+    webhookId: v.id("webhooks"),
+    userId: v.string(),
+    event: v.string(),
+    status: v.string(), // "success" | "failed"
+    statusCode: v.optional(v.number()),
+    error: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_webhookId", ["webhookId"])
+    .index("by_userId", ["userId"]),
 
   /**
    * Domain milik pengguna sendiri: link.brandanda.com
@@ -506,8 +571,15 @@ export default defineSchema({
     submittedAt: v.number(),
     certificateUrl: v.optional(v.string()), // link Google Drive setelah sertifikat digenerate
     certificateSentAt: v.optional(v.number()), // waktu terakhir email sertifikat terkirim
+
+    // Kode verifikasi publik, dicetak di sertifikat dan dapat diperiksa siapa
+    // pun di singkat.in/v/<kode>. Diterbitkan sekali dan tidak pernah berubah:
+    // sertifikat yang sudah dicetak tidak bisa ditarik kembali.
+    certificateCode: v.optional(v.string()),
+    certificateIssuedAt: v.optional(v.number()),
   })
-    .index("by_formId", ["formId"]),
+    .index("by_formId", ["formId"])
+    .index("by_certificateCode", ["certificateCode"]),
 
   // ---------------------------------------------------------
   // 8. TEMPLATE SERTIFIKAT (per formulir)
@@ -534,6 +606,10 @@ export default defineSchema({
     driveFolderId: v.optional(v.string()), // folder tujuan upload hasil sertifikat
     driveFolderName: v.optional(v.string()),
     emailQuestionId: v.optional(v.string()), // pertanyaan yang berisi alamat email penerima
+    // Pertanyaan yang berisi nama penerima, ditampilkan di halaman verifikasi
+    // publik. Tanpa ini halaman verifikasi hanya bisa membuktikan bahwa
+    // sertifikatnya asli, tanpa bisa menyebut atas nama siapa.
+    nameQuestionId: v.optional(v.string()),
     emailSubject: v.optional(v.string()),
     emailBody: v.optional(v.string()), // mendukung variabel {{label_pertanyaan}}
     createdAt: v.number(),
