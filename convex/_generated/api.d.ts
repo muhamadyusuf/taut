@@ -44,6 +44,7 @@ import type * as seedData_index from "../seedData/index.js";
 import type * as seedData_types from "../seedData/types.js";
 import type * as shop from "../shop.js";
 import type * as shopActions from "../shopActions.js";
+import type * as subdomains from "../subdomains.js";
 import type * as users from "../users.js";
 
 import type {
@@ -89,6 +90,7 @@ declare const fullApi: ApiFromModules<{
   "seedData/types": typeof seedData_types;
   shop: typeof shop;
   shopActions: typeof shopActions;
+  subdomains: typeof subdomains;
   users: typeof users;
 }>;
 

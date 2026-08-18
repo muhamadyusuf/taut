@@ -78,13 +78,56 @@ function isReservedSlug(slug: string): boolean {
   return RESERVED_SLUGS.has(slug.trim().toLowerCase());
 }
 
+
+/**
+ * Memastikan subdomain yang diminta benar-benar milik pemanggil.
+ *
+ * Tanpa ini, siapa pun bisa menitipkan tautan ke subdomain orang lain hanya
+ * dengan mengirim namanya lewat argumen — dan tautan itu akan tampil seolah
+ * berasal dari merek pemilik subdomain tersebut.
+ */
+async function resolveOwnedSubdomain(
+  ctx: MutationCtx,
+  userId: string,
+  requested: string | undefined
+): Promise<string | undefined> {
+  if (!requested || requested.trim() === "") return undefined;
+
+  const value = requested.trim().toLowerCase();
+  const owned = await ctx.db
+    .query("subdomains")
+    .withIndex("by_subdomain", (q) => q.eq("subdomain", value))
+    .first();
+
+  if (!owned || owned.userId !== userId) {
+    throw new Error("Subdomain itu bukan milik Anda.");
+  }
+
+  return value;
+}
+
+/** Cek tabrakan kode pendek di dalam satu ruang nama (subdomain atau domain utama). */
+async function shortCodeTaken(
+  ctx: MutationCtx,
+  subdomain: string | undefined,
+  shortCode: string
+) {
+  return await ctx.db
+    .query("links")
+    .withIndex("by_subdomain_shortCode", (q) =>
+      q.eq("subdomain", subdomain).eq("shortCode", shortCode)
+    )
+    .first();
+}
+
 export const createLink = mutation({
   args: { 
     originalUrl: v.string(),
     customSlug: v.optional(v.string()),
     title: v.optional(v.string()),
     // ARGS BARU: Menerima array ID kategori
-    categoryIds: v.optional(v.array(v.id("categories"))) 
+    categoryIds: v.optional(v.array(v.id("categories"))),
+    subdomain: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -98,6 +141,12 @@ export const createLink = mutation({
     const ent = await getEntitlements(ctx);
     await assertRateLimit(ctx, "create_link", identity.subject, ent.plan);
 
+    const subdomain = await resolveOwnedSubdomain(
+      ctx,
+      identity.subject,
+      args.subdomain
+    );
+
     let shortCode: string;
 
     // 2. CEK APAKAH SLUG MASUK DAFTAR TERLARANG
@@ -108,10 +157,17 @@ export const createLink = mutation({
     // ... (Logic generate shortCode sama seperti sebelumnya) ...
     if (args.customSlug && args.customSlug.trim() !== "") {
       shortCode = args.customSlug.trim();
-      const existing = await ctx.db.query("links").withIndex("by_shortCode", (q) => q.eq("shortCode", shortCode)).first();
-      if (existing) throw new Error("Link custom ini sudah dipakai orang lain.");
+      if (await shortCodeTaken(ctx, subdomain, shortCode)) {
+        throw new Error("Link custom ini sudah dipakai di alamat tersebut.");
+      }
     } else {
-      shortCode = Math.random().toString(36).substring(2, 7);
+      // Kode acak pun bisa bertabrakan; ulangi sampai benar-benar bebas.
+      let attempt = 0;
+      do {
+        shortCode = Math.random().toString(36).substring(2, 7);
+        attempt += 1;
+        if (attempt > 20) throw new Error("Gagal membuat kode unik. Coba lagi.");
+      } while (await shortCodeTaken(ctx, subdomain, shortCode));
     }
 
     // 1. Simpan Link Utama
@@ -123,6 +179,7 @@ export const createLink = mutation({
       title: args.title || "Untitled Link",
       createdAt: Date.now(),
       status: "active",
+      subdomain,
     });
 
     // Pemeriksaan Safe Browsing dijadwalkan, tidak ditunggu: panggilan jaringan
@@ -154,6 +211,7 @@ export const updateLink = mutation({
     title: v.string(),
     customSlug: v.string(),
     categoryIds: v.array(v.id("categories")), // List kategori baru
+    subdomain: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -174,15 +232,19 @@ export const updateLink = mutation({
     
     // Jika user mengosongkan slug, atau slug-nya sama dengan yang lama, aman.
     // TAPI jika slug BEDA dari yang lama, kita harus cek ketersediaan.
-    if (newSlug !== existingLink.shortCode) {
-       const isTaken = await ctx.db
-          .query("links")
-          .withIndex("by_shortCode", (q) => q.eq("shortCode", newSlug))
-          .first();
-       
-       if (isTaken) {
-          throw new Error("Link custom ini sudah dipakai orang lain.");
-       }
+    const newSubdomain = await resolveOwnedSubdomain(
+      ctx,
+      identity.subject,
+      args.subdomain
+    );
+
+    // Pindah subdomain juga berarti pindah ruang nama, jadi tabrakan harus
+    // diperiksa ulang walau kode pendeknya sendiri tidak berubah.
+    if (newSlug !== existingLink.shortCode || newSubdomain !== existingLink.subdomain) {
+      const clash = await shortCodeTaken(ctx, newSubdomain, newSlug);
+      if (clash && clash._id !== existingLink._id) {
+        throw new Error("Link custom ini sudah dipakai di alamat tersebut.");
+      }
     }
 
     // 3. Update Data Link Utama
@@ -195,6 +257,7 @@ export const updateLink = mutation({
       originalUrl: verdict.normalized,
       title: args.title,
       shortCode: newSlug,
+      subdomain: newSubdomain,
       // Mengganti tujuan ke alamat berbahaya setelah tautan tersebar adalah
       // pola penyalahgunaan yang paling sering dipakai, jadi status keamanan
       // disetel ulang dan tautannya diperiksa lagi.
@@ -247,11 +310,19 @@ export const getMyLinks = query({
  * membuat pelanggan yang sudah membayar tetap melihat iklan.
  */
 export const getUrlByCode = query({
-  args: { shortCode: v.string() },
+  args: {
+    shortCode: v.string(),
+    // Kosong berarti permintaan datang dari domain utama.
+    subdomain: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
+    const subdomain = args.subdomain?.toLowerCase() || undefined;
+
     const link = await ctx.db
       .query("links")
-      .withIndex("by_shortCode", (q) => q.eq("shortCode", args.shortCode))
+      .withIndex("by_subdomain_shortCode", (q) =>
+        q.eq("subdomain", subdomain).eq("shortCode", args.shortCode)
+      )
       .first();
 
     if (!link) return null;
@@ -316,6 +387,7 @@ export const getUrlByCode = query({
 export const getLinkAndIncrement = mutation({
   args: {
     shortCode: v.string(),
+    subdomain: v.optional(v.string()),
     country: v.optional(v.string()),
     city: v.optional(v.string()),
     device: v.optional(v.string()),
@@ -326,7 +398,9 @@ export const getLinkAndIncrement = mutation({
   handler: async (ctx, args) => {
     const link = await ctx.db
       .query("links")
-      .withIndex("by_shortCode", (q) => q.eq("shortCode", args.shortCode))
+      .withIndex("by_subdomain_shortCode", (q) =>
+        q.eq("subdomain", args.subdomain?.toLowerCase() || undefined).eq("shortCode", args.shortCode)
+      )
       .first();
 
     if (!link) return null;

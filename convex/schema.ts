@@ -124,10 +124,33 @@ export default defineSchema({
     status: v.optional(v.string()),
     flagReason: v.optional(v.string()),
     checkedAt: v.optional(v.number()), // terakhir diperiksa Safe Browsing
+
+    // Subdomain pemilik tautan, mis. "tokosaya" untuk tokosaya.singkat.in.
+    // Kosong berarti tautan hidup di domain utama. Dibuat opsional supaya
+    // seluruh baris lama tetap sah tanpa migrasi.
+    subdomain: v.optional(v.string()),
   })
   .index("by_shortCode", ["shortCode"]) // Untuk redirect cepat
   .index("by_userId", ["userId"])       // Untuk dashboard user
-  .index("by_status", ["status"]),      // Untuk tinjauan admin
+  .index("by_status", ["status"])       // Untuk tinjauan admin
+  // Kode pendek hanya wajib unik DI DALAM satu subdomain: dua penyewa berbeda
+  // boleh sama-sama punya /promo tanpa bertabrakan.
+  .index("by_subdomain_shortCode", ["subdomain", "shortCode"]),
+
+  /**
+   * Subdomain yang diklaim pengguna: <nama>.singkat.in
+   *
+   * Dipisah dari tabel users karena satu akun paket Bisnis boleh memegang
+   * beberapa, dan karena pencarian saat redirect harus lewat index nama —
+   * bukan memindai akun.
+   */
+  subdomains: defineTable({
+    userId: v.string(),
+    subdomain: v.string(), // huruf kecil, sudah dinormalkan
+    createdAt: v.number(),
+  })
+    .index("by_subdomain", ["subdomain"])
+    .index("by_userId", ["userId"]),
 
   // ---------------------------------------------------------
   // 1b. ANTI-PENYALAHGUNAAN

@@ -1,58 +1,100 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-// 1. Definisikan Rute yang WAJIB Login
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
   '/admin(.*)',
 ]);
 
+/** Domain utama tempat aplikasi ini dilayani. */
+const ROOT_DOMAIN = "singkat.in";
+
+/**
+ * Nama host yang BUKAN subdomain penyewa walau bentuknya mirip.
+ * Harus sinkron dengan RESERVED_SUBDOMAINS di convex/subdomains.ts.
+ */
+const SYSTEM_HOSTS = new Set(["app", "www", "api", "admin"]);
+
+/**
+ * Mengambil nama penyewa dari sebuah host.
+ *
+ * Mengembalikan null untuk domain utama, host sistem, dan localhost. Saat
+ * pengembangan, subdomain tetap bisa diuji lewat bentuk "nama.localhost:3000"
+ * yang dipetakan browser modern ke 127.0.0.1 tanpa perlu menyentuh /etc/hosts.
+ */
+function tenantFromHost(hostname: string): string | null {
+  const host = hostname.split(":")[0].toLowerCase();
+
+  if (host === ROOT_DOMAIN || host === `www.${ROOT_DOMAIN}`) return null;
+
+  let label: string | null = null;
+
+  if (host.endsWith(`.${ROOT_DOMAIN}`)) {
+    label = host.slice(0, -(ROOT_DOMAIN.length + 1));
+  } else if (host.endsWith(".localhost")) {
+    label = host.slice(0, -".localhost".length);
+  }
+
+  if (!label) return null;
+  // Hanya satu tingkat: "a.b.singkat.in" bukan penyewa yang sah.
+  if (label.includes(".")) return null;
+  if (SYSTEM_HOSTS.has(label)) return null;
+
+  return label;
+}
+
 export default clerkMiddleware(async (auth, req) => {
   const url = req.nextUrl;
   const hostname = req.headers.get("host") || "";
+  const tenant = tenantFromHost(hostname);
 
-  // Definisikan Environment
-  // Gunakan optional chaining untuk keamanan jika hostname null
-  const isAppDomain = hostname === "app.singkat.in"; 
-  const isMainDomain = hostname === "singkat.in";   
-  
-  // (Opsional) Deteksi Localhost untuk development
-  // const isLocalhost = hostname.includes("localhost"); 
+  const isAppDomain = hostname.split(":")[0] === `app.${ROOT_DOMAIN}`;
+  const isMainDomain = hostname.split(":")[0] === ROOT_DOMAIN;
 
   // --- ATURAN 1: PROTEKSI ROUTE (Dashboard Wajib Login) ---
   if (isProtectedRoute(req)) {
     const { userId, redirectToSignIn } = await auth();
-
     if (!userId) {
-      // Redirect ke halaman login Clerk, lalu balik ke URL semula setelah login
       return redirectToSignIn({ returnBackUrl: req.url });
     }
   }
 
-  // --- ATURAN 2: LOGIKA REDIRECT SUBDOMAIN ---
+  // --- ATURAN 2: SUBDOMAIN PENYEWA ---
+  // Ditempatkan sebelum aturan domain lain supaya tautan penyewa tidak pernah
+  // tersedot ke logika domain utama.
+  if (tenant) {
+    // Dasbor tidak dilayani dari subdomain penyewa: sesi login hidup di
+    // app.singkat.in, dan menyajikannya di sini hanya membuat dua tempat
+    // masuk untuk hal yang sama.
+    if (isProtectedRoute(req)) {
+      return NextResponse.redirect(
+        new URL(url.pathname, `https://app.${ROOT_DOMAIN}`)
+      );
+    }
 
-  // A. Jika akses "app.singkat.in" (Root) -> Lempar ke Dashboard Links
+    const path = url.pathname === "/" ? "" : url.pathname;
+    return NextResponse.rewrite(
+      new URL(`/_sub/${tenant}${path}`, req.url)
+    );
+  }
+
+  // --- ATURAN 3: app.singkat.in root -> dashboard ---
   if (isAppDomain && url.pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard/links", req.url));
   }
 
-  // B. Jika akses "singkat.in/dashboard..." (Main Domain) -> Lempar ke App Domain
-  // Ini mencegah user login dashboard di domain utama
+  // --- ATURAN 4: dashboard di domain utama -> pindahkan ke app ---
   if (isMainDomain && isProtectedRoute(req)) {
-    // Pindahkan path yang diakses user ke domain app
-    const newUrl = new URL(url.pathname, "https://app.singkat.in");
+    const newUrl = new URL(url.pathname, `https://app.${ROOT_DOMAIN}`);
     return NextResponse.redirect(newUrl);
   }
 
-  // Sisanya lolos (Landing Page, Public Profile, Shortlink Redirection)
   return NextResponse.next();
 });
 
 export const config = {
   matcher: [
-    // Regex standar Clerk terbaru untuk men-skip file statis
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Selalu jalankan middleware untuk API routes
     '/(api|trpc)(.*)',
   ],
 };

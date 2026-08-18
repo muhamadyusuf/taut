@@ -19,13 +19,20 @@ export type Visitor = {
   referrerHost?: string;
 };
 
-export default function RedirectClient({ visitor }: { visitor: Visitor }) {
+export default function RedirectClient({
+  visitor,
+  subdomain,
+}: {
+  visitor: Visitor;
+  /** Diisi hanya bila halaman ini dilayani dari <nama>.singkat.in. */
+  subdomain?: string;
+}) {
   const params = useParams();
   const shortCode = (params.slug || params.shortCode) as string;
 
   const link = useQuery(
     api.links.getUrlByCode,
-    shortCode ? { shortCode } : "skip"
+    shortCode ? { shortCode, subdomain } : "skip"
   );
 
   // Iklan hanya diambil kalau halaman ini memang akan menampilkannya. Pemilik
@@ -59,9 +66,9 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
     // Klik dicatat sebelum berpindah: navigasi memutus koneksi Convex, jadi
     // mutation yang dilepas tanpa ditunggu akan sering hilang dan statistik
     // pemilik tautan jadi bocor.
-    await incrementClick({ shortCode, ...visitor });
+    await incrementClick({ shortCode, subdomain, ...visitor });
     window.location.replace(link.originalUrl);
-  }, [shortCode, link, incrementClick, visitor]);
+  }, [shortCode, link, incrementClick, visitor, subdomain]);
 
   /** Dipakai halaman antara: tombolnya perlu berubah jadi status "mengalihkan". */
   const handleContinue = useCallback(() => {

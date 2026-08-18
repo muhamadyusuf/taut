@@ -5,6 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { X, Link as LinkIcon, Check } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
+import { errorMessage } from "@/lib/planError";
 
 interface CreateLinkModalProps {
   isOpen: boolean;
@@ -18,9 +19,14 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
   // Ambil data kategori untuk ditampilkan
   const categories = useQuery(api.categories.getMyCategories);
 
+  // Subdomain yang dimiliki pengguna; kosong berarti hanya domain utama.
+  const subdomainData = useQuery(api.subdomains.getMine);
+  const ownedSubdomains = subdomainData?.subdomains ?? [];
+
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [subdomain, setSubdomain] = useState("");
 
   // State untuk menyimpan BANYAK kategori
   const [selectedCats, setSelectedCats] = useState<Id<"categories">[]>([]);
@@ -59,19 +65,19 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
         originalUrl: url,
         title: title || "Untitled Link",
         customSlug: slug,
-        categoryIds: selectedCats // Kirim array kategori
+        categoryIds: selectedCats, // Kirim array kategori
+        subdomain: subdomain || undefined,
       });
 
       // Reset form
-      setUrl(""); setTitle(""); setSlug(""); setSelectedCats([]);
+      setUrl(""); setTitle(""); setSlug(""); setSelectedCats([]); setSubdomain("");
       onClose();
     } catch (err: unknown) {
-      console.log(err);
-      setError(
-        err instanceof Error && err.message.includes("already taken")
-          ? "Link custom ini sudah dipakai orang lain."
-          : "Terjadi kesalahan sistem."
-      );
+      // Pesan aslinya ditampilkan apa adanya. Sebelumnya semua kegagalan
+      // diringkas jadi "Terjadi kesalahan sistem", sehingga penolakan yang
+      // sebenarnya bisa ditindaklanjuti — URL tidak sah, slug terpakai, batas
+      // laju terlampaui — sama-sama terlihat seperti aplikasi yang rusak.
+      setError(errorMessage(err, "Gagal membuat tautan."));
     } finally {
       setLoading(false);
     }
@@ -159,12 +165,31 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
             )}
           </div>
 
+          {/* Pemilih alamat — hanya tampil kalau pengguna punya subdomain */}
+          {ownedSubdomains.length > 0 && (
+            <div>
+              <label className="form-label">Alamat</label>
+              <select
+                value={subdomain}
+                onChange={(e) => setSubdomain(e.target.value)}
+                className="input-field w-full"
+              >
+                <option value="">singkat.in (domain utama)</option>
+                {ownedSubdomains.map((row) => (
+                  <option key={row._id} value={row.subdomain}>
+                    {row.subdomain}.singkat.in
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           {/* Custom Slug */}
           <div>
             <label className="form-label">Custom Link (Opsional)</label>
             <div className="flex items-center border border-border rounded-xl bg-input focus-within:border-brand focus-within:ring-4 focus-within:ring-ring transition overflow-hidden">
               <span className="px-4 text-muted-foreground text-sm border-r border-border py-4 font-medium whitespace-nowrap">
-                {process.env.NEXT_PUBLIC_APP_URL}/
+                {subdomain ? `${subdomain}.singkat.in/` : `${process.env.NEXT_PUBLIC_APP_URL}/`}
               </span>
               <input
                 type="text"
