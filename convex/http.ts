@@ -5,45 +5,66 @@ import { hashKey } from "./apiKeys";
 
 const http = httpRouter();
 
-http.route({
-  path: "/midtrans-webhook",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    // 1. Parse Body
-    const body = await request.json();
+/**
+ * PENERIMA NOTIFIKASI MIDTRANS
+ *
+ * Satu penangan untuk dua jenis pembelian, dipilah dari awalan order id:
+ *   SUB- / EVT-  -> pembelian paket & paket acara (kunci Midtrans platform)
+ *   selain itu   -> pesanan toko penjual (kunci Midtrans milik penjual)
+ *
+ * Kenapa disatukan: Midtrans tidak selalu menghormati `notification_url` yang
+ * dikirim per transaksi — pada banyak konfigurasi akun, URL yang disetel di
+ * dashboard Midtrans-lah yang dipakai. Akibatnya notifikasi pembelian paket
+ * bisa mendarat di endpoint toko, yang mencarinya di tabel `orders`, tidak
+ * menemukannya, lalu menjawab 404. Dengan pemilahan di sini, notifikasi tetap
+ * diproses dengan benar ke mana pun Midtrans mengirimkannya.
+ */
+async function handleMidtransNotification(
+  ctx: Parameters<Parameters<typeof httpAction>[0]>[0],
+  request: Request
+): Promise<Response> {
+  let body: { order_id?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return new Response("Body bukan JSON yang sah", { status: 400 });
+  }
 
-    // 2. Panggil Internal Action (yang jalan di Node.js)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const result = await ctx.runAction((internal as any).midtransActions.verifyAndProcessWebhook, {
-      body: body,
-    });
+  const orderId = typeof body?.order_id === "string" ? body.order_id : "";
+  const isPlatformOrder = orderId.startsWith("SUB-") || orderId.startsWith("EVT-");
 
-    // 3. Kembalikan Response ke Midtrans
-    return new Response(result.message, { status: result.status });
-  }),
-});
+  const result = isPlatformOrder
+    ? await ctx.runAction(
+        internal.billingActions.verifyAndProcessSubscriptionWebhook,
+        { body }
+      )
+    : await ctx.runAction(internal.midtransActions.verifyAndProcessWebhook, {
+        body,
+      });
+
+  return new Response(result.message, { status: result.status });
+}
 
 /**
- * Webhook pembelian paket langganan.
+ * Ketiga jalur ini menerima notifikasi yang sama.
  *
- * Sengaja terpisah dari /midtrans-webhook milik toko: keduanya memverifikasi
- * tanda tangan dengan server key yang berbeda (platform vs penjual), jadi
- * menyatukannya hanya akan membuat salah satu notifikasi ditolak diam-diam.
+ * Alamat lama dipertahankan karena sudah tercatat di dashboard Midtrans dan di
+ * transaksi-transaksi yang terlanjur dibuat; mencabutnya berarti membuang
+ * notifikasi untuk pembayaran yang sedang berjalan. Jalur "/api/..." ikut
+ * didaftarkan karena bentuk itulah yang tertulis di convex/shopActions.ts dan
+ * mudah tersalin ke pengaturan dashboard.
  */
-http.route({
-  path: "/midtrans-subscription-webhook",
-  method: "POST",
-  handler: httpAction(async (ctx, request) => {
-    const body = await request.json();
-
-    const result = await ctx.runAction(
-      internal.billingActions.verifyAndProcessSubscriptionWebhook,
-      { body }
-    );
-
-    return new Response(result.message, { status: result.status });
-  }),
-});
+for (const path of [
+  "/midtrans-webhook",
+  "/midtrans-subscription-webhook",
+  "/api/midtrans-webhook",
+]) {
+  http.route({
+    path,
+    method: "POST",
+    handler: httpAction(handleMidtransNotification),
+  });
+}
 
 
 /**
