@@ -125,9 +125,15 @@ export default defineSchema({
     flagReason: v.optional(v.string()),
     checkedAt: v.optional(v.number()), // terakhir diperiksa Safe Browsing
 
-    // Subdomain pemilik tautan, mis. "tokosaya" untuk tokosaya.singkat.in.
-    // Kosong berarti tautan hidup di domain utama. Dibuat opsional supaya
-    // seluruh baris lama tetap sah tanpa migrasi.
+    // Ruang nama tempat tautan ini hidup. Kosong berarti domain utama.
+    //
+    // Isinya salah satu dari dua bentuk, dan keduanya tidak mungkin bentrok
+    // karena label subdomain divalidasi tanpa titik:
+    //   "tokosaya"        -> tokosaya.singkat.in
+    //   "link.brand.com"  -> domain milik pengguna sendiri
+    //
+    // Namanya tetap `subdomain` karena mengganti nama kolom menuntut migrasi
+    // seluruh baris tanpa memberi manfaat perilaku apa pun.
     subdomain: v.optional(v.string()),
   })
   .index("by_shortCode", ["shortCode"]) // Untuk redirect cepat
@@ -136,6 +142,38 @@ export default defineSchema({
   // Kode pendek hanya wajib unik DI DALAM satu subdomain: dua penyewa berbeda
   // boleh sama-sama punya /promo tanpa bertabrakan.
   .index("by_subdomain_shortCode", ["subdomain", "shortCode"]),
+
+  /**
+   * Domain milik pengguna sendiri: link.brandanda.com
+   *
+   * Status mengikuti kenyataan di Vercel, bukan niat pengguna:
+   *   "pending"  — sudah didaftarkan, DNS belum menunjuk ke sini
+   *   "active"   — DNS benar dan sertifikat terbit
+   *   "error"    — Vercel menolak, alasannya disimpan di `note`
+   */
+  domains: defineTable({
+    userId: v.string(),
+    domain: v.string(), // huruf kecil, tanpa protokol, tanpa garis miring
+    status: v.string(),
+    note: v.optional(v.string()),
+
+    // Petunjuk DNS dari Vercel, ditampilkan apa adanya ke pengguna.
+    verification: v.optional(
+      v.array(
+        v.object({
+          type: v.string(), // "TXT" | "CNAME" | "A"
+          domain: v.string(),
+          value: v.string(),
+        })
+      )
+    ),
+
+    createdAt: v.number(),
+    verifiedAt: v.optional(v.number()),
+    lastCheckedAt: v.optional(v.number()),
+  })
+    .index("by_domain", ["domain"])
+    .index("by_userId", ["userId"]),
 
   /**
    * Subdomain yang diklaim pengguna: <nama>.singkat.in

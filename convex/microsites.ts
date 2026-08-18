@@ -173,6 +173,24 @@ export const deleteMicrosite = mutation({
 // ---------------------------------------------------------
 // 6. PUBLIC: VIEW HALAMAN BIO
 // ---------------------------------------------------------
+/**
+ * Halaman bio pertama milik seorang pengguna.
+ *
+ * Dipakai akar domain/subdomain penyewa untuk memutuskan ke mana pengunjung
+ * dibawa saat mereka mengetik alamatnya tanpa kode apa pun.
+ */
+export const getFirstByUser = query({
+  args: { userId: v.string() },
+  handler: async (ctx, args) => {
+    const microsite = await ctx.db
+      .query("microsites")
+      .withIndex("by_userId", (q) => q.eq("userId", args.userId))
+      .first();
+
+    return microsite ? { slug: microsite.slug, title: microsite.title } : null;
+  },
+});
+
 export const getPublicMicrosite = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {

@@ -22,6 +22,25 @@ const SYSTEM_HOSTS = new Set(["app", "www", "api", "admin"]);
  * pengembangan, subdomain tetap bisa diuji lewat bentuk "nama.localhost:3000"
  * yang dipetakan browser modern ke 127.0.0.1 tanpa perlu menyentuh /etc/hosts.
  */
+function isLocalHost(hostname: string): boolean {
+  const host = hostname.split(":")[0].toLowerCase();
+  return host === "localhost" || host === "127.0.0.1" || host.endsWith(".localhost");
+}
+
+/**
+ * Host yang merupakan milik platform, apa pun bentuknya.
+ *
+ * Dibutuhkan karena "bukan penyewa" tidak sama dengan "milik pelanggan":
+ * www.singkat.in bukan penyewa, tapi juga jelas bukan domain pelanggan. Tanpa
+ * pemeriksaan ini www sempat tersedot ke jalur domain pelanggan dan berakhir
+ * sebagai halaman tidak ditemukan.
+ */
+function isPlatformHost(hostname: string): boolean {
+  const host = hostname.split(":")[0].toLowerCase();
+  if (isLocalHost(hostname)) return true;
+  return host === ROOT_DOMAIN || host.endsWith(`.${ROOT_DOMAIN}`);
+}
+
 function tenantFromHost(hostname: string): string | null {
   const host = hostname.split(":")[0].toLowerCase();
 
@@ -78,12 +97,30 @@ export default clerkMiddleware(async (auth, req) => {
     );
   }
 
-  // --- ATURAN 3: app.singkat.in root -> dashboard ---
+  // --- ATURAN 3: DOMAIN MILIK PENGGUNA SENDIRI ---
+  // Host apa pun yang bukan milik platform diperlakukan sebagai kandidat domain
+  // pengguna. Middleware sengaja TIDAK menanyakan pemiliknya ke basis data:
+  // itu berarti panggilan jaringan di setiap permintaan, termasuk permintaan
+  // untuk host yang ternyata tidak dikenal. Pencariannya diserahkan ke halaman,
+  // yang memang sudah berbicara dengan Convex.
+  if (!isPlatformHost(hostname)) {
+    if (isProtectedRoute(req)) {
+      return NextResponse.redirect(
+        new URL(url.pathname, `https://app.${ROOT_DOMAIN}`)
+      );
+    }
+
+    const host = hostname.split(":")[0].toLowerCase();
+    const path = url.pathname === "/" ? "" : url.pathname;
+    return NextResponse.rewrite(new URL(`/_domain/${host}${path}`, req.url));
+  }
+
+  // --- ATURAN 4: app.singkat.in root -> dashboard ---
   if (isAppDomain && url.pathname === "/") {
     return NextResponse.redirect(new URL("/dashboard/links", req.url));
   }
 
-  // --- ATURAN 4: dashboard di domain utama -> pindahkan ke app ---
+  // --- ATURAN 5: dashboard di domain utama -> pindahkan ke app ---
   if (isMainDomain && isProtectedRoute(req)) {
     const newUrl = new URL(url.pathname, `https://app.${ROOT_DOMAIN}`);
     return NextResponse.redirect(newUrl);

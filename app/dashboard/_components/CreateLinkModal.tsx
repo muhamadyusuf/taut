@@ -21,7 +21,19 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
 
   // Subdomain yang dimiliki pengguna; kosong berarti hanya domain utama.
   const subdomainData = useQuery(api.subdomains.getMine);
-  const ownedSubdomains = subdomainData?.subdomains ?? [];
+  const domainData = useQuery(api.domains.getMine);
+
+  // Subdomain dan domain sendiri sama-sama berperan sebagai ruang nama, jadi
+  // keduanya muncul dalam satu daftar pilihan alamat.
+  const addressOptions = [
+    ...(subdomainData?.subdomains ?? []).map((row) => ({
+      value: row.subdomain,
+      label: `${row.subdomain}.singkat.in`,
+    })),
+    ...(domainData?.domains ?? [])
+      .filter((row) => row.status === "active")
+      .map((row) => ({ value: row.domain, label: row.domain })),
+  ];
 
   const [url, setUrl] = useState("");
   const [title, setTitle] = useState("");
@@ -166,7 +178,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
           </div>
 
           {/* Pemilih alamat — hanya tampil kalau pengguna punya subdomain */}
-          {ownedSubdomains.length > 0 && (
+          {addressOptions.length > 0 && (
             <div>
               <label className="form-label">Alamat</label>
               <select
@@ -175,9 +187,9 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
                 className="input-field w-full"
               >
                 <option value="">singkat.in (domain utama)</option>
-                {ownedSubdomains.map((row) => (
-                  <option key={row._id} value={row.subdomain}>
-                    {row.subdomain}.singkat.in
+                {addressOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -189,7 +201,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
             <label className="form-label">Custom Link (Opsional)</label>
             <div className="flex items-center border border-border rounded-xl bg-input focus-within:border-brand focus-within:ring-4 focus-within:ring-ring transition overflow-hidden">
               <span className="px-4 text-muted-foreground text-sm border-r border-border py-4 font-medium whitespace-nowrap">
-                {subdomain ? `${subdomain}.singkat.in/` : `${process.env.NEXT_PUBLIC_APP_URL}/`}
+                {subdomain ? `${addressOptions.find((o) => o.value === subdomain)?.label ?? subdomain}/` : `${process.env.NEXT_PUBLIC_APP_URL}/`}
               </span>
               <input
                 type="text"
