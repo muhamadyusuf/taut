@@ -2,7 +2,9 @@ import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
-import { getEntitlementsForUser } from "./entitlements";
+import { getEntitlements, getEntitlementsForUser } from "./entitlements";
+import { assertRateLimit, inspectUrl, linkStatusOf } from "./abuse";
+import { internal } from "./_generated/api";
 import { planHasFeature } from "./plans";
 
 /**
@@ -88,6 +90,14 @@ export const createLink = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
+    // Tautan ke skema berbahaya, jaringan lokal, atau kembali ke singkat.in
+    // ditolak sebelum apa pun ditulis.
+    const verdict = inspectUrl(args.originalUrl);
+    if (!verdict.ok) throw new Error(verdict.reason);
+
+    const ent = await getEntitlements(ctx);
+    await assertRateLimit(ctx, "create_link", identity.subject, ent.plan);
+
     let shortCode: string;
 
     // 2. CEK APAKAH SLUG MASUK DAFTAR TERLARANG
@@ -106,12 +116,21 @@ export const createLink = mutation({
 
     // 1. Simpan Link Utama
     const linkId = await ctx.db.insert("links", {
-      originalUrl: args.originalUrl,
+      originalUrl: verdict.normalized,
       shortCode: shortCode,
       userId: identity.subject,
       clicks: 0,
       title: args.title || "Untitled Link",
       createdAt: Date.now(),
+      status: "active",
+    });
+
+    // Pemeriksaan Safe Browsing dijadwalkan, tidak ditunggu: panggilan jaringan
+    // tidak boleh menahan pembuatan tautan, dan Google yang sedang mati tidak
+    // boleh membuat pengguna gagal memendekkan tautannya.
+    await ctx.scheduler.runAfter(0, internal.abuseActions.checkLinkSafety, {
+      linkId,
+      url: verdict.normalized,
     });
 
     // 2. Simpan Relasi Kategori (Looping)
@@ -167,11 +186,27 @@ export const updateLink = mutation({
     }
 
     // 3. Update Data Link Utama
+    const verdict = inspectUrl(args.originalUrl);
+    if (!verdict.ok) throw new Error(verdict.reason);
+
+    const destinationChanged = verdict.normalized !== existingLink.originalUrl;
+
     await ctx.db.patch(args.id, {
-      originalUrl: args.originalUrl,
+      originalUrl: verdict.normalized,
       title: args.title,
       shortCode: newSlug,
+      // Mengganti tujuan ke alamat berbahaya setelah tautan tersebar adalah
+      // pola penyalahgunaan yang paling sering dipakai, jadi status keamanan
+      // disetel ulang dan tautannya diperiksa lagi.
+      ...(destinationChanged ? { status: "active", flagReason: undefined } : {}),
     });
+
+    if (destinationChanged) {
+      await ctx.scheduler.runAfter(0, internal.abuseActions.checkLinkSafety, {
+        linkId: args.id,
+        url: verdict.normalized,
+      });
+    }
 
     // 4. Update Kategori (Reset & Re-insert)
     // Hapus semua kategori lama untuk link ini
@@ -263,6 +298,8 @@ export const getUrlByCode = query({
       title: link.title,
       mode,
       brand,
+      safety: linkStatusOf(link),
+      flagReason: link.flagReason ?? null,
     };
   },
 });

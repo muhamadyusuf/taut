@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Megaphone,
   Newspaper,
+  ShieldAlert,
 } from "lucide-react";
 
 const menuItems = [
@@ -20,6 +21,7 @@ const menuItems = [
   { name: "Pengguna", href: "/admin/users", icon: Users },
   { name: "Artikel", href: "/admin/articles", icon: Newspaper },
   { name: "Iklan", href: "/admin/ads", icon: Megaphone },
+  { name: "Penyalahgunaan", href: "/admin/abuse", icon: ShieldAlert },
 ];
 
 export default function AdminSidebar() {

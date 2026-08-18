@@ -115,9 +115,55 @@ export default defineSchema({
     clicks: v.number(),
     title: v.optional(v.string()),
     createdAt: v.number(),
+
+    // Opsional supaya seluruh baris lama tetap sah tanpa migrasi. Kosong
+    // diperlakukan sama dengan "active".
+    //   "active"  — normal
+    //   "flagged" — dicurigai, pengunjung diberi peringatan tapi boleh lanjut
+    //   "blocked" — diteruskan tidak lagi mungkin
+    status: v.optional(v.string()),
+    flagReason: v.optional(v.string()),
+    checkedAt: v.optional(v.number()), // terakhir diperiksa Safe Browsing
   })
   .index("by_shortCode", ["shortCode"]) // Untuk redirect cepat
-  .index("by_userId", ["userId"]),      // Untuk dashboard user
+  .index("by_userId", ["userId"])       // Untuk dashboard user
+  .index("by_status", ["status"]),      // Untuk tinjauan admin
+
+  // ---------------------------------------------------------
+  // 1b. ANTI-PENYALAHGUNAAN
+  // ---------------------------------------------------------
+
+  /**
+   * Laporan dari pengunjung lewat halaman antara.
+   *
+   * Terbuka untuk publik tanpa login: orang yang menerima tautan phishing
+   * justru hampir tidak pernah punya akun di sini, dan memaksa mereka mendaftar
+   * lebih dulu berarti laporan itu tidak akan pernah masuk.
+   */
+  link_reports: defineTable({
+    linkId: v.id("links"),
+    shortCode: v.string(),
+    reason: v.string(), // "phishing" | "malware" | "spam" | "konten" | "lainnya"
+    note: v.optional(v.string()),
+    status: v.string(), // "open" | "reviewed" | "dismissed"
+    createdAt: v.number(),
+    reviewedAt: v.optional(v.number()),
+  })
+    .index("by_status", ["status"])
+    .index("by_linkId", ["linkId"]),
+
+  /**
+   * Penghitung laju berjendela.
+   *
+   * Dipisah dari tabel links, bukan dihitung dengan memindai tautan yang sudah
+   * ada: akun dengan puluhan ribu tautan akan membuat pemeriksaan batas justru
+   * lebih mahal daripada pembuatan tautannya sendiri.
+   */
+  rate_limits: defineTable({
+    key: v.string(), // "<aksi>:<pemilik>"
+    windowStart: v.number(),
+    count: v.number(),
+  }).index("by_key", ["key"]),
 
   // ---------------------------------------------------------
   // 2. KATEGORI & TAGS (Opsional/Fitur Tambahan)

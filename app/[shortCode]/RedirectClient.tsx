@@ -5,7 +5,8 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { ExternalLink, ShieldCheck, AlertCircle, Loader2 } from "lucide-react";
+import { ExternalLink, ShieldCheck, ShieldAlert, AlertCircle, Flag, Loader2 } from "lucide-react";
+import Link from "next/link";
 import NotFoundPage from "@/app/not-found";
 
 /** Atribut pengunjung yang hanya bisa dibaca dari header HTTP di sisi server. */
@@ -35,10 +36,14 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
   );
 
   const incrementClick = useMutation(api.links.getLinkAndIncrement);
+  const reportLink = useMutation(api.abuse.reportLink);
 
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [countdown, setCountdown] = useState(5);
   const redirectingRef = useRef(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportReason, setReportReason] = useState("phishing");
+  const [reportSent, setReportSent] = useState(false);
 
   /**
    * Mencatat klik lalu berpindah. Sengaja tidak menyentuh state apa pun supaya
@@ -49,6 +54,7 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
     // dengan klik tombol — dan efek ganda React StrictMode saat development —
     // sama-sama akan menghitung satu klik menjadi dua.
     if (!shortCode || !link || redirectingRef.current) return;
+    if (link.safety === "blocked") return;
     redirectingRef.current = true;
     // Klik dicatat sebelum berpindah: navigasi memutus koneksi Convex, jadi
     // mutation yang dilepas tanpa ditunggu akan sering hilang dan statistik
@@ -65,6 +71,11 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
 
   useEffect(() => {
     if (!link || isRedirecting) return;
+
+    // Keamanan mengalahkan paket. Tautan yang diblokir tidak pernah diteruskan,
+    // dan yang ditandai kehilangan hitungan mundur otomatis — pengunjung harus
+    // menekan sendiri setelah membaca peringatannya.
+    if (link.safety === "blocked" || link.safety === "flagged") return;
 
     // Paket berbayar tanpa branding sendiri: tidak ada halaman antara sama
     // sekali, langsung diteruskan. Tidak ada state yang perlu diubah — layar
@@ -108,8 +119,34 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
     // fallback ke URL lengkap
   }
 
+  // ── TAUTAN DIBLOKIR ──
+  if (link.safety === "blocked") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-lg rounded-2xl border border-danger/30 bg-card p-8 text-center">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-danger-soft text-danger">
+            <ShieldAlert size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Tautan ini diblokir
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            Pemeriksaan keamanan kami menemukan tautan ini mengarah ke halaman
+            berbahaya, jadi kami tidak meneruskan Anda ke sana.
+          </p>
+          {link.flagReason && (
+            <p className="mt-3 text-xs text-subtle">{link.flagReason}</p>
+          )}
+          <Link href="/" className="mt-7 inline-block">
+            <button className="btn-saweria px-8 py-3">Kembali ke beranda</button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   // ── MODE LOMPAT LANGSUNG (paket berbayar) ──
-  if (link.mode === "skip") {
+  if (link.mode === "skip" && link.safety !== "flagged") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-brand" />
@@ -283,15 +320,32 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
                 </a>
               </div>
 
-              {/* Note */}
-              <div className="flex items-start gap-2.5 bg-warning-soft border border-warning/25 rounded-xl px-4 py-3">
-                <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
-                <p className="text-xs text-warning leading-relaxed">
-                  Kami tidak dapat mengambil informasi tentang tujuan Anda. Namun
-                  tidak perlu khawatir — kami memeriksa tautan ini untuk menjaga
-                  keamanan Anda.
-                </p>
-              </div>
+              {/* Catatan, atau peringatan bila tautan ditandai */}
+              {link.safety === "flagged" ? (
+                <div className="flex items-start gap-2.5 rounded-xl border border-danger/30 bg-danger-soft px-4 py-3">
+                  <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-danger" />
+                  <div>
+                    <p className="text-xs font-bold leading-relaxed text-danger">
+                      Tautan ini ditandai mencurigakan. Lanjutkan hanya bila Anda
+                      memang mengenali dan mempercayai tujuannya.
+                    </p>
+                    {link.flagReason && (
+                      <p className="mt-1 text-[11px] text-danger/80">
+                        {link.flagReason}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2.5 bg-warning-soft border border-warning/25 rounded-xl px-4 py-3">
+                  <AlertCircle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                  <p className="text-xs text-warning leading-relaxed">
+                    Kami tidak dapat mengambil informasi tentang tujuan Anda. Namun
+                    tidak perlu khawatir — kami memeriksa tautan ini untuk menjaga
+                    keamanan Anda.
+                  </p>
+                </div>
+              )}
 
               {/* Security check */}
               <div>
@@ -334,7 +388,7 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
                   <>
                     <ExternalLink className="h-4 w-4" />
                     Lanjutkan ke tujuan
-                    {countdown > 0 && (
+                    {countdown > 0 && link.safety !== "flagged" && (
                       <span className="ml-1 bg-white/20 text-white text-xs px-1.5 py-0.5 rounded-full">
                         {countdown}
                       </span>
@@ -343,9 +397,69 @@ export default function RedirectClient({ visitor }: { visitor: Visitor }) {
                 )}
               </button>
 
-              <p className="text-[11px] text-subtle text-center">
-                Anda akan diarahkan secara otomatis dalam {countdown} detik
-              </p>
+              {link.safety === "flagged" ? (
+                <p className="text-center text-[11px] text-subtle">
+                  Pengalihan otomatis dimatikan untuk tautan yang ditandai.
+                </p>
+              ) : (
+                <p className="text-[11px] text-subtle text-center">
+                  Anda akan diarahkan secara otomatis dalam {countdown} detik
+                </p>
+              )}
+
+              {/* Pelaporan sengaja terbuka tanpa login: orang yang menerima
+                  tautan phishing hampir tidak pernah punya akun di sini. */}
+              <div className="border-t border-border pt-4">
+                {reportSent ? (
+                  <p className="text-center text-xs text-success">
+                    Terima kasih. Laporan Anda sudah kami terima.
+                  </p>
+                ) : reportOpen ? (
+                  <div className="space-y-3">
+                    <select
+                      value={reportReason}
+                      onChange={(e) => setReportReason(e.target.value)}
+                      className="input-field w-full text-sm"
+                      aria-label="Alasan laporan"
+                    >
+                      <option value="phishing">Penipuan / phishing</option>
+                      <option value="malware">Perangkat perusak</option>
+                      <option value="spam">Spam</option>
+                      <option value="konten">Konten tidak pantas</option>
+                      <option value="lainnya">Lainnya</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await reportLink({ shortCode, reason: reportReason });
+                            setReportSent(true);
+                          } catch {
+                            setReportSent(true); // jangan bocorkan detail kegagalan
+                          }
+                        }}
+                        className="flex-1 rounded-lg bg-danger-soft py-2 text-xs font-bold text-danger transition hover:opacity-80"
+                      >
+                        Kirim laporan
+                      </button>
+                      <button
+                        onClick={() => setReportOpen(false)}
+                        className="rounded-lg px-4 py-2 text-xs font-bold text-muted-foreground"
+                      >
+                        Batal
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setReportOpen(true)}
+                    className="mx-auto flex items-center gap-1.5 text-xs text-subtle transition hover:text-danger"
+                  >
+                    <Flag size={12} />
+                    Laporkan tautan ini
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </aside>
