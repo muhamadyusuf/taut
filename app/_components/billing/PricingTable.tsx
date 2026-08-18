@@ -12,6 +12,8 @@ import {
   yearlySavingPercent,
   type PlanId,
 } from "@/convex/plans";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/localeConfig";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export type BillingCycle = "monthly" | "yearly";
 
@@ -24,13 +26,16 @@ type Props = {
    */
   onSelect?: (plan: PlanId, cycle: BillingCycle) => void;
   busyPlan?: PlanId | null;
+  /** Dipakai halaman harga publik (locale terdeteksi dari cookie). Dasbor tetap default ID. */
+  locale?: Locale;
 };
 
 const POPULAR: PlanId = "pro";
 
-export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props) {
+export default function PricingTable({ currentPlan, onSelect, busyPlan, locale = DEFAULT_LOCALE }: Props) {
   const [cycle, setCycle] = useState<BillingCycle>("yearly");
   const saving = yearlySavingPercent("pro");
+  const t = getDictionary(locale).pricing.table;
 
   return (
     <div className="space-y-8">
@@ -39,7 +44,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
         <div
           className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1"
           role="group"
-          aria-label="Siklus pembayaran"
+          aria-label={t.cycleAriaLabel}
         >
           {(["monthly", "yearly"] as const).map((value) => {
             const active = cycle === value;
@@ -55,14 +60,14 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {value === "monthly" ? "Bulanan" : "Tahunan"}
+                {value === "monthly" ? t.monthly : t.yearly}
                 {value === "yearly" && saving > 0 && (
                   <span
                     className={`ml-2 rounded-full px-2 py-0.5 text-[11px] ${
                       active ? "bg-white/20" : "bg-success-soft text-success"
                     }`}
                   >
-                    hemat {saving}%
+                    {t.savingPrefix} {saving}%
                   </span>
                 )}
               </button>
@@ -89,7 +94,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
               {isPopular && (
                 <span className="absolute -top-3 left-6 inline-flex items-center gap-1 rounded-full bg-brand px-3 py-1 text-[11px] font-bold text-brand-contrast">
                   <Sparkles size={12} />
-                  Paling banyak dipilih
+                  {t.popularBadge}
                 </span>
               )}
 
@@ -102,14 +107,14 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
 
               <div className="mb-6">
                 {price === 0 ? (
-                  <p className="text-4xl font-bold text-foreground">Gratis</p>
+                  <p className="text-4xl font-bold text-foreground">{t.free}</p>
                 ) : (
                   <>
                     <p className="text-4xl font-bold text-foreground">
                       {formatIDR(price)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      per {cycle === "yearly" ? "tahun" : "bulan"}
+                      {cycle === "yearly" ? t.perYear : t.perMonth}
                     </p>
                   </>
                 )}
@@ -133,20 +138,20 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
                   disabled
                   className="btn-ghost w-full cursor-default py-3 text-center"
                 >
-                  Paket Anda saat ini
+                  {t.currentPlan}
                 </button>
               ) : planId === "free" ? (
                 <>
                   <SignedOut>
                     <SignInButton mode="modal">
-                      <button className="btn-ghost w-full py-3">Mulai gratis</button>
+                      <button className="btn-ghost w-full py-3">{t.startFree}</button>
                     </SignInButton>
                   </SignedOut>
                   <SignedIn>
                     {/* Sudah punya akun tapi sedang di paket berbayar: kartu ini
                         tetap perlu penutup supaya tingginya tidak timpang. */}
                     <p className="py-3 text-center text-sm text-muted-foreground">
-                      Paket dasar, aktif selamanya
+                      {t.freeForever}
                     </p>
                   </SignedIn>
                 </>
@@ -159,10 +164,10 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
                   {busy ? (
                     <>
                       <Loader2 size={16} className="animate-spin" />
-                      Menyiapkan…
+                      {t.preparing}
                     </>
                   ) : (
-                    `Pilih ${plan.name}`
+                    t.choosePlan(plan.name)
                   )}
                 </button>
               ) : (
@@ -170,14 +175,14 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
                   <SignedIn>
                     <Link href="/dashboard/billing" className="block">
                       <button className="btn-saweria w-full py-3">
-                        Pilih {plan.name}
+                        {t.choosePlan(plan.name)}
                       </button>
                     </Link>
                   </SignedIn>
                   <SignedOut>
                     <SignInButton mode="modal">
                       <button className="btn-saweria w-full py-3">
-                        Pilih {plan.name}
+                        {t.choosePlan(plan.name)}
                       </button>
                     </SignInButton>
                   </SignedOut>
@@ -189,9 +194,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan }: Props)
       </div>
 
       <p className="text-center text-sm text-muted-foreground">
-        Pembayaran lewat QRIS, transfer bank, dan e-wallet. Paket berlaku sesuai
-        masa yang dibeli dan tidak diperpanjang otomatis — kami mengirim
-        pengingat sebelum masa aktif habis.
+        {t.disclaimer}
       </p>
     </div>
   );

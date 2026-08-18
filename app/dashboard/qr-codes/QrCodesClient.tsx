@@ -7,7 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { QRCode } from "react-qrcode-logo";
 import { QRCodeSVG } from "qrcode.react";
 import { Download, FileCode2, Loader2, QrCode as QrIcon } from "lucide-react";
-import { DEFAULT_QR_STYLE } from "@/convex/qr";
+import { DEFAULT_QR_STYLE } from "@/convex/qrDefaults";
 import { downloadCanvasAsPng, downloadSvgNode } from "@/lib/qrDownload";
 import QrStyleEditor from "./QrStyleEditor";
 
@@ -20,6 +20,14 @@ export default function QrCodesPage() {
 
   const style = qrConfig?.style ?? DEFAULT_QR_STYLE;
   const canDownloadVector = qrConfig?.canDownloadVector ?? false;
+  const canCustomize = qrConfig?.canCustomize ?? false;
+
+  // Paket gratis tidak bisa mengatur logo sendiri — pusat QR-nya selalu
+  // menampilkan logo singkat.in sebagai identitas & ajakan upgrade halus.
+  // Paket berbayar bebas memilih: pakai logo sendiri atau kosongkan.
+  const logoUrl = canCustomize
+    ? style.logoUrl || undefined
+    : `${process.env.NEXT_PUBLIC_APP_URL}/logo.svg`;
 
   const linkUrl = (shortCode: string) =>
     `${process.env.NEXT_PUBLIC_APP_URL}/${shortCode}`;
@@ -94,7 +102,7 @@ export default function QrCodesPage() {
                 ecLevel="H"
                 fgColor={style.fgColor}
                 bgColor={style.bgColor}
-                logoImage={style.logoUrl || undefined}
+                logoImage={logoUrl}
                 logoWidth={150 * style.logoSizeRatio}
                 logoHeight={150 * style.logoSizeRatio}
                 logoOpacity={1}
@@ -118,10 +126,10 @@ export default function QrCodesPage() {
                   fgColor={style.fgColor}
                   bgColor={style.bgColor}
                   marginSize={2}
-                  {...(style.logoUrl
+                  {...(logoUrl
                     ? {
                         imageSettings: {
-                          src: style.logoUrl,
+                          src: logoUrl,
                           height: 1024 * style.logoSizeRatio,
                           width: 1024 * style.logoSizeRatio,
                           excavate: true,

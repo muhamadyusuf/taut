@@ -24,105 +24,52 @@ import {
   CategoryArt,
   ShieldArt,
 } from "@/app/_components/marketing/FeatureArt";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "Shortlink Gratis Terbaik dengan Analitik & QR Code",
-  description: "Ubah link panjang menjadi singkat.in/namamu. Platform perpendek link gratis dengan fitur statistik lengkap, kustomisasi slug, dan QR code otomatis.",
-  alternates: {
-    canonical: "https://singkat.in", // Mencegah duplikat konten
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "en"
+    ? {
+        title: "Best Free Shortlink with Analytics & QR Code",
+        description:
+          "Turn long links into singkat.in/yourname. A free link-shortening platform with full statistics, custom slugs, and automatic QR codes.",
+        alternates: { canonical: "https://singkat.in" },
+      }
+    : {
+        title: "Shortlink Gratis Terbaik dengan Analitik & QR Code",
+        description: "Ubah link panjang menjadi singkat.in/namamu. Platform perpendek link gratis dengan fitur statistik lengkap, kustomisasi slug, dan QR code otomatis.",
+        alternates: {
+          canonical: "https://singkat.in", // Mencegah duplikat konten
+        },
+      };
+}
 
-const STATS = [
-  { label: "Tautan Aktif", value: 10, decimals: 0, suffix: "K+" },
-  { label: "Klik Terhitung", value: 5.2, decimals: 1, suffix: "M" },
-  { label: "Pengguna", value: 2.5, decimals: 1, suffix: "K" },
-  { label: "Uptime", value: 99.9, decimals: 1, suffix: "%" },
+const STAT_VALUES = [
+  { value: 10, decimals: 0, suffix: "K+" },
+  { value: 5.2, decimals: 1, suffix: "M" },
+  { value: 2.5, decimals: 1, suffix: "K" },
+  { value: 99.9, decimals: 1, suffix: "%" },
 ];
 
 /**
  * Urutan `wide` menghasilkan pola bento 3 kolom: 2+1 / 1+2 / 2+1.
- * `tint` mewarnai semburat di kanvas ilustrasi masing-masing kartu.
+ * `tint` mewarnai semburat di kanvas ilustrasi masing-masing kartu. Teks
+ * label/title/body diambil dari kamus i18n (lihat FEATURES di bawah).
  */
-const FEATURES: FeatureItem[] = [
-  {
-    art: SlugArt,
-    label: "Identitas",
-    title: "Tautan bernama sendiri",
-    tint: "var(--brand)",
-    wide: true,
-    body: (
-      <>
-        Ubah URL sepanjang satu paragraf jadi{" "}
-        <span className="font-semibold text-brand">singkat.in/namamu</span> — mudah
-        diingat, mudah diketik, dan memperkuat personal branding.
-      </>
-    ),
-  },
-  {
-    art: AnalyticsArt,
-    label: "Data",
-    title: "Analitik real-time",
-    tint: "var(--warning)",
-    body: "Lihat berapa klik yang masuk tiap hari, dan tautan mana yang benar-benar bekerja.",
-  },
-  {
-    art: QrArt,
-    label: "Cetak",
-    title: "QR code instan",
-    tint: "var(--info)",
-    body: "Setiap tautan otomatis punya QR siap unduh untuk poster, kartu nama, atau merchandise.",
-  },
-  {
-    art: MicrositeArt,
-    label: "Halaman",
-    title: "Microsite & bio link",
-    tint: "var(--brand)",
-    wide: true,
-    body: "Satu halaman rapi untuk menampung semua tautanmu, lengkap dengan pilihan tema siap pakai — tanpa perlu menyentuh kode sama sekali.",
-  },
-  {
-    art: ShieldArt,
-    label: "Proteksi",
-    title: "Diperiksa sebelum diteruskan",
-    tint: "var(--success)",
-    wide: true,
-    body: "Setiap tautan dipindai dari indikasi spam dan phishing, dan pengunjung selalu melihat tujuan aslinya lebih dulu sebelum melanjutkan.",
-  },
-  {
-    art: CategoryArt,
-    label: "Rapi",
-    title: "Kategori terkelola",
-    tint: "var(--info)",
-    body: "Kelompokkan per kampanye atau mata kuliah, biar tidak tenggelam saat sudah ratusan.",
-  },
+const FEATURE_ART = [SlugArt, AnalyticsArt, QrArt, MicrositeArt, ShieldArt, CategoryArt];
+const FEATURE_TINT = [
+  "var(--brand)",
+  "var(--warning)",
+  "var(--info)",
+  "var(--brand)",
+  "var(--success)",
+  "var(--info)",
 ];
+const FEATURE_WIDE = [true, false, false, true, true, false];
 
-const USE_CASES = [
-  "Kampus", "UMKM", "Content Creator", "Event Organizer", "Startup",
-  "Komunitas", "Dosen", "Toko Online", "Freelancer", "Organisasi",
-];
-
-const STEPS = [
-  {
-    no: "01",
-    title: "Tempel tautan panjang",
-    body: "Salin URL apa pun — form pendaftaran, Google Drive, katalog produk — lalu tempel ke kolom tautan.",
-  },
-  {
-    no: "02",
-    title: "Atur slug & kategori",
-    body: "Tentukan nama link sesuai kebutuhan, beri judul, dan kelompokkan ke kategori yang sesuai.",
-  },
-  {
-    no: "03",
-    title: "Bagikan & pantau",
-    body: "Sebar lewat QR code atau bio link, lalu lihat performanya langsung di halaman statistik.",
-  },
-];
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString("id-ID", {
+function formatDate(ts: number, locale: string) {
+  return new Date(ts).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -139,7 +86,18 @@ async function getLatestArticles() {
 }
 
 export default async function Home() {
-  const articles = await getLatestArticles();
+  const [articles, locale] = await Promise.all([getLatestArticles(), getLocale()]);
+  const t = getDictionary(locale).home;
+
+  const STATS = t.stats.map((s, i) => ({ ...s, ...STAT_VALUES[i] }));
+  const USE_CASES = t.useCases;
+  const STEPS = t.steps;
+  const FEATURES: FeatureItem[] = t.features.map((f, i) => ({
+    ...f,
+    art: FEATURE_ART[i],
+    tint: FEATURE_TINT[i],
+    wide: FEATURE_WIDE[i],
+  }));
 
   return (
     <div className="overflow-x-hidden">
@@ -161,21 +119,20 @@ export default async function Home() {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-brand opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-brand" />
                 </span>
-                Tautkan duniamu dalam satu klik
+                {t.heroBadge}
               </div>
             </Reveal>
 
             <Reveal delay={90}>
               <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl xl:text-7xl">
-                Lebih Singkat, <br />
-                <span className="text-gradient-animated">Lebih Terhubung.</span>
+                {t.heroTitle1} <br />
+                <span className="text-gradient-animated">{t.heroTitle2}</span>
               </h1>
             </Reveal>
 
             <Reveal delay={180}>
               <p className="mx-auto mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground lg:mx-0">
-                Perpendek tautan, pantau performanya, dan bagikan lewat QR code —
-                semuanya dari satu tempat.
+                {t.heroSubtitle}
               </p>
             </Reveal>
 
@@ -185,7 +142,7 @@ export default async function Home() {
                 <SignedOut>
                   <SignInButton mode="modal">
                     <button className="btn-saweria group flex w-full items-center justify-center gap-2 px-8 py-4 text-base sm:w-auto sm:px-10 sm:text-lg">
-                      Mulai singkat.in
+                      {t.ctaStart}
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </SignInButton>
@@ -194,7 +151,7 @@ export default async function Home() {
                 <SignedIn>
                   <Link href="/dashboard/links" className="w-full sm:w-auto">
                     <button className="btn-saweria group flex w-full items-center justify-center gap-2 px-8 py-4 text-base sm:w-auto sm:px-10 sm:text-lg">
-                      Mulai singkat.in
+                      {t.ctaStart}
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </Link>
@@ -204,7 +161,7 @@ export default async function Home() {
                   href="/about"
                   className="btn-ghost w-full px-8 py-4 text-center text-base sm:w-auto"
                 >
-                  Pelajari dulu
+                  {t.ctaLearnMore}
                 </Link>
               </div>
             </Reveal>
@@ -212,7 +169,7 @@ export default async function Home() {
             <Reveal delay={340}>
               <p className="mt-6 flex items-center justify-center gap-2 text-sm text-subtle lg:justify-start">
                 <Sparkles size={15} className="text-brand" />
-                Gratis selamanya · Tanpa kartu kredit
+                {t.freeNote}
               </p>
             </Reveal>
           </div>
@@ -227,7 +184,7 @@ export default async function Home() {
       {/* ================= MARQUEE ================= */}
       <section className="border-y border-border bg-card py-8">
         <p className="mb-6 text-center text-xs font-bold uppercase tracking-[0.2em] text-subtle">
-          Dipakai untuk berbagai kebutuhan
+          {t.marqueeLabel}
         </p>
         <div className="marquee-mask overflow-hidden">
           {/* Daftar digandakan agar animasi -50% menghasilkan loop mulus */}
@@ -273,13 +230,13 @@ export default async function Home() {
           <Reveal className="mb-16 text-center">
             <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-soft-fg">
               <Zap className="h-3.5 w-3.5" />
-              Fitur
+              {t.featuresBadge}
             </span>
             <h2 className="mt-4 text-3xl font-bold text-foreground md:text-4xl">
-              Semua yang bikin link lebih powerful
+              {t.featuresTitle}
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-              Bukan cuma memendekkan — tapi mengelola, mengukur, dan membagikan.
+              {t.featuresSubtitle}
             </p>
           </Reveal>
 
@@ -302,10 +259,10 @@ export default async function Home() {
         <div className="mx-auto max-w-5xl">
           <Reveal className="mb-16 text-center">
             <h2 className="text-3xl font-bold text-foreground md:text-4xl">
-              Tiga langkah, selesai
+              {t.stepsTitle}
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-              Dari tautan panjang jadi tautan siap sebar dalam waktu kurang dari satu menit.
+              {t.stepsSubtitle}
             </p>
           </Reveal>
 
@@ -338,17 +295,17 @@ export default async function Home() {
             <div className="bg-grid pointer-events-none absolute inset-0 opacity-40" aria-hidden />
             <div className="relative z-10">
               <h2 className="mx-auto max-w-2xl text-3xl font-bold leading-tight text-foreground md:text-4xl">
-                Siap bikin tautan pertamamu?
+                {t.ctaTitle}
               </h2>
               <p className="mx-auto mt-4 max-w-md text-muted-foreground">
-                Daftar gratis, tanpa batas jumlah tautan, dan langsung dapat statistik.
+                {t.ctaSubtitle}
               </p>
 
               <div className="mt-8 flex justify-center">
                 <SignedOut>
                   <SignInButton mode="modal">
                     <button className="btn-saweria group flex items-center gap-2 px-10 py-4 text-lg">
-                      Daftar Gratis
+                      {t.ctaButtonSignedOut}
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </SignInButton>
@@ -356,7 +313,7 @@ export default async function Home() {
                 <SignedIn>
                   <Link href="/dashboard/links">
                     <button className="btn-saweria group flex items-center gap-2 px-10 py-4 text-lg">
-                      Buka Dashboard
+                      {t.ctaButtonSignedIn}
                       <ArrowRight size={20} className="transition-transform group-hover:translate-x-1" />
                     </button>
                   </Link>
@@ -375,13 +332,13 @@ export default async function Home() {
               <div>
                 <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-soft-fg">
                   <Newspaper className="h-3.5 w-3.5" />
-                  Blog
+                  {t.blogBadge}
                 </span>
                 <h2 className="mt-4 text-3xl font-bold text-foreground md:text-4xl">
-                  Artikel Terbaru
+                  {t.blogTitle}
                 </h2>
                 <p className="mt-2 text-muted-foreground">
-                  Tips, tutorial, dan kabar terbaru dari tim singkat.in.
+                  {t.blogSubtitle}
                 </p>
               </div>
 
@@ -389,7 +346,7 @@ export default async function Home() {
                 href="/blog"
                 className="group inline-flex shrink-0 items-center gap-2 font-semibold text-brand transition-colors hover:text-brand-hover"
               >
-                Lihat semua artikel
+                {t.blogSeeAll}
                 <ArrowRight
                   size={18}
                   className="transition-transform group-hover:translate-x-1"
@@ -435,11 +392,11 @@ export default async function Home() {
                       <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-1 pt-3 text-xs text-subtle">
                         <span className="flex items-center gap-1.5">
                           <CalendarDays className="h-3.5 w-3.5" />
-                          {formatDate(article.publishedAt)}
+                          {formatDate(article.publishedAt, locale)}
                         </span>
                         <span className="flex items-center gap-1.5">
                           <Eye className="h-3.5 w-3.5" />
-                          {article.views.toLocaleString("id-ID")} dilihat
+                          {article.views.toLocaleString("id-ID")} {t.blogViewsSuffix}
                         </span>
                       </div>
                     </div>

@@ -7,20 +7,35 @@ import { UserButton, SignInButton, useUser } from "@clerk/nextjs";
 import {
   Link as LinkIcon, BarChart3, Settings,
   Menu, X, QrCode, Plus, Layers, Smartphone,
-  ShoppingBag, ShieldCheck, ClipboardList, Sparkles, Palette, Globe, Link2, Code2
+  ShoppingBag, ShieldCheck, ClipboardList, Sparkles, Palette, Globe, Link2, Code2,
+  Crown, ChevronDown
 } from "lucide-react";
 import Image from "next/image";
 import { useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import CreateLinkModal from "./_components/CreateLinkModal";
 import ThemeToggle from "../_components/ThemeToggle";
+import LanguageToggle from "../_components/LanguageToggle";
 import { useEnsureUser } from "../_components/useEnsureUser";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
   const { isSignedIn, isLoaded } = useUser();
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard;
+
+  const premiumMenuItems = [
+    { name: t.sidebar.subdomain, href: "/dashboard/subdomains", icon: Globe },
+    { name: t.sidebar.ownDomain, href: "/dashboard/domains", icon: Link2 },
+    { name: t.sidebar.landingPage, href: "/dashboard/branding", icon: Palette },
+    { name: t.sidebar.developer, href: "/dashboard/developer", icon: Code2 },
+  ];
+  const isPremiumRouteActive = premiumMenuItems.some((item) => pathname.startsWith(item.href));
+  const [premiumMenuOpen, setPremiumMenuOpen] = useState(isPremiumRouteActive);
 
   useEnsureUser();
   const me = useQuery(api.users.getMe);
@@ -29,7 +44,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
   if (!isLoaded) {
     return (
       <div className="h-screen flex items-center justify-center bg-background text-brand font-medium">
-        Memuat...
+        {t.loading}
       </div>
     );
   }
@@ -37,29 +52,26 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
   if (!isSignedIn) {
     return (
       <div className="h-screen flex items-center justify-center flex-col gap-4 bg-background">
-        <h2 className="text-xl font-bold text-foreground">Akses Ditolak</h2>
+        <h2 className="text-xl font-bold text-foreground">{t.accessDenied.title}</h2>
         <SignInButton mode="modal">
-          <button className="btn-saweria">Masuk ke singkat.in</button>
+          <button className="btn-saweria">{t.accessDenied.loginButton}</button>
         </SignInButton>
       </div>
     );
   }
 
   const menuItems = [
-    { name: "Tautan Saya", href: "/dashboard/links", icon: LinkIcon },
-    { name: "Kategori", href: "/dashboard/categories", icon: Layers },
-    { name: "QR Codes", href: "/dashboard/qr-codes", icon: QrCode },
-    { name: "Formulir", icon: ClipboardList, href: "/dashboard/forms", isNew: true },
-    { name: "Microsite", icon: Smartphone, href: "/dashboard/microsite", isNew: false },
-    { name: "Shop", icon: ShoppingBag, href: "/dashboard/shop", isNew: false },
-    { name: "Statistik", href: "/dashboard/analytics", icon: BarChart3 },
-    { name: "Subdomain", href: "/dashboard/subdomains", icon: Globe },
-    { name: "Domain Sendiri", href: "/dashboard/domains", icon: Link2 },
-    { name: "Halaman Antara", href: "/dashboard/branding", icon: Palette },
-    { name: "Developer", href: "/dashboard/developer", icon: Code2 },
-    { name: "Paket & Tagihan", href: "/dashboard/billing", icon: Sparkles },
-    { name: "Pengaturan", href: "/dashboard/settings", icon: Settings },
+    { name: t.sidebar.links, href: "/dashboard/links", icon: LinkIcon },
+    { name: t.sidebar.categories, href: "/dashboard/categories", icon: Layers },
+    { name: t.sidebar.qrCodes, href: "/dashboard/qr-codes", icon: QrCode },
+    { name: t.sidebar.forms, icon: ClipboardList, href: "/dashboard/forms", isNew: true },
+    { name: t.sidebar.microsite, icon: Smartphone, href: "/dashboard/microsite", isNew: false },
+    { name: t.sidebar.shop, icon: ShoppingBag, href: "/dashboard/shop", isNew: false },
+    { name: t.sidebar.analytics, href: "/dashboard/analytics", icon: BarChart3 },
+    { name: t.sidebar.billing, href: "/dashboard/billing", icon: Sparkles },
+    { name: t.sidebar.settings, href: "/dashboard/settings", icon: Settings },
   ];
+
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -92,7 +104,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
           <button
             onClick={() => setSidebarOpen(false)}
             className="md:hidden ml-auto text-muted-foreground hover:text-foreground"
-            aria-label="Tutup menu"
+            aria-label={t.sidebar.closeMenu}
           >
             <X size={24} />
           </button>
@@ -123,12 +135,63 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
                 {/* Badge "NEW" untuk fitur baru */}
                 {item.isNew && (
                   <span className="absolute right-3 bg-danger-soft text-danger text-[10px] font-bold px-2 py-0.5 rounded-full">
-                    NEW
+                    {t.sidebar.newBadge}
                   </span>
                 )}
               </Link>
             );
           })}
+
+          {/* Grup "Akses Premium" — menu fitur premium dilipat agar sidebar tidak penuh */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setPremiumMenuOpen((prev) => !prev)}
+              aria-expanded={premiumMenuOpen}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative ${
+                isPremiumRouteActive
+                  ? "bg-brand-soft text-brand-soft-fg font-bold"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
+              }`}
+            >
+              <Crown
+                size={20}
+                className={isPremiumRouteActive ? "text-brand" : "text-subtle group-hover:text-foreground"}
+              />
+              <span>{t.sidebar.premiumAccess}</span>
+              <ChevronDown
+                size={18}
+                className={`ml-auto transition-transform duration-200 ${premiumMenuOpen ? "rotate-180" : ""}`}
+              />
+            </button>
+
+            {premiumMenuOpen && (
+              <div className="mt-1 ml-4 pl-4 border-l border-border space-y-1">
+                {premiumMenuItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href);
+
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-all duration-200 group ${
+                        isActive
+                          ? "bg-brand-soft text-brand-soft-fg font-bold"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground font-medium"
+                      }`}
+                    >
+                      <item.icon
+                        size={18}
+                        className={isActive ? "text-brand" : "text-subtle group-hover:text-foreground"}
+                      />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           {/* Menu Administrator — hanya untuk admin */}
           {isAdmin && (
@@ -147,9 +210,9 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
                   size={20}
                   className={pathname.startsWith("/admin") ? "text-brand" : "text-subtle group-hover:text-foreground"}
                 />
-                <span>Administrator</span>
+                <span>{t.sidebar.admin}</span>
                 <span className="absolute right-3 bg-brand-soft text-brand-soft-fg text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  ADMIN
+                  {t.sidebar.adminBadge}
                 </span>
               </Link>
             </>
@@ -160,8 +223,8 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
           <div className="bg-warning-soft border border-warning/25 p-4 rounded-2xl flex items-center gap-3">
             <div className="bg-warning p-2 rounded-full text-brand-contrast leading-none">⚡</div>
             <div>
-              <p className="text-sm font-bold text-warning">singkat.in Pro</p>
-              <p className="text-xs text-muted-foreground">Fitur lebih lengkap.</p>
+              <p className="text-sm font-bold text-warning">{t.sidebar.proTitle}</p>
+              <p className="text-xs text-muted-foreground">{t.sidebar.proSubtitle}</p>
             </div>
           </div>
         </div>
@@ -175,7 +238,7 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
             <button
               onClick={() => setSidebarOpen(true)}
               className="md:hidden shrink-0 text-muted-foreground bg-card border border-border p-2 rounded-xl"
-              aria-label="Buka menu"
+              aria-label={t.sidebar.openMenu}
             >
               <Menu />
             </button>
@@ -185,20 +248,21 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">
+            <LanguageToggle locale={locale} />
             <ThemeToggle />
             <button
               onClick={() => setIsModalOpen(true)}
-              aria-label="Tautkan link baru"
+              aria-label={t.topbar.createLinkAria}
               className="btn-saweria flex items-center gap-2 px-3 py-2.5 sm:px-4 sm:py-3 md:pr-6"
             >
               <div className="bg-white/20 p-1 rounded-full"><Plus size={18} strokeWidth={3} /></div>
-              <span className="hidden sm:inline">Tautkan Link</span>
+              <span className="hidden sm:inline">{t.topbar.createLink}</span>
             </button>
             <div className="bg-card p-1 rounded-full border border-border">
               <UserButton afterSignOutUrl="/">
                 <UserButton.MenuItems>
                   <UserButton.Link
-                    label="Formulir Saya"
+                    label={t.topbar.myForms}
                     labelIcon={<ClipboardList size={16} />}
                     href="/dashboard/forms"
                   />

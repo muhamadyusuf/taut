@@ -4,20 +4,36 @@ import Image from "next/image";
 import { fetchQuery } from "convex/nextjs";
 import { api } from "@/convex/_generated/api";
 import { CalendarDays, Clock, Eye, Newspaper } from "lucide-react";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "Artikel & Blog",
-  description:
-    "Tips, tutorial, dan kabar terbaru seputar manajemen tautan, QR code, dan digital marketing dari tim singkat.in.",
-  openGraph: {
-    title: "Artikel & Blog | singkat.in",
-    description:
-      "Tips, tutorial, dan kabar terbaru seputar manajemen tautan dari tim singkat.in.",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "en"
+    ? {
+        title: "Articles & Blog",
+        description:
+          "Tips, tutorials, and the latest news about link management, QR codes, and digital marketing from the singkat.in team.",
+        openGraph: {
+          title: "Articles & Blog | singkat.in",
+          description:
+            "Tips, tutorials, and the latest news about link management from the singkat.in team.",
+        },
+      }
+    : {
+        title: "Artikel & Blog",
+        description:
+          "Tips, tutorial, dan kabar terbaru seputar manajemen tautan, QR code, dan digital marketing dari tim singkat.in.",
+        openGraph: {
+          title: "Artikel & Blog | singkat.in",
+          description:
+            "Tips, tutorial, dan kabar terbaru seputar manajemen tautan dari tim singkat.in.",
+        },
+      };
+}
 
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString("id-ID", {
+function formatDate(ts: number, locale: string) {
+  return new Date(ts).toLocaleDateString(locale === "en" ? "en-US" : "id-ID", {
     day: "numeric",
     month: "long",
     year: "numeric",
@@ -30,6 +46,8 @@ export default async function BlogPage({
   searchParams: Promise<{ kategori?: string }>;
 }) {
   const { kategori } = await searchParams;
+  const locale = await getLocale();
+  const t = getDictionary(locale).blog;
 
   const [articles, categories] = await Promise.all([
     fetchQuery(api.articles.getPublishedArticles, { category: kategori }),
@@ -44,14 +62,13 @@ export default async function BlogPage({
       <header className="mb-10">
         <span className="inline-flex items-center gap-2 rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand-soft-fg">
           <Newspaper className="h-3.5 w-3.5" />
-          Blog
+          {t.badge}
         </span>
         <h1 className="mt-4 text-4xl md:text-5xl font-extrabold text-foreground">
-          Artikel <span className="text-brand">singkat.in</span>
+          {t.titlePrefix} <span className="text-brand">singkat.in</span>
         </h1>
         <p className="mt-3 max-w-2xl text-lg text-muted-foreground leading-relaxed">
-          Tips, tutorial, dan kabar terbaru seputar manajemen tautan, QR code,
-          dan strategi digital.
+          {t.subtitle}
         </p>
       </header>
 
@@ -66,7 +83,7 @@ export default async function BlogPage({
                 : "bg-card border border-border text-muted-foreground hover:text-brand hover:border-brand"
             }`}
           >
-            Semua
+            {t.all}
           </Link>
           {categories.map((c) => (
             <Link
@@ -88,11 +105,9 @@ export default async function BlogPage({
       {articles.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-border bg-card py-24 text-muted-foreground">
           <Newspaper className="h-10 w-10 text-subtle" />
-          <p className="font-semibold text-foreground">Belum ada artikel</p>
+          <p className="font-semibold text-foreground">{t.empty}</p>
           <p className="text-sm">
-            {kategori
-              ? `Tidak ada artikel dalam kategori "${kategori}".`
-              : "Artikel pertama sedang disiapkan. Nantikan ya!"}
+            {kategori ? t.emptyInCategory(kategori) : t.emptyGeneral}
           </p>
         </div>
       ) : (
@@ -134,6 +149,9 @@ export default async function BlogPage({
                 publishedAt={featured.publishedAt}
                 views={featured.views}
                 readingTime={featured.readingTime}
+                locale={locale}
+                viewsSuffix={t.viewsSuffix}
+                readingTimeSuffix={t.readingTimeSuffix}
               />
             </div>
           </Link>
@@ -179,6 +197,9 @@ export default async function BlogPage({
                         publishedAt={a.publishedAt}
                         views={a.views}
                         readingTime={a.readingTime}
+                        locale={locale}
+                        viewsSuffix={t.viewsSuffix}
+                        readingTimeSuffix={t.readingTimeSuffix}
                       />
                     </div>
                   </div>
@@ -196,24 +217,30 @@ function ArticleMeta({
   publishedAt,
   views,
   readingTime,
+  locale,
+  viewsSuffix,
+  readingTimeSuffix,
 }: {
   publishedAt: number;
   views: number;
   readingTime: number;
+  locale: string;
+  viewsSuffix: string;
+  readingTimeSuffix: string;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-subtle">
       <span className="flex items-center gap-1.5">
         <CalendarDays className="h-3.5 w-3.5" />
-        {formatDate(publishedAt)}
+        {formatDate(publishedAt, locale)}
       </span>
       <span className="flex items-center gap-1.5">
         <Eye className="h-3.5 w-3.5" />
-        {views.toLocaleString("id-ID")} dilihat
+        {views.toLocaleString("id-ID")} {viewsSuffix}
       </span>
       <span className="flex items-center gap-1.5">
         <Clock className="h-3.5 w-3.5" />
-        {readingTime} menit baca
+        {readingTime} {readingTimeSuffix}
       </span>
     </div>
   );

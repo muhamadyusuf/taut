@@ -7,18 +7,23 @@ import { usePathname } from "next/navigation";
 import { LayoutDashboard, Menu, X } from "lucide-react";
 import Image from "next/image";
 import ThemeToggle, { ThemeSwitcher } from "../ThemeToggle";
+import LanguageToggle from "../LanguageToggle";
+import type { Locale } from "@/lib/i18n/localeConfig";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-const NAV_LINKS = [
-  { href: "/", label: "Home" },
-  { href: "/pricing", label: "Harga" },
-  { href: "/blog", label: "Blog" },
-  { href: "/about", label: "Tentang" },
-  { href: "/contact", label: "Kontak" },
-];
+type NavbarDict = Pick<Dictionary, "nav" | "languageToggle">;
 
-export default function Navbar() {
+export default function Navbar({ locale, dict }: { locale: Locale; dict: NavbarDict }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+
+  const NAV_LINKS = [
+    { href: "/", label: dict.nav.home },
+    { href: "/pricing", label: dict.nav.pricing },
+    { href: "/blog", label: dict.nav.blog },
+    { href: "/about", label: dict.nav.about },
+    { href: "/contact", label: dict.nav.contact },
+  ];
 
   return (
     <nav className="sticky top-0 z-50 glass border-b border-border">
@@ -59,7 +64,8 @@ export default function Navbar() {
             jadi toggle tema dipindah ke dalam panel menu. Dibungkus span agar
             `hidden` tidak beradu dengan `grid` milik komponennya sendiri.
           */}
-          <span className="hidden md:block">
+          <span className="hidden md:flex items-center gap-2">
+            <LanguageToggle locale={locale} />
             <ThemeToggle />
           </span>
 
@@ -67,14 +73,14 @@ export default function Navbar() {
           <SignedOut>
             <SignInButton mode="modal">
               <button className="hidden px-4 py-2 font-medium text-muted-foreground transition hover:text-brand sm:block">
-                Masuk
+                {dict.nav.login}
               </button>
             </SignInButton>
             <SignInButton mode="modal">
               <button className="btn-saweria px-4 py-2 text-sm font-bold sm:px-5 sm:py-2.5 sm:text-base">
                 {/* Label dipendekkan di mobile supaya baris navbar tetap muat */}
-                <span className="sm:hidden">Daftar</span>
-                <span className="hidden sm:inline">Daftar Gratis</span>
+                <span className="sm:hidden">{dict.nav.registerShort}</span>
+                <span className="hidden sm:inline">{dict.nav.registerFull}</span>
               </button>
             </SignInButton>
           </SignedOut>
@@ -83,11 +89,11 @@ export default function Navbar() {
           <SignedIn>
             <Link href="/dashboard/links">
               <button
-                aria-label="Buka dashboard"
+                aria-label={dict.nav.dashboard}
                 className="flex items-center gap-2 rounded-full border-2 border-brand bg-card px-3 py-2 font-bold text-brand transition-colors hover:bg-brand hover:text-brand-contrast sm:px-5"
               >
                 <LayoutDashboard size={18} />
-                <span className="hidden sm:inline">Dashboard</span>
+                <span className="hidden sm:inline">{dict.nav.dashboard}</span>
               </button>
             </Link>
             <UserButton />
@@ -99,7 +105,7 @@ export default function Navbar() {
             onClick={() => setOpen((v) => !v)}
             aria-expanded={open}
             aria-controls="menu-mobile"
-            aria-label={open ? "Tutup menu" : "Buka menu"}
+            aria-label={open ? dict.nav.closeMenu : dict.nav.openMenu}
             className="grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-brand hover:text-brand active:scale-95 md:hidden"
           >
             {open ? <X size={18} /> : <Menu size={18} />}
@@ -137,14 +143,18 @@ export default function Navbar() {
                   onClick={() => setOpen(false)}
                   className="mt-1 rounded-xl px-3 py-3 text-left font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                 >
-                  Masuk
+                  {dict.nav.login}
                 </button>
               </SignInButton>
             </SignedOut>
 
-            {/* Pengatur tema, dipindah ke sini dari baris navbar */}
+            {/* Pengatur bahasa & tema, dipindah ke sini dari baris navbar */}
             <div className="mt-2 flex items-center justify-between gap-3 border-t border-border px-3 pt-4 pb-2">
-              <span className="text-sm font-medium text-muted-foreground">Tema</span>
+              <span className="text-sm font-medium text-muted-foreground">{dict.languageToggle.label}</span>
+              <LanguageToggle locale={locale} />
+            </div>
+            <div className="flex items-center justify-between gap-3 px-3 pb-2">
+              <span className="text-sm font-medium text-muted-foreground">{dict.nav.theme}</span>
               <ThemeSwitcher />
             </div>
           </div>

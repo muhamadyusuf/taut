@@ -14,18 +14,10 @@ import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertFeature, getEntitlements, requireIdentity } from "./entitlements";
 import { planHasFeature } from "./plans";
+import { DEFAULT_QR_STYLE } from "./qrDefaults";
 
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 const DOT_STYLES = ["squares", "dots", "fluid"];
-
-export const DEFAULT_QR_STYLE = {
-  fgColor: "#000000",
-  bgColor: "#ffffff",
-  logoUrl: undefined as string | undefined,
-  logoSizeRatio: 0.22,
-  dotStyle: "squares",
-  quietZone: 5,
-};
 
 /** Luminansi relatif (WCAG) untuk mengukur kontras dua warna. */
 function relativeLuminance(hex: string): number {

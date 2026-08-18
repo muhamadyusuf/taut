@@ -8,47 +8,36 @@ import {
   AnalyticsArt,
   CommunityArt,
 } from "@/app/_components/marketing/FeatureArt";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "Tentang Singkat.in",
-  description: "Platform manajemen tautan modern untuk semua kebutuhan digital.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return locale === "en"
+    ? {
+        title: "About Singkat.in",
+        description: "A modern link management platform for all your digital needs.",
+      }
+    : {
+        title: "Tentang Singkat.in",
+        description: "Platform manajemen tautan modern untuk semua kebutuhan digital.",
+      };
+}
 
-/** Pola bento 3 kolom untuk 4 kartu: 2+1 / 1+2. */
-const VALUES: FeatureItem[] = [
-  {
-    art: ShieldArt,
-    label: "Keamanan",
-    title: "Aman & privat",
-    tint: "var(--brand)",
-    wide: true,
-    body: "Kami memprioritaskan keamanan data pengguna. Setiap tautan dipindai dari indikasi spam dan konten berbahaya sebelum diteruskan, dan pengunjung selalu melihat tujuan aslinya lebih dulu.",
-  },
-  {
-    art: GlobalArt,
-    label: "Performa",
-    title: "Infrastruktur global",
-    tint: "var(--warning)",
-    body: "Server berkinerja tinggi yang memastikan tautan Anda dapat diakses dengan cepat dari seluruh dunia.",
-  },
-  {
-    art: AnalyticsArt,
-    label: "Wawasan",
-    title: "Analitik real-time",
-    tint: "var(--success)",
-    body: "Pantau performa tautan Anda dan optimalkan strategi digital berdasarkan data, bukan tebakan.",
-  },
-  {
-    art: CommunityArt,
-    label: "Akses",
-    title: "Terbuka untuk umum",
-    tint: "var(--info)",
-    wide: true,
-    body: "Siapa pun bisa mendaftar — mulai dari pelajar, dosen, UMKM, hingga korporasi. Tidak ada batasan eksklusif dan tidak ada biaya tersembunyi untuk mulai memakainya.",
-  },
-];
+const VALUE_ART = [ShieldArt, GlobalArt, AnalyticsArt, CommunityArt];
+const VALUE_TINT = ["var(--brand)", "var(--warning)", "var(--success)", "var(--info)"];
+const VALUE_WIDE = [true, false, false, true];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const locale = await getLocale();
+  const t = getDictionary(locale).about;
+  const VALUES: FeatureItem[] = t.values.map((v, i) => ({
+    ...v,
+    art: VALUE_ART[i],
+    tint: VALUE_TINT[i],
+    wide: VALUE_WIDE[i],
+  }));
+
   return (
     <div className="overflow-x-hidden">
       {/* ================= INTRO ================= */}
@@ -59,22 +48,20 @@ export default function AboutPage() {
           <Reveal>
             <span className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-brand shadow-sm">
               <Sparkles size={15} />
-              Tentang kami
+              {t.badge}
             </span>
           </Reveal>
 
           <Reveal delay={90}>
             <h1 className="mt-6 text-4xl font-extrabold leading-tight tracking-tight text-foreground md:text-5xl lg:text-6xl">
-              Solusi Link Pendek yang{" "}
-              <span className="text-gradient-animated">Simpel &amp; Powerful.</span>
+              {t.title1}{" "}
+              <span className="text-gradient-animated">{t.title2}</span>
             </h1>
           </Reveal>
 
           <Reveal delay={180}>
             <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground md:text-xl">
-              Singkat.in adalah inisiatif teknologi dari Prodi Teknologi Informasi
-              ITTS untuk mempermudah distribusi informasi, materi akademik, dan
-              presensi digital dalam satu tautan yang aman dan terpercaya.
+              {t.intro}
             </p>
           </Reveal>
         </div>
@@ -85,10 +72,10 @@ export default function AboutPage() {
         <div className="mx-auto max-w-6xl px-6">
           <Reveal className="mb-14 text-center">
             <h2 className="text-3xl font-bold text-foreground md:text-4xl">
-              Yang kami pegang
+              {t.valuesTitle}
             </h2>
             <p className="mx-auto mt-3 max-w-lg text-muted-foreground">
-              Empat prinsip yang menentukan bagaimana platform ini dibangun.
+              {t.valuesSubtitle}
             </p>
           </Reveal>
 
@@ -108,3 +95,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

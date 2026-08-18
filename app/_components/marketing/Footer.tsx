@@ -1,19 +1,8 @@
 import Link from "next/link";
 import Image from "next/image";
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-const MENU_LINKS = [
-  { href: "/", label: "Beranda" },
-  { href: "/blog", label: "Artikel" },
-  { href: "/about", label: "Tentang Kami" },
-  { href: "/contact", label: "Kontak & Lokasi" },
-];
-
-const LEGAL_LINKS = [
-  { href: "/privacy", label: "Kebijakan Privasi" },
-  { href: "/terms", label: "Syarat Penggunaan" },
-];
-
-export default function Footer() {
+export default function Footer({ dict }: { dict: Dictionary }) {
   return (
     <footer className="bg-card border-t border-border pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-6">
@@ -28,14 +17,14 @@ export default function Footer() {
               </Link>
             </div>
             <p className="text-muted-foreground text-sm leading-relaxed max-w-xs">
-              Platform manajemen tautan.<br />Aman, Cepat, dan Terpercaya.
+              {dict.footer.tagline}<br />{dict.footer.taglineLine2}
             </p>
           </div>
 
           <div>
-            <h4 className="font-bold text-foreground mb-4">Menu</h4>
+            <h4 className="font-bold text-foreground mb-4">{dict.footer.menuTitle}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {MENU_LINKS.map((item) => (
+              {dict.footer.menuLinks.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="hover:text-brand transition-colors">
                     {item.label}
@@ -46,9 +35,9 @@ export default function Footer() {
           </div>
 
           <div>
-            <h4 className="font-bold text-foreground mb-4">Legal &amp; Support</h4>
+            <h4 className="font-bold text-foreground mb-4">{dict.footer.legalTitle}</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              {LEGAL_LINKS.map((item) => (
+              {dict.footer.legalLinks.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className="hover:text-brand transition-colors">
                     {item.label}
@@ -57,7 +46,7 @@ export default function Footer() {
               ))}
               <li>
                 <a href="mailto:info@singkat.in" className="hover:text-brand transition-colors">
-                  Bantuan IT
+                  {dict.footer.helpLink}
                 </a>
               </li>
             </ul>
@@ -65,7 +54,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-border pt-8 text-center text-xs text-subtle">
-          &copy; {new Date().getFullYear()} ITTS Dev Team. All rights reserved.
+          {dict.footer.copyright(new Date().getFullYear())}
         </div>
       </div>
     </footer>
