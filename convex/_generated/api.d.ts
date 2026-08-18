@@ -28,6 +28,7 @@ import type * as entitlements from "../entitlements.js";
 import type * as forms from "../forms.js";
 import type * as http from "../http.js";
 import type * as links from "../links.js";
+import type * as micrositeSlug from "../micrositeSlug.js";
 import type * as microsites from "../microsites.js";
 import type * as midtransActions from "../midtransActions.js";
 import type * as plans from "../plans.js";
@@ -82,6 +83,7 @@ declare const fullApi: ApiFromModules<{
   forms: typeof forms;
   http: typeof http;
   links: typeof links;
+  micrositeSlug: typeof micrositeSlug;
   microsites: typeof microsites;
   midtransActions: typeof midtransActions;
   plans: typeof plans;

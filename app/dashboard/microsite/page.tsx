@@ -7,28 +7,14 @@ import { Plus, Smartphone, ExternalLink, Edit, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
-import { alertMessageFor, errorMessage } from "@/lib/planError";
+import { errorMessage } from "@/lib/planError";
+import CreateMicrositeModal from "./_components/CreateMicrositeModal";
 
 export default function MicrositeListPage() {
   const microsites = useQuery(api.microsites.getMyMicrosites);
-  const createMicrosite = useMutation(api.microsites.createMicrosite);
   const deleteMicrosite = useMutation(api.microsites.deleteMicrosite);
   const router = useRouter();
-  const [isCreating, setIsCreating] = useState(false);
-
-  const handleCreate = async () => {
-    const slug = prompt("Masukkan URL Bio yang diinginkan (contoh: andri-bisnis):");
-    if (!slug) return;
-    setIsCreating(true);
-    try {
-      const id = await createMicrosite({ slug, title: "Halaman Baru" });
-      router.push(`/dashboard/microsite/${id}`); // Redirect ke Editor
-    } catch (e) {
-      alert(alertMessageFor(e, "Gagal membuat halaman bio."));
-    } finally {
-      setIsCreating(false);
-    }
-  };
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleDelete = async (id: Id<"microsites">, title: string) => {
     if (confirm(`Yakin ingin menghapus halaman "${title}" selamanya?`)) {
@@ -42,14 +28,22 @@ export default function MicrositeListPage() {
 
   return (
     <div className="max-w-5xl mx-auto">
+      <CreateMicrositeModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreated={(id) => {
+          setIsModalOpen(false);
+          router.push(`/dashboard/microsite/${id}`);
+        }}
+      />
+
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-foreground">Bio Link Saya</h1>
         <button
-          onClick={handleCreate}
-          disabled={isCreating}
+          onClick={() => setIsModalOpen(true)}
           className="btn-saweria px-6 py-2 flex items-center gap-2"
         >
-          <Plus size={18} /> {isCreating ? "Membuat..." : "Buat Baru"}
+          <Plus size={18} /> Buat Baru
         </button>
       </div>
 
@@ -99,7 +93,7 @@ export default function MicrositeListPage() {
         {microsites?.length === 0 && (
           <div className="col-span-full text-center py-20 bg-muted rounded-2xl border border-dashed border-border">
             <p className="text-muted-foreground mb-4">Belum ada Bio Link</p>
-            <button onClick={handleCreate} className="text-brand font-bold hover:underline">
+            <button onClick={() => setIsModalOpen(true)} className="text-brand font-bold hover:underline">
               Buat yang pertama
             </button>
           </div>

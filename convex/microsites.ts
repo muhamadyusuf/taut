@@ -1,6 +1,10 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { assertWithinLimit, countOwned, userHasFeature } from "./entitlements";
+import {
+  inspectMicrositeSlug,
+  sanitizeMicrositeSlug,
+} from "./micrositeSlug";
 
 // ---------------------------------------------------------
 // 1. READ: AMBIL LIST MICROSITE (Untuk Dashboard Utama)
@@ -33,6 +37,34 @@ export const getMicrositeById = query({
 // ---------------------------------------------------------
 // 3. CREATE: BUAT MICROSITE BARU
 // ---------------------------------------------------------
+/**
+ * Ketersediaan slug, untuk umpan balik langsung di formulir.
+ *
+ * Ini kenyamanan, bukan penjaga: pemeriksaan yang mengikat tetap dilakukan
+ * ulang di dalam createMicrosite, karena nama bisa saja diambil orang lain di
+ * sela antara pengetikan dan penyimpanan.
+ */
+export const checkSlugAvailability = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return { available: false, reason: "Belum masuk." };
+
+    const clean = sanitizeMicrositeSlug(args.slug);
+    const verdict = inspectMicrositeSlug(clean);
+    if (!verdict.ok) return { available: false, reason: verdict.reason };
+
+    const taken = await ctx.db
+      .query("microsites")
+      .withIndex("by_slug", (q) => q.eq("slug", clean))
+      .first();
+
+    return taken
+      ? { available: false, reason: "Nama ini sudah dipakai." }
+      : { available: true, reason: null };
+  },
+});
+
 export const createMicrosite = mutation({
   args: { 
     slug: v.string(), 
@@ -48,8 +80,10 @@ export const createMicrosite = mutation({
     const existingCount = await countOwned(ctx, "microsites", identity.subject);
     await assertWithinLimit(ctx, "microsites", existingCount);
 
-    // Validasi Slug: Pastikan hanya huruf kecil, angka, dan strip
-    const cleanSlug = args.slug.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    // Aturan yang sama dengan yang dipakai pratinjau di formulir.
+    const cleanSlug = sanitizeMicrositeSlug(args.slug);
+    const verdict = inspectMicrositeSlug(cleanSlug);
+    if (!verdict.ok) throw new Error(verdict.reason);
 
     // Cek apakah Slug sudah dipakai orang lain
     const existing = await ctx.db
