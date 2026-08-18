@@ -6,8 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { X, Pencil, Check } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
 import { errorMessage } from "@/lib/planError";
-import Link from "next/link";
-import { KeyRound, Clock, Lock } from "lucide-react";
+import LinkProtectionFields, {
+  EMPTY_PROTECTION,
+  protectionToArgs,
+  type ProtectionState,
+} from "./LinkProtectionFields";
 
 interface EditLinkModalProps {
   isOpen: boolean;
@@ -26,7 +29,7 @@ interface EditLinkModalProps {
 
 export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkModalProps) {
   const updateLink = useMutation(api.links.updateLink);
-  const setProtection = useMutation(api.links.setLinkProtection);
+  const saveProtection = useMutation(api.links.setLinkProtection);
   const categories = useQuery(api.categories.getMyCategories);
   const me = useQuery(api.users.getMe);
 
@@ -47,10 +50,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const [expiryDate, setExpiryDate] = useState("");
-  const [maxClicks, setMaxClicks] = useState("");
-  const [password, setPassword] = useState("");
-  const [clearPassword, setClearPassword] = useState(false);
+  const [protection, setProtection] = useState<ProtectionState>(EMPTY_PROTECTION);
 
   // SAAT MODAL DIBUKA: Isi form dengan data lama
   useEffect(() => {
@@ -63,18 +63,19 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
 
       // <input type="datetime-local"> menuntut waktu LOKAL tanpa zona. Memakai
       // toISOString() di sini akan menggeser tampilannya tujuh jam untuk WIB.
+      let expiryDate = "";
       if (linkData.expiresAt) {
         const d = new Date(linkData.expiresAt);
         const pad = (n: number) => String(n).padStart(2, "0");
-        setExpiryDate(
-          `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-        );
-      } else {
-        setExpiryDate("");
+        expiryDate = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
       }
-      setMaxClicks(linkData.maxClicks ? String(linkData.maxClicks) : "");
-      setPassword("");
-      setClearPassword(false);
+
+      setProtection({
+        expiryDate,
+        maxClicks: linkData.maxClicks ? String(linkData.maxClicks) : "",
+        password: "",
+        clearPassword: false,
+      });
     }
   }, [isOpen, linkData]);
 
@@ -103,15 +104,9 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
       });
 
       if (canProtect) {
-        await setProtection({
+        await saveProtection({
           id: linkData._id,
-          expiresAt: expiryDate ? new Date(expiryDate).getTime() : null,
-          maxClicks: maxClicks ? Number(maxClicks) : null,
-          ...(clearPassword
-            ? { password: "" }
-            : password
-              ? { password }
-              : {}),
+          ...protectionToArgs(protection),
         });
       }
       onClose();
@@ -207,6 +202,15 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
             </div>
           </div>
 
+          {/* Proteksi tautan diletakkan setelah Custom Link — ia bagian dari
+              pengaturan tautan, bukan bagian dari baris aksi di bawah. */}
+          <LinkProtectionFields
+            value={protection}
+            onChange={setProtection}
+            canProtect={canProtect}
+            hasPassword={!!linkData.hasPassword}
+          />
+
           {error && (
             <div className="text-danger text-sm bg-danger-soft p-4 rounded-xl border border-danger/25">
               ⚠️ {error}
@@ -221,94 +225,6 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
             >
               Batal
             </button>
-            {/* Proteksi tautan — fitur paket berbayar */}
-            {canProtect ? (
-              <div className="w-full space-y-4 rounded-2xl border border-border bg-muted/40 p-5">
-                <p className="flex items-center gap-2 text-sm font-bold text-foreground">
-                  <Lock size={16} className="text-brand" />
-                  Proteksi tautan
-                </p>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-                      <Clock size={13} /> Berlaku sampai
-                    </label>
-                    <input
-                      type="datetime-local"
-                      value={expiryDate}
-                      onChange={(e) => setExpiryDate(e.target.value)}
-                      className="input-field w-full"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-                      Maksimal jumlah klik
-                    </label>
-                    <input
-                      type="number"
-                      min={1}
-                      value={maxClicks}
-                      onChange={(e) => setMaxClicks(e.target.value)}
-                      placeholder="Tanpa batas"
-                      className="input-field w-full"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-                    <KeyRound size={13} /> Sandi
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => {
-                      setPassword(e.target.value);
-                      setClearPassword(false);
-                    }}
-                    placeholder={
-                      linkData.hasPassword
-                        ? "Terpasang — isi untuk mengganti"
-                        : "Kosongkan untuk tanpa sandi"
-                    }
-                    className="input-field w-full"
-                  />
-                  {linkData.hasPassword && (
-                    <label className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
-                      <input
-                        type="checkbox"
-                        checked={clearPassword}
-                        onChange={(e) => {
-                          setClearPassword(e.target.checked);
-                          if (e.target.checked) setPassword("");
-                        }}
-                      />
-                      Hapus sandi dari tautan ini
-                    </label>
-                  )}
-                </div>
-
-                <p className="text-xs text-muted-foreground">
-                  Kosongkan tanggal dan batas klik untuk membuat tautan berlaku
-                  selamanya.
-                </p>
-              </div>
-            ) : (
-              <Link href="/dashboard/billing" className="w-full">
-                <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border p-4 transition hover:border-brand">
-                  <Lock size={18} className="shrink-0 text-subtle" />
-                  <p className="text-sm text-muted-foreground">
-                    <span className="font-bold text-foreground">
-                      Kedaluwarsa &amp; sandi tautan
-                    </span>{" "}
-                    tersedia di paket berbayar.
-                  </p>
-                </div>
-              </Link>
-            )}
-
             <button disabled={loading} type="submit" className="btn-saweria py-3 px-8 font-bold">
               {loading ? "Menyimpan..." : "Simpan Perubahan"}
             </button>

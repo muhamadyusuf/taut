@@ -6,6 +6,11 @@ import { api } from "@/convex/_generated/api";
 import { X, Link as LinkIcon, Check } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
 import { errorMessage } from "@/lib/planError";
+import LinkProtectionFields, {
+  EMPTY_PROTECTION,
+  protectionToArgs,
+  type ProtectionState,
+} from "./LinkProtectionFields";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
 
@@ -26,6 +31,15 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
   // Subdomain yang dimiliki pengguna; kosong berarti hanya domain utama.
   const subdomainData = useQuery(api.subdomains.getMine);
   const domainData = useQuery(api.domains.getMine);
+  const me = useQuery(api.users.getMe);
+
+  // Panelnya tetap tampil untuk semua orang, tapi sebagai ajakan upgrade bila
+  // paketnya belum mencakup — menyembunyikannya sama sekali membuat fiturnya
+  // tidak pernah ditemukan orang yang justru membutuhkannya.
+  const canProtect =
+    me?.features?.includes("link_expiry") ||
+    me?.features?.includes("link_password") ||
+    false;
 
   // Subdomain dan domain sendiri sama-sama berperan sebagai ruang nama, jadi
   // keduanya muncul dalam satu daftar pilihan alamat.
@@ -43,6 +57,7 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [subdomain, setSubdomain] = useState("");
+  const [protection, setProtection] = useState<ProtectionState>(EMPTY_PROTECTION);
 
   // State untuk menyimpan BANYAK kategori
   const [selectedCats, setSelectedCats] = useState<Id<"categories">[]>([]);
@@ -83,10 +98,12 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
         customSlug: slug,
         categoryIds: selectedCats, // Kirim array kategori
         subdomain: subdomain || undefined,
+        ...(canProtect ? protectionToArgs(protection) : {}),
       });
 
       // Reset form
       setUrl(""); setTitle(""); setSlug(""); setSelectedCats([]); setSubdomain("");
+      setProtection(EMPTY_PROTECTION);
       onClose();
     } catch (err: unknown) {
       // Pesan aslinya ditampilkan apa adanya. Sebelumnya semua kegagalan
@@ -216,6 +233,15 @@ export default function CreateLinkModal({ isOpen, onClose, initialCategoryId }: 
               />
             </div>
           </div>
+
+          {/* Posisi sama dengan modal edit: setelah Custom Link, sebelum
+              baris aksi. Dua modal yang menaruhnya di tempat berbeda memaksa
+              orang mencari ulang tiap kali berpindah. */}
+          <LinkProtectionFields
+            value={protection}
+            onChange={setProtection}
+            canProtect={canProtect}
+          />
 
           {error && (
             <div className="text-danger text-sm bg-danger-soft p-4 rounded-xl border border-danger/25">

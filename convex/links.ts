@@ -133,6 +133,12 @@ export const createLink = mutation({
     // ARGS BARU: Menerima array ID kategori
     categoryIds: v.optional(v.array(v.id("categories"))),
     subdomain: v.optional(v.string()),
+
+    // Proteksi ikut di panggilan yang sama, bukan mutation kedua: tautan yang
+    // sempat hidup tanpa sandi walau sedetik tetap tautan yang bocor.
+    expiresAt: v.optional(v.union(v.number(), v.null())),
+    maxClicks: v.optional(v.union(v.number(), v.null())),
+    password: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
@@ -175,6 +181,39 @@ export const createLink = mutation({
       } while (await shortCodeTaken(ctx, subdomain, shortCode));
     }
 
+    // Proteksi divalidasi SEBELUM tautan ditulis. Kalau paketnya tidak
+    // mencakup, tidak ada baris setengah jadi yang tertinggal di basis data.
+    let expiresAt: number | undefined;
+    let maxClicks: number | undefined;
+    let passwordHash: string | undefined;
+
+    const memintaProteksi =
+      (args.expiresAt !== undefined && args.expiresAt !== null) ||
+      (args.maxClicks !== undefined && args.maxClicks !== null);
+
+    if (memintaProteksi) {
+      await assertFeature(ctx, "link_expiry");
+
+      if (args.expiresAt !== undefined && args.expiresAt !== null) {
+        if (args.expiresAt <= Date.now()) {
+          throw new Error("Tanggal kedaluwarsa harus di masa depan.");
+        }
+        expiresAt = args.expiresAt;
+      }
+      if (args.maxClicks !== undefined && args.maxClicks !== null) {
+        if (args.maxClicks < 1) throw new Error("Batas klik minimal 1.");
+        maxClicks = args.maxClicks;
+      }
+    }
+
+    if (args.password) {
+      await assertFeature(ctx, "link_password");
+      if (args.password.length < 4) {
+        throw new Error("Sandi minimal 4 karakter.");
+      }
+      passwordHash = await hashPassword(args.password, shortCode);
+    }
+
     // 1. Simpan Link Utama
     const linkId = await ctx.db.insert("links", {
       originalUrl: verdict.normalized,
@@ -185,6 +224,9 @@ export const createLink = mutation({
       createdAt: Date.now(),
       status: "active",
       subdomain,
+      expiresAt,
+      maxClicks,
+      passwordHash,
     });
 
     // Pemeriksaan Safe Browsing dijadwalkan, tidak ditunggu: panggilan jaringan
