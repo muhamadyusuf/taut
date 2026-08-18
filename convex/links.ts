@@ -2,7 +2,12 @@ import { mutation, query } from "./_generated/server";
 import type { MutationCtx } from "./_generated/server";
 import type { Doc } from "./_generated/dataModel";
 import { v } from "convex/values";
-import { getEntitlements, getEntitlementsForUser } from "./entitlements";
+import {
+  assertFeature,
+  getEntitlements,
+  getEntitlementsForUser,
+  requireIdentity,
+} from "./entitlements";
 import { assertRateLimit, inspectUrl, linkStatusOf } from "./abuse";
 import { internal } from "./_generated/api";
 import { planHasFeature } from "./plans";
@@ -306,11 +311,168 @@ export const updateLink = mutation({
   },
 });
 
+
+/**
+ * Menukar sandi yang benar dengan URL tujuan.
+ *
+ * Dibuat mutation, bukan query, karena sekaligus mencatat klik: memisahkannya
+ * berarti tujuan bisa diambil tanpa pernah tercatat sebagai kunjungan.
+ */
+export const unlockAndIncrement = mutation({
+  args: {
+    shortCode: v.string(),
+    subdomain: v.optional(v.string()),
+    password: v.string(),
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    device: v.optional(v.string()),
+    os: v.optional(v.string()),
+    browser: v.optional(v.string()),
+    referrerHost: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const link = await ctx.db
+      .query("links")
+      .withIndex("by_subdomain_shortCode", (q) =>
+        q
+          .eq("subdomain", args.subdomain?.toLowerCase() || undefined)
+          .eq("shortCode", args.shortCode)
+      )
+      .first();
+
+    if (!link || !link.passwordHash) return { ok: false as const };
+
+    const attempt = await hashPassword(args.password, link.shortCode);
+    if (attempt !== link.passwordHash) return { ok: false as const };
+
+    const now = Date.now();
+    await ctx.db.patch(link._id, { clicks: link.clicks + 1 });
+
+    await ctx.db.insert("click_events", {
+      linkId: link._id,
+      userId: link.userId,
+      ts: now,
+      country: args.country,
+      city: args.city,
+      device: args.device,
+      os: args.os,
+      browser: args.browser,
+      referrerHost: args.referrerHost,
+    });
+
+    await bumpDailyRollup(ctx, link, now, args);
+
+    return { ok: true as const, originalUrl: link.originalUrl };
+  },
+});
+
+/**
+ * Sidik jari sandi tautan.
+ *
+ * Kode pendek dipakai sebagai garam supaya dua tautan bersandi sama tidak
+ * menghasilkan sidik jari yang sama — tanpa itu, siapa pun yang melihat isi
+ * basis data bisa tahu tautan mana saja yang memakai sandi yang sama.
+ */
+export async function hashPassword(
+  password: string,
+  salt: string
+): Promise<string> {
+  const data = new TextEncoder().encode(`${salt}:${password}`);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+
+/**
+ * Mengatur kedaluwarsa dan sandi sebuah tautan.
+ *
+ * Keduanya fitur berbayar dan diperiksa terpisah: seseorang boleh saja punya
+ * paket yang mencakup salah satunya saja di kemudian hari, dan menggabungkan
+ * pemeriksaannya akan menutup pintu yang seharusnya terbuka.
+ */
+export const setLinkProtection = mutation({
+  args: {
+    id: v.id("links"),
+    /** null = hapus kedaluwarsa tanggal */
+    expiresAt: v.optional(v.union(v.number(), v.null())),
+    /** null = hapus batas klik */
+    maxClicks: v.optional(v.union(v.number(), v.null())),
+    /** "" = hapus sandi, undefined = biarkan apa adanya */
+    password: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const identity = await requireIdentity(ctx);
+
+    const link = await ctx.db.get(args.id);
+    if (!link || link.userId !== identity.subject) {
+      throw new Error("Tautan tidak ditemukan atau bukan milik Anda.");
+    }
+
+    const patch: Record<string, unknown> = {};
+
+    if (args.expiresAt !== undefined || args.maxClicks !== undefined) {
+      // Menghapus batasan tidak butuh paket berbayar. Kalau langganan berakhir,
+      // pengguna harus tetap bisa membereskan tautannya sendiri.
+      const menambahBatas =
+        (args.expiresAt !== undefined && args.expiresAt !== null) ||
+        (args.maxClicks !== undefined && args.maxClicks !== null);
+
+      if (menambahBatas) await assertFeature(ctx, "link_expiry");
+
+      if (args.expiresAt !== undefined) {
+        if (args.expiresAt !== null && args.expiresAt <= Date.now()) {
+          throw new Error("Tanggal kedaluwarsa harus di masa depan.");
+        }
+        patch.expiresAt = args.expiresAt ?? undefined;
+      }
+      if (args.maxClicks !== undefined) {
+        if (args.maxClicks !== null && args.maxClicks < 1) {
+          throw new Error("Batas klik minimal 1.");
+        }
+        patch.maxClicks = args.maxClicks ?? undefined;
+      }
+    }
+
+    if (args.password !== undefined) {
+      if (args.password === "") {
+        patch.passwordHash = undefined;
+      } else {
+        await assertFeature(ctx, "link_password");
+        if (args.password.length < 4) {
+          throw new Error("Sandi minimal 4 karakter.");
+        }
+        patch.passwordHash = await hashPassword(args.password, link.shortCode);
+      }
+    }
+
+    await ctx.db.patch(args.id, patch);
+  },
+});
+
 export const getMyLinks = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return [];
-    return await ctx.db.query("links").withIndex("by_userId", (q) => q.eq("userId", identity.subject)).order("desc").collect();
+
+    const links = await ctx.db
+      .query("links")
+      .withIndex("by_userId", (q) => q.eq("userId", identity.subject))
+      .order("desc")
+      .collect();
+
+    const now = Date.now();
+
+    return links.map(({ passwordHash, ...link }) => ({
+      ...link,
+      // Sidik jari sandi tidak pernah keluar dari server; UI hanya perlu tahu
+      // ada atau tidaknya.
+      hasPassword: !!passwordHash,
+      isExpired:
+        (link.expiresAt !== undefined && link.expiresAt <= now) ||
+        (link.maxClicks !== undefined && link.clicks >= link.maxClicks),
+    }));
   },
 });
 
@@ -342,6 +504,37 @@ export const getUrlByCode = query({
     if (!link) return null;
 
     const owner = await getEntitlementsForUser(ctx, link.userId);
+
+    // Tautan yang hidup di alamat khusus ikut berhenti saat paket pemiliknya
+    // berakhir — alamat itu sendiri yang berbayar. Tautannya tidak dihapus dan
+    // tetap bisa dibuka lewat domain utama, jadi datanya tidak hilang.
+    if (subdomain) {
+      const isCustomDomain = subdomain.includes(".");
+      const feature = isCustomDomain ? "custom_domain" : "subdomain";
+      if (!planHasFeature(owner.plan, feature)) return null;
+    }
+
+    // Kedaluwarsa diperiksa saat dibaca, bukan lewat pekerjaan terjadwal:
+    // tautan yang lewat tanggalnya harus mati pada detik itu juga, bukan
+    // menunggu cron berikutnya menyapu.
+    const expiredByDate =
+      link.expiresAt !== undefined && link.expiresAt <= Date.now();
+    const expiredByClicks =
+      link.maxClicks !== undefined && link.clicks >= link.maxClicks;
+
+    if (expiredByDate || expiredByClicks) {
+      return {
+        originalUrl: "",
+        shortCode: link.shortCode,
+        title: link.title,
+        mode: "expired" as const,
+        brand: null,
+        safety: linkStatusOf(link),
+        flagReason: null,
+        needsPassword: false,
+        expiredReason: expiredByDate ? ("date" as const) : ("clicks" as const),
+      };
+    }
 
     let mode: "skip" | "ads" | "branded" = "ads";
     let brand: {
@@ -377,14 +570,23 @@ export const getUrlByCode = query({
       mode = "skip";
     }
 
+    const needsPassword = !!link.passwordHash;
+
     return {
-      originalUrl: link.originalUrl,
+      // URL tujuan sengaja TIDAK dikirim untuk tautan bersandi. Query ini
+      // terbuka untuk publik, jadi mengirimkannya lalu menyembunyikannya di
+      // React sama saja dengan tidak memasang sandi sama sekali.
+      originalUrl: needsPassword ? "" : link.originalUrl,
       shortCode: link.shortCode,
       title: link.title,
-      mode,
+      // Gerbang sandi mengalahkan mode lompat-langsung: pemilik berbayar pun
+      // tetap harus melewati sandinya sendiri.
+      mode: needsPassword ? ("password" as const) : mode,
       brand,
       safety: linkStatusOf(link),
       flagReason: link.flagReason ?? null,
+      needsPassword,
+      expiredReason: null,
     };
   },
 });

@@ -16,6 +16,12 @@ import { inspectUrl } from "./abuse";
 export const listLinksForApi = internalQuery({
   args: { userId: v.string(), limit: v.optional(v.number()) },
   handler: async (ctx, args) => {
+    // Diperiksa di sini, bukan hanya saat kunci dibuat: kunci yang terlanjur
+    // ada di tangan sistem pelanggan tidak boleh tetap membaca data setelah
+    // langganannya berakhir.
+    const owner = await getEntitlementsForUser(ctx, args.userId);
+    if (!planHasFeature(owner.plan, "api_access")) return null;
+
     const links = await ctx.db
       .query("links")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

@@ -112,7 +112,7 @@ export default async function Home() {
 
         <div className="relative z-10 mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-2 lg:gap-10">
           {/* --- Kolom teks --- */}
-          <div className="text-center lg:text-left">
+          <div className="min-w-0 text-center lg:text-left">
             <Reveal>
               <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-brand shadow-sm">
                 <span className="relative flex h-2 w-2">
@@ -124,7 +124,7 @@ export default async function Home() {
             </Reveal>
 
             <Reveal delay={90}>
-              <h1 className="mt-6 text-4xl font-bold leading-[1.08] tracking-tight text-foreground sm:text-5xl md:text-6xl xl:text-7xl">
+              <h1 className="mt-6 text-[2rem] font-bold leading-[1.12] tracking-tight text-foreground sm:text-5xl md:text-6xl xl:text-7xl">
                 {t.heroTitle1} <br />
                 <span className="text-gradient-animated">{t.heroTitle2}</span>
               </h1>
@@ -175,7 +175,11 @@ export default async function Home() {
           </div>
 
           {/* --- Kolom mockup 3D --- */}
-          <Reveal delay={200} scale={0.94} y="2.5rem" className="lg:pl-6">
+          {/* min-w-0 wajib: grid item default punya min-width:auto, sehingga kolom
+              menolak menyusut di bawah lebar min-content isinya. Mockup memuat URL
+              ber-truncate (white-space:nowrap) selebar ~438px — tanpa ini seluruh
+              halaman ikut melebar dan tampak terpotong di ponsel. */}
+          <Reveal delay={200} scale={0.94} y="2.5rem" className="min-w-0 lg:pl-6">
             <HeroMockup />
           </Reveal>
         </div>

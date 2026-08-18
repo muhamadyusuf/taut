@@ -23,8 +23,10 @@ const BARS = [38, 62, 45, 78, 56, 92, 70];
  * (client component); seluruh isi kartu dirender di server.
  */
 export default function HeroMockup() {
+  // px di mobile menyusutkan kartu, menyisakan ruang bagi chip melayang agar
+  // tetap di dalam layar alih-alih tersayat tepi viewport.
   return (
-    <div className="scene-3d relative mx-auto w-full max-w-md lg:max-w-lg">
+    <div className="scene-3d relative mx-auto w-full max-w-md px-6 sm:px-0 lg:max-w-lg">
       {/* Cahaya latar di belakang mockup */}
       <div
         className="glow-orb animate-drift absolute -top-10 left-1/4 h-56 w-56 bg-brand/30"
@@ -69,7 +71,7 @@ export default function HeroMockup() {
           </p>
           <div className="flex items-center gap-2 rounded-xl border-2 border-brand bg-brand-soft px-3 py-2.5">
             <LinkIcon size={15} className="shrink-0 text-brand" />
-            <span className="truncate text-sm font-bold text-brand">
+            <span className="min-w-0 truncate text-sm font-bold text-brand">
               singkat.in/itts
             </span>
             <span className="ml-auto flex shrink-0 items-center gap-1 rounded-lg bg-brand px-2 py-1 text-[10px] font-bold text-brand-contrast">

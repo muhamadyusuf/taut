@@ -8,7 +8,12 @@
 
 import { v } from "convex/values";
 import { internalMutation, internalQuery, mutation, query } from "./_generated/server";
-import { assertFeature, getEntitlements, requireIdentity } from "./entitlements";
+import {
+  assertFeature,
+  getEntitlements,
+  getEntitlementsForUser,
+  requireIdentity,
+} from "./entitlements";
 import { planHasFeature } from "./plans";
 
 export const SUPPORTED_EVENTS = ["link.created", "link.clicked"] as const;
@@ -114,6 +119,12 @@ export const remove = mutation({
 export const getTargets = internalQuery({
   args: { userId: v.string(), event: v.string() },
   handler: async (ctx, args) => {
+    // Paket pemilik diperiksa pada setiap pengiriman, bukan hanya saat webhook
+    // didaftarkan. Tanpa ini, endpoint yang terlanjur terdaftar akan terus
+    // menerima kiriman selamanya walau langganannya sudah lama berakhir.
+    const owner = await getEntitlementsForUser(ctx, args.userId);
+    if (!planHasFeature(owner.plan, "webhooks")) return [];
+
     const hooks = await ctx.db
       .query("webhooks")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))

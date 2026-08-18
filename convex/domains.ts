@@ -13,8 +13,10 @@ import {
   assertFeature,
   assertWithinLimit,
   getEntitlements,
+  getEntitlementsForUser,
   requireIdentity,
 } from "./entitlements";
+import { planHasFeature } from "./plans";
 
 /** Domain yang tidak boleh didaftarkan siapa pun sebagai "miliknya". */
 const BLOCKED_DOMAINS = new Set([
@@ -97,6 +99,13 @@ export const getActiveByHost = query({
       .first();
 
     if (!row || row.status !== "active") return null;
+
+    // Domain sendiri adalah fitur berbayar, jadi ia berhenti melayani begitu
+    // paket pemiliknya berakhir. Barisnya sengaja tidak dihapus: kalau mereka
+    // berlangganan lagi, alamatnya hidup kembali tanpa perlu menyiapkan DNS
+    // dari awal.
+    const owner = await getEntitlementsForUser(ctx, row.userId);
+    if (!planHasFeature(owner.plan, "custom_domain")) return null;
 
     return { userId: row.userId, domain: row.domain };
   },

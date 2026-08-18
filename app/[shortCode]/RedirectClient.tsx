@@ -5,7 +5,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import Image from "next/image";
-import { ExternalLink, ShieldCheck, ShieldAlert, AlertCircle, Flag, Loader2 } from "lucide-react";
+import { ExternalLink, ShieldCheck, ShieldAlert, AlertCircle, Flag, Loader2, Clock, KeyRound } from "lucide-react";
 import Link from "next/link";
 import NotFoundPage from "@/app/not-found";
 
@@ -44,6 +44,7 @@ export default function RedirectClient({
 
   const incrementClick = useMutation(api.links.getLinkAndIncrement);
   const reportLink = useMutation(api.abuse.reportLink);
+  const unlockLink = useMutation(api.links.unlockAndIncrement);
 
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [countdown, setCountdown] = useState(5);
@@ -51,6 +52,9 @@ export default function RedirectClient({
   const [reportOpen, setReportOpen] = useState(false);
   const [reportReason, setReportReason] = useState("phishing");
   const [reportSent, setReportSent] = useState(false);
+  const [password, setPassword] = useState("");
+  const [unlocking, setUnlocking] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   /**
    * Mencatat klik lalu berpindah. Sengaja tidak menyentuh state apa pun supaya
@@ -83,6 +87,10 @@ export default function RedirectClient({
     // dan yang ditandai kehilangan hitungan mundur otomatis — pengunjung harus
     // menekan sendiri setelah membaca peringatannya.
     if (link.safety === "blocked" || link.safety === "flagged") return;
+
+    // Tautan kedaluwarsa tidak pernah diteruskan, dan tautan bersandi menunggu
+    // sandinya dulu.
+    if (link.mode === "expired" || link.mode === "password") return;
 
     // Paket berbayar tanpa branding sendiri: tidak ada halaman antara sama
     // sekali, langsung diteruskan. Tidak ada state yang perlu diubah — layar
@@ -147,6 +155,96 @@ export default function RedirectClient({
           <Link href="/" className="mt-7 inline-block">
             <button className="btn-saweria px-8 py-3">Kembali ke beranda</button>
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── TAUTAN KEDALUWARSA ──
+  if (link.mode === "expired") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-lg rounded-2xl border border-border bg-card p-8 text-center">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-muted text-muted-foreground">
+            <Clock size={32} />
+          </div>
+          <h1 className="text-2xl font-bold text-foreground">
+            Tautan ini sudah tidak berlaku
+          </h1>
+          <p className="mt-3 text-muted-foreground">
+            {link.expiredReason === "clicks"
+              ? "Tautan ini sudah mencapai batas jumlah kunjungan yang ditetapkan pembuatnya."
+              : "Masa berlaku tautan ini sudah berakhir."}
+          </p>
+          <Link href="/" className="mt-7 inline-block">
+            <button className="btn-ghost px-8 py-3">Kembali ke beranda</button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // ── GERBANG SANDI ──
+  if (link.mode === "password") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="w-full max-w-md rounded-2xl border border-border bg-card p-8">
+          <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-brand-soft text-brand">
+            <KeyRound size={32} />
+          </div>
+          <h1 className="text-center text-xl font-bold text-foreground">
+            Tautan ini dilindungi sandi
+          </h1>
+          <p className="mt-2 text-center text-sm text-muted-foreground">
+            Masukkan sandi yang diberikan pengirim tautan.
+          </p>
+
+          <form
+            className="mt-6 space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setUnlocking(true);
+              setPasswordError(false);
+              try {
+                const result = await unlockLink({
+                  shortCode,
+                  subdomain,
+                  password,
+                  ...visitor,
+                });
+                if (result.ok) {
+                  redirectingRef.current = true;
+                  window.location.replace(result.originalUrl);
+                } else {
+                  setPasswordError(true);
+                }
+              } finally {
+                setUnlocking(false);
+              }
+            }}
+          >
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Sandi"
+              autoFocus
+              required
+              className="input-field w-full text-center"
+            />
+            {passwordError && (
+              <p className="text-center text-sm text-danger">
+                Sandi salah. Coba lagi.
+              </p>
+            )}
+            <button
+              disabled={unlocking}
+              className="btn-saweria flex w-full items-center justify-center gap-2 py-3"
+            >
+              {unlocking && <Loader2 size={16} className="animate-spin" />}
+              Buka tautan
+            </button>
+          </form>
         </div>
       </div>
     );

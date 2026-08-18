@@ -577,6 +577,20 @@
   .depth-2 { transform: translateZ(55px); }
   .depth-3 { transform: translateZ(85px); }
 
+  /*
+    Di layar sempit kedalaman dipangkas.
+    Proyeksi perspektif memperbesar elemen sebesar P/(P-z) DAN mendorongnya
+    menjauhi titik perspektif. Pada z=85 dengan perspective 1200px, elemen di
+    tepi kartu terdorong ~7,6% dari jaraknya ke pusat — cukup untuk membuat
+    chip melayang tersayat tepi layar ponsel. Nilai Z dikecilkan agar chip
+    tetap dekat posisi CSS-nya.
+  */
+  @media (max-width: 639px) {
+    .depth-1 { transform: translateZ(10px); }
+    .depth-2 { transform: translateZ(18px); }
+    .depth-3 { transform: translateZ(26px); }
+  }
+
   /* ------------------------------------------------------------------
      REVEAL SAAT MASUK VIEWPORT
      ------------------------------------------------------------------ */

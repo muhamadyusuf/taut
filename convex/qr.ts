@@ -49,9 +49,13 @@ export const getMySettings = query({
       .first();
 
     const ent = await getEntitlements(ctx);
+    const canCustomize = planHasFeature(ent.plan, "branded_qr");
 
     return {
-      style: settings
+      // Gaya kustom ikut dilepas saat paket berakhir. Mengembalikan warna
+      // simpanan sambil menutup editornya berarti akun yang sudah turun paket
+      // tetap menikmati QR bermerek — hanya tidak bisa mengubahnya lagi.
+      style: settings && canCustomize
         ? {
             fgColor: settings.fgColor,
             bgColor: settings.bgColor,
@@ -63,7 +67,7 @@ export const getMySettings = query({
         : DEFAULT_QR_STYLE,
       // Dibaca dari katalog, bukan dibandingkan dengan "free": kalau suatu saat
       // fitur ini digeser antar paket, tidak ada tempat kedua yang harus diubah.
-      canCustomize: planHasFeature(ent.plan, "branded_qr"),
+      canCustomize,
       canDownloadVector: planHasFeature(ent.plan, "vector_qr"),
       plan: ent.plan,
     };

@@ -19,6 +19,8 @@ import LanguageToggle from "../_components/LanguageToggle";
 import { useEnsureUser } from "../_components/useEnsureUser";
 import { useLocale } from "@/lib/i18n/useLocale";
 import { getDictionary } from "@/lib/i18n/dictionaries";
+import PlanBadge from "../_components/billing/PlanBadge";
+import type { PlanId } from "@/convex/plans";
 
 export function DashboardLayoutContent({ children }: { children: React.ReactNode }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,6 +42,17 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
   useEnsureUser();
   const me = useQuery(api.users.getMe);
   const isAdmin = me?.isAdmin ?? false;
+
+  // `me.plan` adalah paket EFEKTIF: backend sudah menurunkannya ke gratis
+  // begitu masa aktif lewat, jadi tampilan tidak menghitung tanggal sendiri.
+  const currentPlan: PlanId = (me?.plan as PlanId) ?? "free";
+  const planExpiresAt = me?.planExpiresAt ?? null;
+
+  // Kolom mentah masih menyimpan paket yang dibeli. Bedanya dengan paket
+  // efektif inilah yang memberi tahu bahwa langganannya baru saja habis —
+  // tanpa itu, akun yang kedaluwarsa tidak bisa dibedakan dari akun yang
+  // memang belum pernah berlangganan.
+  const justExpired = me ? me.storedPlan !== "free" && me.plan === "free" : false;
 
   if (!isLoaded) {
     return (
@@ -219,14 +232,34 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
           )}
         </nav>
 
+        {/* Status paket yang sebenarnya. Kotak promo sebelumnya selalu menulis
+            "singkat.in Pro" untuk semua orang — termasuk yang memang sudah Pro,
+            sehingga tidak pernah memberi tahu apa pun. */}
         <div className="p-6">
-          <div className="bg-warning-soft border border-warning/25 p-4 rounded-2xl flex items-center gap-3">
-            <div className="bg-warning p-2 rounded-full text-brand-contrast leading-none">⚡</div>
-            <div>
-              <p className="text-sm font-bold text-warning">{t.sidebar.proTitle}</p>
-              <p className="text-xs text-muted-foreground">{t.sidebar.proSubtitle}</p>
+          <Link href="/dashboard/billing" onClick={() => setSidebarOpen(false)}>
+            <div className="rounded-2xl border border-border bg-muted/50 p-4 transition hover:border-brand">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-xs font-bold uppercase text-muted-foreground">
+                  {t.sidebar.planCardTitle}
+                </span>
+                <PlanBadge plan={currentPlan} size="sm" />
+              </div>
+
+              {planExpiresAt ? (
+                <p className="mt-2 text-xs text-muted-foreground">
+                  {t.sidebar.planActiveUntil}{" "}
+                  {new Date(planExpiresAt).toLocaleDateString(
+                    locale === "en" ? "en-US" : "id-ID",
+                    { day: "numeric", month: "short", year: "numeric" }
+                  )}
+                </p>
+              ) : justExpired ? (
+                <p className="mt-2 text-xs text-danger">{t.sidebar.planExpiredHint}</p>
+              ) : currentPlan === "free" ? (
+                <p className="mt-2 text-xs text-brand">{t.sidebar.planSeePaid} &rarr;</p>
+              ) : null}
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
 
@@ -245,6 +278,13 @@ export function DashboardLayoutContent({ children }: { children: React.ReactNode
             <h1 className="truncate font-bold text-lg sm:text-xl md:text-2xl text-foreground capitalize">
               {pathname.split("/").pop()?.replace("-", " ")}
             </h1>
+            {/* Paket gratis tidak diberi lencana di header: menandai setiap
+                orang justru menghilangkan artinya sebagai pembeda. */}
+            {currentPlan !== "free" && (
+              <span className="hidden shrink-0 sm:inline">
+                <PlanBadge plan={currentPlan} size="sm" />
+              </span>
+            )}
           </div>
 
           <div className="flex shrink-0 items-center gap-2 sm:gap-3 md:gap-4">

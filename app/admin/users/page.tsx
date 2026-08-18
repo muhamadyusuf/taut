@@ -15,6 +15,8 @@ import {
   User,
 } from "lucide-react";
 import Image from "next/image";
+import PlanBadge from "@/app/_components/billing/PlanBadge";
+import type { PlanId } from "@/convex/plans";
 
 export default function AdminUsersPage() {
   const userStats = useQuery(api.admin.getUserStats);
@@ -118,10 +120,18 @@ export default function AdminUsersPage() {
 
                   {/* User Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground truncate">
-                      {info?.name ?? (
-                        <span className="text-subtle text-sm">Memuat...</span>
-                      )}
+                    <p className="flex items-center gap-2 font-semibold text-foreground">
+                      <span className="truncate">
+                        {info?.name ?? (
+                          <span className="text-subtle text-sm">Memuat...</span>
+                        )}
+                      </span>
+                      {/* Paket efektif, bukan kolom mentah: akun yang masa
+                          aktifnya lewat tampil sebagai Gratis di sini, sama
+                          seperti yang dirasakan pemiliknya. */}
+                      <span className="shrink-0">
+                        <PlanBadge plan={(u.plan as PlanId) ?? "free"} size="sm" />
+                      </span>
                     </p>
                     <p className="text-xs text-subtle truncate">
                       {info?.email ?? u.userId}

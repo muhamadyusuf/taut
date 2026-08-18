@@ -100,6 +100,16 @@ http.route({
       limit: Number.isFinite(limit) ? limit : 50,
     });
 
+    // null berarti kuncinya sah tapi paketnya tidak lagi mencakup akses API.
+    // 403, bukan 401: kuncinya benar, haknya yang hilang — dan membedakan
+    // keduanya menghemat waktu pelanggan yang sedang mencari sebabnya.
+    if (links === null) {
+      return jsonResponse(
+        { error: "Paket Anda tidak lagi mencakup akses API." },
+        403
+      );
+    }
+
     return jsonResponse({ data: links }, 200);
   }),
 });

@@ -288,6 +288,16 @@ Beberapa hal yang cocok dengan posisi Anda tapi jarang dimiliki kompetitor:
 | 6. Kampus/acara | Selesai — verifikasi sertifikat publik & Paket Acara |
 | 7. Platform | Sebagian — API key & webhook selesai. **Tim/workspace sengaja belum dikerjakan.** |
 
+### Katalog paket kini hanya memuat fitur yang benar-benar ada (18 Agustus 2026)
+
+Audit menemukan 11 fitur tercantum di katalog tanpa implementasi apa pun, dan
+empat di antaranya sudah tampil di kartu harga. `link_expiry` dan
+`link_password` kemudian dibangun; sisanya dicabut dari katalog sampai jadi:
+impor massal, targeting lokasi, rotator A/B, pixel retargeting, QR massal,
+ekspor & laporan terjadwal, dasbor publik, unggah berkas & logika percabangan
+formulir, serta anggota tim. `teamSeats` paket Bisnis dikembalikan ke 1 dengan
+alasan yang sama.
+
 ### Kenapa tim/workspace belum dikerjakan
 
 Bukan karena rumit secara teknis, melainkan karena ia mengubah hal paling

@@ -96,6 +96,17 @@ export type PlanDefinition = {
  * janji itu kita pegang. Yang dijual adalah kontrol, identitas merek, kedalaman
  * data, dan otomatisasi — bukan hak untuk memendekkan tautan.
  */
+/**
+ * Fitur yang SUDAH direncanakan tapi BELUM ada implementasinya sengaja tidak
+ * dicantumkan di sini: impor massal, targeting lokasi, rotator A/B, pixel
+ * retargeting, QR massal, ekspor & laporan terjadwal, dasbor publik, unggah
+ * berkas & logika percabangan formulir, serta anggota tim.
+ *
+ * Alasannya sederhana: planHasFeature() adalah satu-satunya sumber yang dibaca
+ * halaman harga maupun penjaga di backend. Mencantumkan fitur yang belum ada di
+ * sini sama dengan menagih pelanggan untuk sesuatu yang tidak bisa mereka pakai.
+ * Tambahkan kembali pada baris paket yang bersangkutan begitu fiturnya jadi.
+ */
 export const PLANS: Record<PlanId, PlanDefinition> = {
   free: {
     id: "free",
@@ -142,12 +153,10 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     features: [
       "link_expiry",
       "link_password",
-      "bulk_import",
       "skip_interstitial",
       "branded_qr",
       "vector_qr",
       "detailed_analytics",
-      "export_report",
       "subdomain",
       "remove_branding",
       "certificate_generator",
@@ -171,36 +180,27 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       subdomains: 3,
       customDomains: 3,
       analyticsRetentionDays: UNLIMITED,
-      teamSeats: 5,
+      // Tetap 1 sampai workspace tim benar-benar ada; kartu harga membaca
+      // angka ini, jadi menaikkannya lebih dulu berarti menjanjikan yang belum ada.
+      teamSeats: 1,
     },
     features: [
       "link_expiry",
       "link_password",
-      "bulk_import",
-      "geo_targeting",
-      "ab_rotator",
-      "retargeting_pixel",
       "skip_interstitial",
       // Bisnis tidak sekadar bebas iklan: halaman antara dipakai jadi kanal
       // branding sendiri (logo, warna, pesan). Lihat docs/premium-strategy.md §8.
       "whitelabel_interstitial",
       "branded_qr",
       "vector_qr",
-      "bulk_qr",
       "detailed_analytics",
-      "export_report",
-      "scheduled_report",
-      "public_dashboard",
       "subdomain",
       "custom_domain",
       "remove_branding",
       "certificate_generator",
       "certificate_verification",
-      "form_file_upload",
-      "form_logic",
       "api_access",
       "webhooks",
-      "team",
     ],
   },
 };
@@ -393,8 +393,6 @@ export function planHighlights(planId: PlanId): string[] {
     "link_expiry",
     "remove_branding",
     "certificate_verification",
-    "geo_targeting",
-    "ab_rotator",
     "api_access",
   ];
 

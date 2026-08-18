@@ -4,6 +4,7 @@ import { v } from "convex/values";
 // email yang ditulis di kode. Dengan begitu admin bisa ditambah atau dicabut
 // tanpa deploy ulang, dan hanya ada satu definisi "admin" di seluruh backend.
 import { assertAdmin } from "./entitlements";
+import { resolvePlan } from "./plans";
 
 // -------------------------------------------------------
 // 1. OVERVIEW STATS
@@ -177,7 +178,15 @@ export const getUserStats = query({
       if (shop.slug) userMap[shop.userId].shopSlugs.push(shop.slug);
     }
 
-    return Object.values(userMap).sort((a, b) => b.totalClicks - a.totalClicks);
+    // Paket efektif ikut dikirim supaya admin melihat status yang sama dengan
+    // yang dirasakan pengguna — bukan kolom mentah yang masih berisi "pro"
+    // walau masa aktifnya sudah lewat.
+    const accounts = await ctx.db.query("users").collect();
+    const planByUser = new Map(accounts.map((u) => [u.clerkId, resolvePlan(u)]));
+
+    return Object.values(userMap)
+      .sort((a, b) => b.totalClicks - a.totalClicks)
+      .map((row) => ({ ...row, plan: planByUser.get(row.userId) ?? "free" }));
   },
 });
 

@@ -143,6 +143,18 @@ export default defineSchema({
     flagReason: v.optional(v.string()),
     checkedAt: v.optional(v.number()), // terakhir diperiksa Safe Browsing
 
+    // --- Fitur paket berbayar, semuanya opsional agar baris lama tetap sah ---
+
+    // Tautan berhenti bekerja setelah tanggal ini, atau setelah sekian klik.
+    // Keduanya bisa dipakai bersamaan; yang lebih dulu tercapai yang berlaku.
+    expiresAt: v.optional(v.number()),
+    maxClicks: v.optional(v.number()),
+
+    // Sandi disimpan sebagai sidik jari, bukan teks asli. Pemilik tautan pun
+    // tidak bisa membacanya kembali dari basis data — sama seperti kata sandi
+    // akun, dan alasannya sama.
+    passwordHash: v.optional(v.string()),
+
     // Ruang nama tempat tautan ini hidup. Kosong berarti domain utama.
     //
     // Isinya salah satu dari dua bentuk, dan keduanya tidak mungkin bentrok
