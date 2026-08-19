@@ -1,7 +1,9 @@
 "use client";
 
 import { Crown, Sparkles, User } from "lucide-react";
-import { PLANS, type PlanId } from "@/convex/plans";
+import { planName, type PlanId } from "@/convex/plans";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Penanda paket yang dipakai di seluruh aplikasi.
@@ -47,6 +49,8 @@ export default function PlanBadge({
   /** Tampilkan sebagai paket yang baru saja berakhir, bukan paket aktif. */
   expired?: boolean;
 }) {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.planBadge;
   const style = STYLES[plan];
   const Icon = style.icon;
 
@@ -60,10 +64,10 @@ export default function PlanBadge({
     return (
       <span
         className={`inline-flex items-center rounded-full bg-danger-soft text-danger font-bold ${dims}`}
-        title="Masa aktif paket sudah berakhir"
+        title={t.expiredTitle}
       >
         <Icon size={iconSize} aria-hidden />
-        {showLabel && <>Kedaluwarsa</>}
+        {showLabel && <>{t.expired}</>}
       </span>
     );
   }
@@ -71,10 +75,10 @@ export default function PlanBadge({
   return (
     <span
       className={`inline-flex items-center rounded-full font-bold ${style.className} ${dims}`}
-      title={`Paket ${PLANS[plan].name}`}
+      title={t.planTitle(planName(plan, locale))}
     >
       <Icon size={iconSize} aria-hidden />
-      {showLabel && <>{PLANS[plan].name}</>}
+      {showLabel && <>{planName(plan, locale)}</>}
     </span>
   );
 }

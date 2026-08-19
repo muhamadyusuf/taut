@@ -3,6 +3,8 @@
 import useDrivePicker from "react-google-drive-picker";
 import { FolderOpen, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 const GOOGLE_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_API_KEY || "";
@@ -20,6 +22,7 @@ interface DriveFolderPickerProps {
 }
 
 export default function DriveFolderPicker({ folderId, folderName, onSelect }: DriveFolderPickerProps) {
+  const t = getDictionary(useLocale()).dashboard.drivePicker;
   const [openPicker, authResponse] = useDrivePicker();
   const [accessToken, setAccessToken] = useState("");
 
@@ -61,7 +64,7 @@ export default function DriveFolderPicker({ folderId, folderName, onSelect }: Dr
 
   return (
     <div className="space-y-2 p-4 border rounded-xl bg-muted border-border">
-      <label className="text-xs font-bold text-muted-foreground uppercase">Folder Tujuan di Google Drive</label>
+      <label className="text-xs font-bold text-muted-foreground uppercase">{t.folderLabel}</label>
       {folderId ? (
         <div className="flex items-center justify-between gap-2 bg-card border border-border rounded-lg px-3 py-2">
           <span className="flex items-center gap-2 text-sm text-foreground truncate">
@@ -72,7 +75,7 @@ export default function DriveFolderPicker({ folderId, folderName, onSelect }: Dr
           </button>
         </div>
       ) : (
-        <p className="text-xs text-subtle">Belum ada folder dipilih. Sertifikat akan diunggah ke folder ini.</p>
+        <p className="text-xs text-subtle">{t.folderEmpty}</p>
       )}
       <button
         type="button"
@@ -84,7 +87,7 @@ export default function DriveFolderPicker({ folderId, folderName, onSelect }: Dr
           className="w-4 h-4"
           alt="Drive"
         />
-        {folderId ? "Ganti Folder" : "Pilih Folder Drive"}
+        {folderId ? t.changeFolder : t.pickFolder}
       </button>
     </div>
   );

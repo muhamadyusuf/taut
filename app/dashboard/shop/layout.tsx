@@ -3,25 +3,28 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ShoppingBag, Settings, ListOrdered, PlusCircle } from "lucide-react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function ShopLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = getDictionary(useLocale()).dashboard.shop;
 
   const tabs = [
-    { name: "Produk", href: "/dashboard/shop", icon: ShoppingBag },
-    { name: "Pesanan", href: "/dashboard/shop/orders", icon: ListOrdered },
-    { name: "Pengaturan", href: "/dashboard/shop/settings", icon: Settings },
+    { name: t.tabProducts, href: "/dashboard/shop", icon: ShoppingBag },
+    { name: t.tabOrders, href: "/dashboard/shop/orders", icon: ListOrdered },
+    { name: t.tabSettings, href: "/dashboard/shop/settings", icon: Settings },
   ];
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight">Toko Digital</h1>
-            <p className="text-muted-foreground">Kelola produk dan pembayaran Midtrans Anda.</p>
+            <h1 className="text-2xl font-bold tracking-tight">{t.title}</h1>
+            <p className="text-muted-foreground">{t.subtitle}</p>
         </div>
         <Link href="/dashboard/shop/new" className="bg-brand text-brand-contrast px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-brand-hover transition">
-            <PlusCircle size={16} /> Tambah Produk
+            <PlusCircle size={16} /> {t.addProduct}
         </Link>
       </div>
 

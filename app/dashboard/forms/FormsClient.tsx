@@ -7,15 +7,19 @@ import { Id } from "@/convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import {
   ClipboardList, Plus, Trash2, Pencil, BarChart2,
   Copy, ExternalLink, FileText,
 } from "lucide-react";
-import { getFormTheme } from "@/lib/formThemeConfig";
+import { getFormTheme, formThemeLabel } from "@/lib/formThemeConfig";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale } from "@/lib/i18n/dateLocale";
 
 export default function FormsClient() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.forms;
   const forms = useQuery(api.forms.getMyForms);
   const createForm = useMutation(api.forms.createForm);
   const deleteForm = useMutation(api.forms.deleteForm);
@@ -34,14 +38,14 @@ export default function FormsClient() {
     } catch (err) {
       // Tanpa catch, penolakan kuota paket hanya jadi promise yang gagal diam-diam
       // dan user melihat tombol yang seolah tidak berfungsi.
-      alert(alertMessageFor(err, "Gagal membuat formulir."));
+      alert(alertMessageFor(err, t.createFailed));
     } finally {
       setLoading(false);
     }
   };
 
   const handleDelete = async (id: Id<"forms">) => {
-    if (confirm("Yakin ingin menghapus formulir ini? Semua jawaban yang masuk juga akan terhapus.")) {
+    if (confirm(t.deleteConfirm)) {
       await deleteForm({ id });
     }
   };
@@ -49,7 +53,7 @@ export default function FormsClient() {
   const copyPublicLink = (slug: string) => {
     const url = `${process.env.NEXT_PUBLIC_APP_URL}/f/${slug}`;
     navigator.clipboard.writeText(url);
-    alert("Link formulir berhasil disalin! 🎉");
+    alert(t.copiedAlert);
   };
 
   return (
@@ -61,15 +65,15 @@ export default function FormsClient() {
             <ClipboardList size={28} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">Formulir Saya</h2>
-            <p className="text-muted-foreground text-sm">Buat survei atau formulir seperti Google Form.</p>
+            <h2 className="text-xl font-bold text-foreground">{t.title}</h2>
+            <p className="text-muted-foreground text-sm">{t.subtitle}</p>
           </div>
         </div>
 
         <form onSubmit={handleCreate} className="flex w-full md:w-auto gap-3">
           <input
             type="text"
-            placeholder="Judul Formulir Baru..."
+            placeholder={t.newPlaceholder}
             value={newTitle}
             onChange={(e) => setNewTitle(e.target.value)}
             className="input-field flex-1 md:w-64"
@@ -79,7 +83,7 @@ export default function FormsClient() {
             disabled={loading}
             type="submit"
             className="btn-saweria rounded-xl px-6 py-3 shrink-0"
-            aria-label="Buat formulir"
+            aria-label={t.createAria}
           >
             {loading ? "..." : <Plus size={20} />}
           </button>
@@ -90,7 +94,7 @@ export default function FormsClient() {
       {!forms || forms.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-[30px] bg-card/50">
           <FileText size={48} className="mx-auto text-subtle mb-4" />
-          <p className="text-muted-foreground font-medium">Belum ada formulir. Buat yang pertama di atas!</p>
+          <p className="text-muted-foreground font-medium">{t.empty}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -104,7 +108,10 @@ export default function FormsClient() {
                   <div className="bg-brand-soft text-brand p-2 rounded-lg">
                     <ClipboardList size={20} />
                   </div>
-                  <div className={`w-3 h-3 rounded-full ${theme.swatch}`} title={theme.label} />
+                  <div
+                    className={`w-3 h-3 rounded-full ${theme.swatch}`}
+                    title={formThemeLabel(form.theme, locale)}
+                  />
                 </div>
                 <span
                   className={`text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide ${
@@ -113,7 +120,7 @@ export default function FormsClient() {
                       : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {form.status === "published" ? "Terbit" : "Draft"}
+                  {form.status === "published" ? t.published : t.draft}
                 </span>
               </div>
 
@@ -121,7 +128,11 @@ export default function FormsClient() {
                 {form.title}
               </h3>
               <p className="text-xs text-muted-foreground mb-4">
-                {questionCount} pertanyaan · {form.sections.length} bagian · Dibuat {format(form.createdAt, "d MMM yyyy", { locale: localeId })}
+                {t.meta(
+                  questionCount,
+                  form.sections.length,
+                  format(form.createdAt, "d MMM yyyy", { locale: dateLocale(locale) })
+                )}
               </p>
 
               <div className="flex-1" />
@@ -130,16 +141,16 @@ export default function FormsClient() {
                 <Link
                   href={`/dashboard/forms/${form._id}`}
                   className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-brand px-2 py-2 rounded-lg hover:bg-brand-soft transition"
-                  title="Edit Formulir"
+                  title={t.editTitle}
                 >
-                  <Pencil size={14} /> Edit
+                  <Pencil size={14} /> {t.edit}
                 </Link>
                 <Link
                   href={`/dashboard/forms/${form._id}/responses`}
                   className="flex items-center gap-1 text-xs font-bold text-muted-foreground hover:text-brand px-2 py-2 rounded-lg hover:bg-brand-soft transition"
-                  title="Lihat Jawaban"
+                  title={t.responsesTitle}
                 >
-                  <BarChart2 size={14} /> Jawaban
+                  <BarChart2 size={14} /> {t.responses}
                 </Link>
 
                 <div className="flex-1" />
@@ -149,7 +160,7 @@ export default function FormsClient() {
                     <button
                       onClick={() => copyPublicLink(form.slug)}
                       className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition"
-                      title="Salin Link Publik"
+                      title={t.copyTitle}
                     >
                       <Copy size={16} />
                     </button>
@@ -157,7 +168,7 @@ export default function FormsClient() {
                       href={`/f/${form.slug}`}
                       target="_blank"
                       className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition"
-                      title="Buka Formulir"
+                      title={t.openTitle}
                     >
                       <ExternalLink size={16} />
                     </a>
@@ -166,7 +177,7 @@ export default function FormsClient() {
                 <button
                   onClick={() => handleDelete(form._id)}
                   className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition"
-                  title="Hapus Formulir"
+                  title={t.deleteTitle}
                 >
                   <Trash2 size={16} />
                 </button>

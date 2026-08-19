@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { Clock, KeyRound, Lock } from "lucide-react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Bidang proteksi tautan: kedaluwarsa dan sandi.
@@ -56,6 +58,8 @@ export default function LinkProtectionFields({
   /** Tautan ini sudah bersandi — mengubah label dan memunculkan opsi hapus. */
   hasPassword?: boolean;
 }) {
+  const t = getDictionary(useLocale()).dashboard.linkProtection;
+
   const set = <K extends keyof ProtectionState>(
     key: K,
     v: ProtectionState[K]
@@ -67,10 +71,8 @@ export default function LinkProtectionFields({
         <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border p-4 transition hover:border-brand">
           <Lock size={18} className="shrink-0 text-subtle" />
           <p className="text-sm text-muted-foreground">
-            <span className="font-bold text-foreground">
-              Kedaluwarsa &amp; sandi tautan
-            </span>{" "}
-            tersedia di paket berbayar.
+            <span className="font-bold text-foreground">{t.lockedName}</span>{" "}
+            {t.lockedSuffix}
           </p>
         </div>
       </Link>
@@ -81,13 +83,13 @@ export default function LinkProtectionFields({
     <div className="space-y-4 rounded-2xl border border-border bg-muted/40 p-5">
       <p className="flex items-center gap-2 text-sm font-bold text-foreground">
         <Lock size={16} className="text-brand" />
-        Proteksi tautan
+        {t.heading}
       </p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-            <Clock size={13} /> Berlaku sampai
+            <Clock size={13} /> {t.expiryLabel}
           </label>
           <input
             type="datetime-local"
@@ -99,14 +101,14 @@ export default function LinkProtectionFields({
 
         <div>
           <label className="mb-1.5 block text-xs font-bold text-muted-foreground">
-            Maksimal jumlah klik
+            {t.maxClicksLabel}
           </label>
           <input
             type="number"
             min={1}
             value={value.maxClicks}
             onChange={(e) => set("maxClicks", e.target.value)}
-            placeholder="Tanpa batas"
+            placeholder={t.maxClicksPlaceholder}
             className="input-field w-full"
           />
         </div>
@@ -114,7 +116,7 @@ export default function LinkProtectionFields({
 
       <div>
         <label className="mb-1.5 flex items-center gap-1.5 text-xs font-bold text-muted-foreground">
-          <KeyRound size={13} /> Sandi
+          <KeyRound size={13} /> {t.passwordLabel}
         </label>
         <input
           type="password"
@@ -123,7 +125,7 @@ export default function LinkProtectionFields({
             onChange({ ...value, password: e.target.value, clearPassword: false })
           }
           placeholder={
-            hasPassword ? "Terpasang — isi untuk mengganti" : "Kosongkan untuk tanpa sandi"
+            hasPassword ? t.passwordSetPlaceholder : t.passwordEmptyPlaceholder
           }
           className="input-field w-full"
         />
@@ -140,13 +142,13 @@ export default function LinkProtectionFields({
                 })
               }
             />
-            Hapus sandi dari tautan ini
+            {t.clearPassword}
           </label>
         )}
       </div>
 
       <p className="text-xs text-muted-foreground">
-        Kosongkan tanggal dan batas klik untuk membuat tautan berlaku selamanya.
+        {t.hint}
       </p>
     </div>
   );

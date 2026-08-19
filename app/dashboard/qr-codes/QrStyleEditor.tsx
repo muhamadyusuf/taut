@@ -6,8 +6,10 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { QRCode } from "react-qrcode-logo";
 import { Loader2, Lock, RotateCcw, Save, Wand2 } from "lucide-react";
-import { PLANS, type PlanId } from "@/convex/plans";
+import { planName, type PlanId } from "@/convex/plans";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export type QrStyle = {
   fgColor: string;
@@ -18,18 +20,15 @@ export type QrStyle = {
   quietZone: number;
 };
 
-const DOT_STYLES = [
-  { value: "squares", label: "Kotak" },
-  { value: "dots", label: "Bulat" },
-  { value: "fluid", label: "Menyatu" },
-];
+const DOT_STYLES = ["squares", "dots", "fluid"] as const;
 
-const PRESETS: { label: string; fg: string; bg: string }[] = [
-  { label: "Klasik", fg: "#000000", bg: "#ffffff" },
-  { label: "Biru", fg: "#0a2970", bg: "#ffffff" },
-  { label: "Hijau", fg: "#14532d", bg: "#f0fdf4" },
-  { label: "Marun", fg: "#7f1d1d", bg: "#fef2f2" },
-];
+/** Kunci-nya dipakai untuk mencari label di kamus, bukan ditampilkan apa adanya. */
+const PRESETS = [
+  { key: "classic", fg: "#000000", bg: "#ffffff" },
+  { key: "blue", fg: "#0a2970", bg: "#ffffff" },
+  { key: "green", fg: "#14532d", bg: "#f0fdf4" },
+  { key: "maroon", fg: "#7f1d1d", bg: "#fef2f2" },
+] as const;
 
 export default function QrStyleEditor({
   style,
@@ -42,6 +41,9 @@ export default function QrStyleEditor({
   plan: PlanId;
   previewValue: string;
 }) {
+  const locale = useLocale();
+  const dict = getDictionary(locale).dashboard;
+  const t = dict.qrStyle;
   const saveSettings = useMutation(api.qr.saveSettings);
   const resetSettings = useMutation(api.qr.resetSettings);
 
@@ -65,14 +67,14 @@ export default function QrStyleEditor({
       });
       setOpen(false);
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal menyimpan gaya QR."));
+      alert(alertMessageFor(err, t.saveFailed));
     } finally {
       setSaving(false);
     }
   };
 
   const handleReset = async () => {
-    if (!confirm("Kembalikan ke gaya bawaan singkat.in?")) return;
+    if (!confirm(t.resetConfirm)) return;
     await resetSettings({});
     setOpen(false);
   };
@@ -84,15 +86,13 @@ export default function QrStyleEditor({
           <Lock size={20} />
         </div>
         <div className="flex-1">
-          <p className="font-bold text-foreground">QR dengan warna &amp; logo Anda</p>
+          <p className="font-bold text-foreground">{t.lockedTitle}</p>
           <p className="text-sm text-muted-foreground">
-            Paket {PLANS.pro.name} membuka warna kustom, logo sendiri, bentuk
-            modul, dan unduhan SVG untuk cetak besar. Paket Anda sekarang:{" "}
-            {PLANS[plan].name}.
+            {t.lockedBody(planName("pro", locale), planName(plan, locale))}
           </p>
         </div>
         <Link href="/dashboard/billing" className="shrink-0">
-          <button className="btn-saweria px-6 py-2.5">Lihat paket</button>
+          <button className="btn-saweria px-6 py-2.5">{t.lockedCta}</button>
         </Link>
       </div>
     );
@@ -106,7 +106,7 @@ export default function QrStyleEditor({
           className="btn-ghost flex items-center gap-2 px-5 py-2.5"
         >
           <Wand2 size={16} />
-          Ubah gaya QR
+          {t.openButton}
         </button>
       </div>
     );
@@ -116,18 +116,18 @@ export default function QrStyleEditor({
     <div className="card-saweria mb-8 p-6">
       <h3 className="mb-5 flex items-center gap-2 font-bold text-foreground">
         <Wand2 size={18} className="text-brand" />
-        Gaya QR
+        {t.heading}
       </h3>
 
       <div className="grid gap-8 md:grid-cols-[1fr_auto]">
         <div className="space-y-5">
           {/* Preset cepat */}
           <div>
-            <p className="mb-2 text-sm font-bold text-foreground">Preset</p>
+            <p className="mb-2 text-sm font-bold text-foreground">{t.presetLabel}</p>
             <div className="flex flex-wrap gap-2">
               {PRESETS.map((p) => (
                 <button
-                  key={p.label}
+                  key={p.key}
                   type="button"
                   onClick={() => {
                     set("fgColor", p.fg);
@@ -139,7 +139,7 @@ export default function QrStyleEditor({
                     className="h-4 w-4 rounded border border-border"
                     style={{ background: p.fg }}
                   />
-                  {p.label}
+                  {t.presets[p.key]}
                 </button>
               ))}
             </div>
@@ -148,7 +148,7 @@ export default function QrStyleEditor({
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-bold text-foreground">
-                Warna kode
+                {t.fgLabel}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -156,7 +156,7 @@ export default function QrStyleEditor({
                   value={draft.fgColor}
                   onChange={(e) => set("fgColor", e.target.value)}
                   className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-card"
-                  aria-label="Warna kode"
+                  aria-label={t.fgLabel}
                 />
                 <input
                   value={draft.fgColor}
@@ -167,7 +167,7 @@ export default function QrStyleEditor({
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-bold text-foreground">
-                Warna latar
+                {t.bgLabel}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -175,7 +175,7 @@ export default function QrStyleEditor({
                   value={draft.bgColor}
                   onChange={(e) => set("bgColor", e.target.value)}
                   className="h-10 w-12 cursor-pointer rounded-lg border border-border bg-card"
-                  aria-label="Warna latar"
+                  aria-label={t.bgLabel}
                 />
                 <input
                   value={draft.bgColor}
@@ -188,21 +188,21 @@ export default function QrStyleEditor({
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              Bentuk modul
+              {t.dotShapeLabel}
             </label>
             <div className="flex gap-2">
-              {DOT_STYLES.map((s) => (
+              {DOT_STYLES.map((value) => (
                 <button
-                  key={s.value}
+                  key={value}
                   type="button"
-                  onClick={() => set("dotStyle", s.value)}
+                  onClick={() => set("dotStyle", value)}
                   className={`rounded-lg border px-4 py-2 text-sm font-bold transition-colors ${
-                    draft.dotStyle === s.value
+                    draft.dotStyle === value
                       ? "border-brand bg-brand-soft text-brand"
                       : "border-border text-muted-foreground hover:border-brand"
                   }`}
                 >
-                  {s.label}
+                  {t.dotStyles[value]}
                 </button>
               ))}
             </div>
@@ -210,7 +210,8 @@ export default function QrStyleEditor({
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              URL logo <span className="font-normal text-muted-foreground">(kosongkan untuk tanpa logo)</span>
+              {t.logoUrlLabel}{" "}
+              <span className="font-normal text-muted-foreground">{t.logoUrlHint}</span>
             </label>
             <input
               value={draft.logoUrl ?? ""}
@@ -222,7 +223,7 @@ export default function QrStyleEditor({
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              Ukuran logo — {Math.round(draft.logoSizeRatio * 100)}%
+              {t.logoSizeLabel(Math.round(draft.logoSizeRatio * 100))}
             </label>
             <input
               type="range"
@@ -232,10 +233,7 @@ export default function QrStyleEditor({
               onChange={(e) => set("logoSizeRatio", Number(e.target.value) / 100)}
               className="w-full accent-[var(--brand)]"
             />
-            <p className="mt-1 text-xs text-muted-foreground">
-              Di atas 30% logo menutupi terlalu banyak modul dan QR mulai gagal
-              dipindai.
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{t.logoSizeHint}</p>
           </div>
         </div>
 
@@ -259,7 +257,7 @@ export default function QrStyleEditor({
               qrStyle={draft.dotStyle as "squares" | "dots" | "fluid"}
             />
           </div>
-          <p className="text-xs text-muted-foreground">Pratinjau</p>
+          <p className="text-xs text-muted-foreground">{t.preview}</p>
         </div>
       </div>
 
@@ -270,17 +268,17 @@ export default function QrStyleEditor({
           className="btn-saweria flex items-center gap-2 px-6 py-2.5"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-          Simpan
+          {dict.common.save}
         </button>
         <button onClick={() => setOpen(false)} className="btn-ghost px-6 py-2.5">
-          Batal
+          {dict.common.cancel}
         </button>
         <button
           onClick={handleReset}
           className="ml-auto flex items-center gap-2 text-sm text-muted-foreground hover:text-danger"
         >
           <RotateCcw size={14} />
-          Kembalikan ke bawaan
+          {t.reset}
         </button>
       </div>
     </div>

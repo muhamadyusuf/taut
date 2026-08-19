@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 import { Loader2, Trash2, Save } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
 import DrivePicker from "../../microsite/_components/DrivePicker";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 interface ProductFormProps {
   initialData?: {
@@ -22,6 +24,7 @@ interface ProductFormProps {
 }
 
 export default function ProductForm({ initialData, mode }: ProductFormProps) {
+  const t = getDictionary(useLocale()).dashboard.productForm;
   const router = useRouter();
   const createProduct = useMutation(api.shop.createProduct);
   const updateProduct = useMutation(api.shop.updateProduct);
@@ -40,7 +43,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
     // Validate stock is non-negative integer
     const stockVal = Number(formData.get("stock"));
     if (!Number.isInteger(stockVal) || stockVal < 0) {
-        alert("Stok harus berupa angka bulat non-negatif.");
+        alert(t.invalidStock);
         setLoading(false);
         return;
     }
@@ -48,7 +51,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
     // Validate price
     const priceVal = Number(formData.get("price"));
     if (priceVal < 1000) {
-        alert("Harga minimum adalah Rp 1.000.");
+        alert(t.invalidPrice);
         setLoading(false);
         return;
     }
@@ -65,16 +68,16 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
     try {
         if (mode === "create") {
             await createProduct(payload);
-            alert("Produk berhasil dibuat!");
+            alert(t.created);
         } else if (mode === "edit" && initialData) {
             await updateProduct({ id: initialData._id, ...payload });
-            alert("Produk berhasil diperbarui!");
+            alert(t.updated);
         }
         router.push("/dashboard/shop");
         router.refresh();
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Kesalahan tidak diketahui";
-        alert("Gagal menyimpan produk: " + message);
+        const message = err instanceof Error ? err.message : t.unknownError;
+        alert(t.saveFailed(message));
         console.error(err);
     } finally {
         setLoading(false);
@@ -82,7 +85,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
   };
 
   const handleDelete = async () => {
-    if (!initialData || !confirm("Yakin ingin menghapus produk ini? Tindakan ini tidak bisa dibatalkan.")) return;
+    if (!initialData || !confirm(t.deleteConfirm)) return;
     
     setIsDeleting(true);
     try {
@@ -90,8 +93,8 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
         router.push("/dashboard/shop");
         router.refresh();
     } catch (err) {
-        const message = err instanceof Error ? err.message : "Kesalahan tidak diketahui";
-        alert("Gagal menghapus produk: " + message);
+        const message = err instanceof Error ? err.message : t.unknownError;
+        alert(t.deleteFailed(message));
     } finally {
         setIsDeleting(false);
     }
@@ -101,7 +104,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
     <div className="max-w-2xl mx-auto bg-card p-6 rounded-xl border shadow-sm">
         <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-bold">
-                {mode === "create" ? "Tambah Produk Baru" : "Edit Produk"}
+                {mode === "create" ? t.createTitle : t.editTitle}
             </h2>
             {mode === "edit" && (
                 <button 
@@ -109,10 +112,10 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                     onClick={handleDelete}
                     disabled={isDeleting}
                     className="flex items-center gap-1.5 text-sm text-danger hover:text-danger px-3 py-1.5 rounded-lg hover:bg-danger-soft border border-danger/30 hover:border-danger transition"
-                    title="Hapus Produk"
+                    title={t.deleteProduct}
                 >
                     {isDeleting ? <Loader2 className="animate-spin" size={16}/> : <Trash2 size={16}/>}
-                    Hapus Produk
+                    {t.deleteProduct}
                 </button>
             )}
         </div>
@@ -120,21 +123,21 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
             {/* NAMA PRODUK */}
             <div>
-                <label className="block text-sm font-bold text-foreground mb-1">Nama Produk</label>
+                <label className="block text-sm font-bold text-foreground mb-1">{t.nameLabel}</label>
                 <input 
                     name="title" 
                     defaultValue={initialData?.title}
                     required 
                     type="text" 
                     className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
-                    placeholder="Contoh: Ebook Belajar Coding" 
+                    placeholder={t.namePlaceholder} 
                 />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
                 {/* HARGA */}
                 <div>
-                    <label className="block text-sm font-bold text-foreground mb-1">Harga (Rp)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.priceLabel}</label>
                     <input 
                         name="price" 
                         defaultValue={initialData?.price}
@@ -142,12 +145,12 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         type="number" 
                         min="1000" 
                         className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
-                        placeholder="100000" 
+                        placeholder={t.pricePlaceholder} 
                     />
                 </div>
                 {/* STOK */}
                 <div>
-                    <label className="block text-sm font-bold text-foreground mb-1">Stok Barang</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.stockLabel}</label>
                     <input 
                         name="stock" 
                         defaultValue={initialData?.stock ?? 1}
@@ -156,30 +159,30 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         min="0" 
                         step="1"
                         className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
-                        placeholder="Jumlah stok" 
+                        placeholder={t.stockPlaceholder} 
                     />
-                    <p className="text-xs text-subtle mt-1">Stok akan otomatis berkurang saat ada transaksi pending.</p>
+                    <p className="text-xs text-subtle mt-1">{t.stockHint}</p>
                 </div>
             </div>
 
             {/* DESKRIPSI */}
             <div>
-                <label className="block text-sm font-bold text-foreground mb-1">Deskripsi Produk</label>
+                <label className="block text-sm font-bold text-foreground mb-1">{t.descriptionLabel}</label>
                 <textarea 
                     name="description" 
                     defaultValue={initialData?.description}
                     required 
                     rows={4} 
                     className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand outline-none" 
-                    placeholder="Jelaskan isi produk Anda..." 
+                    placeholder={t.descriptionPlaceholder} 
                 />
             </div>
 
             {/* GAMBAR PRODUK — Google Drive Picker */}
             <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Gambar Produk (Opsional)</label>
+                <label className="block text-sm font-bold text-foreground mb-2">{t.imageLabel}</label>
                 <DrivePicker
-                    label="Pilih Gambar dari Google Drive"
+                    label={t.imagePicker}
                     currentUrl={imageUrl || null}
                     onSelect={(url) => setImageUrl(url)}
                 />
@@ -188,7 +191,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
                             src={imageUrl}
-                            alt="Preview gambar produk"
+                            alt={t.imagePreviewAlt}
                             referrerPolicy="no-referrer"
                             className="w-20 h-20 object-cover rounded-lg border"
                             onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -200,7 +203,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                                 onClick={() => setImageUrl("")}
                                 className="mt-1 text-xs text-danger hover:text-danger"
                             >
-                                Hapus gambar
+                                {t.removeImage}
                             </button>
                         </div>
                     </div>
@@ -209,9 +212,9 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
 
             {/* LINK FILE — Google Drive Picker */}
             <div>
-                <label className="block text-sm font-bold text-foreground mb-2">Link File / Konten (Opsional)</label>
+                <label className="block text-sm font-bold text-foreground mb-2">{t.fileLabel}</label>
                 <DrivePicker
-                    label="Pilih File dari Google Drive"
+                    label={t.filePicker}
                     currentUrl={fileUrl || null}
                     onSelect={(url) => setFileUrl(url)}
                 />
@@ -223,11 +226,11 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                             onClick={() => setFileUrl("")}
                             className="text-xs text-danger hover:text-danger shrink-0"
                         >
-                            Hapus
+                            {t.removeFile}
                         </button>
                     </div>
                 )}
-                <p className="text-xs text-muted-foreground mt-1">Link ini akan diberikan ke pembeli setelah pembayaran sukses.</p>
+                <p className="text-xs text-muted-foreground mt-1">{t.fileHint}</p>
             </div>
 
             {/* TOMBOL SIMPAN */}
@@ -237,7 +240,7 @@ export default function ProductForm({ initialData, mode }: ProductFormProps) {
                     type="submit" 
                     className="w-full bg-brand text-brand-contrast py-3 rounded-xl font-bold hover:bg-brand-hover disabled:opacity-50 flex justify-center items-center gap-2 shadow-[var(--shadow-brand)] transition active:scale-95"
                 >
-                    {loading ? <Loader2 className="animate-spin"/> : <><Save size={18}/> Simpan Produk</>}
+                    {loading ? <Loader2 className="animate-spin"/> : <><Save size={18}/> {t.submit}</>}
                 </button>
             </div>
         </form>

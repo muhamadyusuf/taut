@@ -5,13 +5,17 @@ import { api } from "@/convex/_generated/api";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { Link as LinkIcon, ArrowLeft, Copy, BarChart2, Plus, Calendar, Tag, Trash2 } from "lucide-react";
 import Link from "next/link";
 import CreateLinkModal from "../../_components/CreateLinkModal";
 import { Id } from "@/convex/_generated/dataModel";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale } from "@/lib/i18n/dateLocale";
 
 export default function CategoryDetailPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.categoryDetail;
   const params = useParams();
   const categoryId = params.id as Id<"categories">;
 
@@ -28,17 +32,17 @@ export default function CategoryDetailPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
-    alert("Disalin!");
+    alert(t.copied);
   };
 
   const handleDeleteLink = async (id: Id<"links">) => {
-    if (confirm("Hapus link ini selamanya?")) {
+    if (confirm(t.deleteConfirm)) {
       await deleteLink({ id });
     }
   };
 
-  if (!categories) return <div className="p-8 text-center text-muted-foreground">Memuat Kategori...</div>;
-  if (!currentCategory) return <div className="p-8 text-center text-danger">Kategori tidak ditemukan.</div>;
+  if (!categories) return <div className="p-8 text-center text-muted-foreground">{t.loading}</div>;
+  if (!currentCategory) return <div className="p-8 text-center text-danger">{t.notFound}</div>;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
@@ -55,7 +59,7 @@ export default function CategoryDetailPage() {
             href="/dashboard/categories"
             className="text-sm text-muted-foreground hover:text-brand flex items-center gap-1 mb-2 transition-colors"
           >
-            <ArrowLeft size={16} /> Kembali ke Kategori
+            <ArrowLeft size={16} /> {t.back}
           </Link>
           <div className="flex items-center gap-3">
             <div className="bg-warning-soft p-2 rounded-lg text-warning">
@@ -63,7 +67,7 @@ export default function CategoryDetailPage() {
             </div>
             <h1 className="text-2xl font-bold text-foreground">{currentCategory.name}</h1>
             <span className="bg-brand-soft text-brand-soft-fg text-xs px-2 py-1 rounded-full font-bold">
-              {links?.length || 0} Link
+              {links?.length || 0} {t.linkCountSuffix}
             </span>
           </div>
         </div>
@@ -74,14 +78,14 @@ export default function CategoryDetailPage() {
           className="btn-saweria flex items-center gap-2 pl-4 pr-6 py-3"
         >
           <div className="bg-white/20 p-1 rounded-full"><Plus size={18} strokeWidth={3} /></div>
-          <span>Tambah Link di Sini</span>
+          <span>{t.addLink}</span>
         </button>
       </div>
 
       {/* List Link */}
       {!links || links.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-[30px] bg-card/50">
-          <p className="text-muted-foreground font-medium">Belum ada link di kategori ini.</p>
+          <p className="text-muted-foreground font-medium">{t.empty}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
@@ -91,7 +95,7 @@ export default function CategoryDetailPage() {
                 <LinkIcon size={20} />
               </div>
               <div className="flex-1 min-w-0 w-full">
-                <h3 className="font-bold text-foreground truncate">{link.title || "Untitled"}</h3>
+                <h3 className="font-bold text-foreground truncate">{link.title || t.untitled}</h3>
                 <div className="flex items-center gap-2 text-sm">
                   <a
                     href={`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`}
@@ -106,18 +110,18 @@ export default function CategoryDetailPage() {
               </div>
               <div className="flex items-center gap-4 text-xs text-muted-foreground w-full md:w-auto justify-between md:justify-end">
                 <span className="flex items-center gap-1"><BarChart2 size={14} /> {link.clicks}</span>
-                <span className="flex items-center gap-1"><Calendar size={14} /> {format(link.createdAt, 'd MMM', { locale: localeId })}</span>
+                <span className="flex items-center gap-1"><Calendar size={14} /> {format(link.createdAt, "d MMM", { locale: dateLocale(locale) })}</span>
                 <button
                   onClick={() => copyToClipboard(`${process.env.NEXT_PUBLIC_APP_URL}/${link.shortCode}`)}
                   className="bg-muted hover:bg-brand-soft p-2 rounded-full text-muted-foreground hover:text-brand transition"
-                  title="Salin Link"
+                  title={t.copyTitle}
                 >
                   <Copy size={14} />
                 </button>
                 <button
                   onClick={() => handleDeleteLink(link._id)}
                   className="text-subtle hover:text-danger hover:bg-danger-soft p-2 rounded-full transition"
-                  title="Hapus Link"
+                  title={t.deleteTitle}
                 >
                   <Trash2 size={16} />
                 </button>

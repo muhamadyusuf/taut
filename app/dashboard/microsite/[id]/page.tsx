@@ -11,6 +11,8 @@ import Link from "next/link";
 import { THEMES } from "@/lib/themeConfig";
 import DrivePicker from "../_components/DrivePicker"; 
 import { getIcon, ICONS } from "@/lib/iconMap"; // Import Icon Map
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 // ... (TYPE DEFINITIONS & HELPER tetap sama) ...
 type LinkItem = {
@@ -43,6 +45,9 @@ const formatUrl = (url: string) => {
 
 export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"microsites"> }> }) {
   const { id } = use(params);
+
+  const dict = getDictionary(useLocale()).dashboard;
+  const t = dict.micrositeEditor;
   
   // 2. Ambil data user yang sedang login dari Clerk
   const { user } = useUser(); 
@@ -75,7 +80,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
       setIsDirty(true);
   };
 
-  if (!formData || !isMounted) return <div className="p-10 text-center animate-pulse text-muted-foreground">Memuat Editor...</div>;
+  if (!formData || !isMounted) return <div className="p-10 text-center animate-pulse text-muted-foreground">{t.loading}</div>;
 
   // ... (LOGIC CRUD: addLink, addHeader, updateItem, deleteItem, handleOnDragEnd tetap sama) ...
   const addLink = () => {
@@ -97,7 +102,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
   };
 
   const deleteItem = (index: number) => {
-    if(!confirm("Hapus item ini?")) return;
+    if(!confirm(t.deleteItemConfirm)) return;
     handleInputChange(prev => {
         const newLinks = [...prev.links];
         newLinks.splice(index, 1);
@@ -136,10 +141,10 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
         });
         
         setIsDirty(false);
-        alert("Berhasil disimpan!"); 
+        alert(t.saved); 
     } catch (e) {
-        const errorMessage = e instanceof Error ? e.message : "Terjadi kesalahan";
-        alert("Gagal: " + errorMessage);
+        const errorMessage = e instanceof Error ? e.message : dict.common.genericError;
+        alert(t.saveFailed(errorMessage));
     } finally {
         setLoading(false);
     }
@@ -161,10 +166,10 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
         {/* Header Actions */}
         <div className="flex justify-between items-center sticky top-0 glass z-20 py-4 border-b border-border">
             <div className="flex items-center gap-2">
-                <Link href="/dashboard/microsite" className="text-subtle hover:text-muted-foreground transition">← Kembali</Link>
+                <Link href="/dashboard/microsite" className="text-subtle hover:text-muted-foreground transition">{t.back}</Link>
                 <h1 className="text-xl font-bold flex items-center gap-2">
-                    Edit: {formData.title}
-                    {isDirty && <span className="w-2 h-2 bg-warning rounded-full animate-pulse" title="Perubahan belum disimpan"></span>}
+                    {t.editPrefix} {formData.title}
+                    {isDirty && <span className="w-2 h-2 bg-warning rounded-full animate-pulse" title={t.unsavedTitle}></span>}
                 </h1>
             </div>
             <button 
@@ -175,13 +180,13 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                         ? 'bg-brand text-brand-contrast hover:bg-brand-hover' 
                         : 'bg-muted text-subtle cursor-not-allowed'}`}
             >
-                <Save size={18}/> {loading ? "Menyimpan..." : "Simpan"}
+                <Save size={18}/> {loading ? dict.common.saving : dict.common.save}
             </button>
         </div>
 
         {/* 1. Appearance Section */}
         <div className="bg-card p-6 rounded-2xl shadow-sm border border-border space-y-6">
-            <div className="flex items-center gap-2 text-foreground font-bold border-b border-border pb-2"><Palette size={18}/> Tampilan</div>
+            <div className="flex items-center gap-2 text-foreground font-bold border-b border-border pb-2"><Palette size={18}/> {t.appearance}</div>
             
             <div className="grid md:grid-cols-2 gap-4">
                 {/* Catatan: DrivePicker tetap menampilkan formData.imageUrl (nilai asli database).
@@ -189,12 +194,12 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                     Tapi kita bisa kasih hint text jika mau.
                 */}
                 <DrivePicker 
-                    label="Foto Profil" 
+                    label={t.profilePhoto} 
                     currentUrl={formData.imageUrl} 
                     onSelect={(url) => handleInputChange(prev => ({...prev, imageUrl: url}))}
                 />
                 <DrivePicker 
-                    label="Background" 
+                    label={t.background} 
                     currentUrl={formData.backgroundUrl} 
                     onSelect={(url) => handleInputChange(prev => ({...prev, backgroundUrl: url}))}
                 />
@@ -202,7 +207,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
             {/* Theme Selector, Basic Info, Textarea Bio tetap sama ... */}
             <div>
-                <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">Pilih Tema</label>
+                <label className="text-xs font-bold text-muted-foreground uppercase mb-2 block">{t.themeLabel}</label>
                 <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                     {Object.entries(THEMES).map(([key, style]) => (
                         <button 
@@ -222,7 +227,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label className="text-xs font-bold text-subtle block mb-1">Nama Tampilan</label>
+                    <label className="text-xs font-bold text-subtle block mb-1">{t.displayName}</label>
                     <input 
                         type="text" 
                         value={formData.title} 
@@ -231,7 +236,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                     />
                 </div>
                 <div>
-                     <label className="text-xs font-bold text-subtle block mb-1">URL Bio (Slug)</label>
+                     <label className="text-xs font-bold text-subtle block mb-1">{t.slugLabel}</label>
                      <div className="flex items-center border border-border rounded-xl bg-muted overflow-hidden focus-within:ring-4 focus-within:ring-ring focus-within:border-brand transition">
                         <span className="pl-3 text-subtle text-sm">/</span>
                         <input 
@@ -244,7 +249,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                 </div>
             </div>
             <textarea 
-                placeholder="Bio / Deskripsi singkat..." 
+                placeholder={t.bioPlaceholder} 
                 value={formData.bio || ""} 
                 onChange={e => handleInputChange(prev => ({...prev, bio: e.target.value}))} 
                 className="w-full p-3 bg-input text-foreground border border-border rounded-xl h-24 text-sm focus:ring-4 focus:ring-ring focus:border-brand outline-none transition resize-none"
@@ -255,10 +260,10 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
         <div className="space-y-4">
              {/* ... Kode drag and drop ... */}
              <div className="flex justify-between items-center sticky top-[72px] glass z-10 py-2">
-                <h3 className="font-bold text-foreground flex items-center gap-2"><LinkIcon size={18}/> Konten Link</h3>
+                <h3 className="font-bold text-foreground flex items-center gap-2"><LinkIcon size={18}/> {t.contentHeading}</h3>
                 <div className="flex gap-2">
-                    <button onClick={addHeader} className="text-xs font-bold bg-card border hover:bg-muted text-muted-foreground px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Type size={14}/> Header</button>
-                    <button onClick={addLink} className="text-xs font-bold bg-brand hover:bg-brand-hover text-brand-contrast px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Plus size={14}/> Link</button>
+                    <button onClick={addHeader} className="text-xs font-bold bg-card border hover:bg-muted text-muted-foreground px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Type size={14}/> {t.addHeader}</button>
+                    <button onClick={addLink} className="text-xs font-bold bg-brand hover:bg-brand-hover text-brand-contrast px-3 py-2 rounded-lg flex gap-1 items-center shadow-sm transition"><Plus size={14}/> {t.addLink}</button>
                 </div>
             </div>
 
@@ -284,7 +289,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                     value={item.label} 
                                                     onChange={e => updateItem(index, 'label', e.target.value)}
                                                     className={`w-full bg-transparent font-bold focus:outline-none placeholder:text-subtle ${item.type === 'header' ? 'text-sm uppercase tracking-wider text-muted-foreground' : 'text-foreground'}`}
-                                                    placeholder={item.type === 'header' ? "JUDUL KATEGORI" : "Label Tombol"}
+                                                    placeholder={item.type === 'header' ? t.headerPlaceholder : t.buttonLabelPlaceholder}
                                                     autoFocus={item.label === ""}
                                                 />
                                                 {item.type === 'link' && (
@@ -295,7 +300,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                             <button 
                                                                 onClick={() => setActiveIconPicker(activeIconPicker === item.id ? null : item.id)}
                                                                 className="w-10 h-10 border rounded-lg flex items-center justify-center bg-muted hover:bg-muted text-muted-foreground transition"
-                                                                title="Pilih Icon"
+                                                                title={t.pickIcon}
                                                             >
                                                                 {getIcon(item.icon)}
                                                             </button>
@@ -321,7 +326,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                                         onClick={() => { updateItem(index, 'icon', ""); setActiveIconPicker(null); }}
                                                                         className="p-2 rounded-lg flex items-center justify-center text-danger hover:bg-danger-soft col-span-5 text-xs font-bold mt-2 border-t pt-3"
                                                                     >
-                                                                        <X size={14} className="mr-1"/> Hapus Icon
+                                                                        <X size={14} className="mr-1"/> {t.removeIcon}
                                                                     </button>
                                                                 </div>
                                                             )}
@@ -338,7 +343,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                                 value={item.label} 
                                                                 onChange={e => updateItem(index, 'label', e.target.value)}
                                                                 className="w-full bg-transparent font-bold focus:outline-none text-foreground"
-                                                                placeholder="Label Link (cth: Instagram)"
+                                                                placeholder={t.linkLabelPlaceholder}
                                                             />
                                                             <div className="flex items-center gap-2">
                                                                 <ExternalLink size={12} className="text-subtle"/>
@@ -355,7 +360,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                                 )}
                                             </div>
 
-                                            <button onClick={() => deleteItem(index)} className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition group" title="Hapus">
+                                            <button onClick={() => deleteItem(index)} className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition group" title={t.deleteItem}>
                                                 <Trash2 size={16} className="group-hover:scale-110 transition"/>
                                             </button>
                                         </div>
@@ -371,8 +376,8 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
             {formData.links.length === 0 && (
                 <div className="text-center p-12 border-2 border-dashed border-border rounded-xl text-subtle flex flex-col items-center gap-2">
                     <AlertCircle size={32} className="opacity-20"/>
-                    <p>Belum ada tautan.</p>
-                    <p className="text-xs">Klik tombol di atas untuk menambah konten.</p>
+                    <p>{t.empty}</p>
+                    <p className="text-xs">{t.emptyHint}</p>
                 </div>
             )}
         </div>
@@ -407,11 +412,11 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                  </div>
                  
                  <h2 className={`font-bold text-lg text-center leading-snug break-words max-w-full ${currentTheme.text}`}>
-                     {formData.title || "Nama Anda"}
+                     {formData.title || t.previewName}
                  </h2>
                  {/* ... Sisanya sama ... */}
                  <p className={`text-xs text-center mt-2 mb-8 px-2 opacity-90 leading-relaxed whitespace-pre-wrap ${currentTheme.text}`}>
-                     {formData.bio || "Tulis deskripsi singkat tentang diri anda disini."}
+                     {formData.bio || t.previewBio}
                  </p>
 
                  <div className="w-full space-y-3 pb-10">
@@ -425,7 +430,7 @@ export default function MicrositeEditor({ params }: { params: Promise<{ id: Id<"
                                 key={item.id} 
                                 className={`w-full py-3.5 px-4 rounded-xl font-bold text-center text-sm transition-transform active:scale-95 shadow-sm flex items-center justify-center min-h-[48px] ${currentTheme.button}`}
                              >
-                                 {item.label || "Link Tanpa Label"}
+                                 {item.label || t.previewUnlabeled}
                              </div>
                          )
                      ))}

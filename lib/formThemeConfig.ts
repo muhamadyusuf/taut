@@ -53,6 +53,23 @@ export const FORM_THEMES: Record<string, FormTheme> = {
 
 export const DEFAULT_FORM_THEME = "default-purple";
 
+/** Nama tema dalam Bahasa Inggris; kunci-nya sama persis dengan FORM_THEMES. */
+const FORM_THEME_LABELS_EN: Record<string, string> = {
+  "default-purple": "Classic Purple",
+  "ocean-blue": "Ocean Blue",
+  "forest-green": "Forest Green",
+  "sunset-orange": "Sunset Orange",
+  "rose-red": "Rose Red",
+  midnight: "Midnight",
+};
+
+/** Nama tema sesuai bahasa tampilan. */
+export function formThemeLabel(key: string | undefined, locale: "id" | "en"): string {
+  const resolved = FORM_THEMES[key || DEFAULT_FORM_THEME] ? key || DEFAULT_FORM_THEME : DEFAULT_FORM_THEME;
+  if (locale === "en") return FORM_THEME_LABELS_EN[resolved] ?? FORM_THEMES[resolved].label;
+  return FORM_THEMES[resolved].label;
+}
+
 export function getFormTheme(key?: string): FormTheme {
   return FORM_THEMES[key || DEFAULT_FORM_THEME] || FORM_THEMES[DEFAULT_FORM_THEME];
 }

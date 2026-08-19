@@ -4,8 +4,14 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Loader2, Trash2, ExternalLink, Copy, Edit, Store, AlertCircle, Eye, EyeOff } from "lucide-react";
 import Link from "next/link";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { numberLocale } from "@/lib/i18n/dateLocale";
 
 export default function ProductsPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.shop;
+  const numLocale = numberLocale(locale);
   // 1. Ambil Data Produk & Setting Toko (untuk URL Slug)
   const products = useQuery(api.shop.getMyProducts);
   const settings = useQuery(api.shop.getMySettings);
@@ -20,12 +26,12 @@ export default function ProductsPage() {
   // Helper: Salin Link Toko
   const copyShopLink = () => {
     if (!settings?.slug) {
-        alert("Anda belum mengatur URL Toko. Silakan ke menu Pengaturan.");
+        alert(t.noShopUrl);
         return;
     }
     const url = `${window.location.origin}/s/${settings.slug}`;
     navigator.clipboard.writeText(url);
-    alert("Link Toko berhasil disalin!");
+    alert(t.copiedShopLink);
   };
 
   // Helper: Get Shop URL
@@ -41,9 +47,9 @@ export default function ProductsPage() {
                 <Store size={24} />
             </div>
             <div>
-                <h3 className="font-bold text-foreground">{settings?.shopName || "Nama Toko Belum Diatur"}</h3>
+                <h3 className="font-bold text-foreground">{settings?.shopName || t.shopNameUnset}</h3>
                 <p className="text-xs text-muted-foreground">
-                    {shopUrl ? `singkat.in${shopUrl}` : "Harap atur URL toko di menu Pengaturan"}
+                    {shopUrl ? `singkat.in${shopUrl}` : t.shopUrlUnset}
                 </p>
             </div>
         </div>
@@ -52,7 +58,7 @@ export default function ProductsPage() {
                 onClick={copyShopLink}
                 className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-card border border-border text-brand rounded-lg text-sm font-bold hover:bg-brand-soft transition"
             >
-                <Copy size={16} /> Salin Link Toko
+                <Copy size={16} /> {t.copyShopLink}
             </button>
             {shopUrl && (
                 <Link 
@@ -60,7 +66,7 @@ export default function ProductsPage() {
                     target="_blank"
                     className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3 py-2 bg-brand text-brand-contrast rounded-lg text-sm font-bold hover:bg-brand-hover transition"
                 >
-                    <ExternalLink size={16} /> Buka Toko
+                    <ExternalLink size={16} /> {t.openShop}
                 </Link>
             )}
         </div>
@@ -73,12 +79,10 @@ export default function ProductsPage() {
               <div className="bg-muted p-4 rounded-full mb-4">
                   <Store className="text-subtle" size={32} />
               </div>
-              <h3 className="text-lg font-bold text-foreground">Belum ada produk</h3>
-              <p className="text-muted-foreground mb-6 max-w-sm">
-                  Toko Anda masih kosong. Tambahkan produk digital pertama Anda untuk mulai berjualan.
-              </p>
+              <h3 className="text-lg font-bold text-foreground">{t.emptyTitle}</h3>
+              <p className="text-muted-foreground mb-6 max-w-sm">{t.emptyBody}</p>
               <Link href="/dashboard/shop/new" className="btn-saweria px-4 py-2 rounded-lg text-sm">
-                  + Tambah Produk
+                  {t.emptyCta}
               </Link>
           </div>
         ) : (
@@ -86,11 +90,11 @@ export default function ProductsPage() {
           <table className="min-w-full divide-y divide-border">
             <thead className="bg-muted">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Produk</th>
-                <th className="px-6 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">Harga</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Stok</th>
-                <th className="px-6 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="px-6 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">Aksi</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.colProduct}</th>
+                <th className="px-6 py-3 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.colPrice}</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.colStock}</th>
+                <th className="px-6 py-3 text-center text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.colStatus}</th>
+                <th className="px-6 py-3 text-right text-xs font-bold text-muted-foreground uppercase tracking-wider">{t.colActions}</th>
               </tr>
             </thead>
             <tbody className="bg-card divide-y divide-border">
@@ -101,7 +105,7 @@ export default function ProductsPage() {
                       <div className="text-xs text-muted-foreground line-clamp-1">{product.description}</div>
                   </td>
                   <td className="px-6 py-4 text-sm font-mono text-foreground">
-                      Rp {product.price.toLocaleString("id-ID")}
+                      Rp {product.price.toLocaleString(numLocale)}
                   </td>
                   <td className="px-6 py-4 text-center">
                       <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
@@ -115,14 +119,14 @@ export default function ProductsPage() {
                   <td className="px-6 py-4 text-center">
                       <button
                           onClick={() => toggleStatus({ id: product._id })}
-                          title={product.isActive ? "Klik untuk nonaktifkan" : "Klik untuk aktifkan"}
+                          title={product.isActive ? t.toggleOff : t.toggleOn}
                           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition ${
                               product.isActive
                                   ? "bg-success-soft text-success hover:bg-success/20"
                                   : "bg-muted text-muted-foreground hover:bg-border"
                           }`}
                       >
-                          {product.isActive ? <><Eye size={12} /> Tampil</> : <><EyeOff size={12} /> Nonaktif</>}
+                          {product.isActive ? <><Eye size={12} /> {t.visible}</> : <><EyeOff size={12} /> {t.hidden}</>}
                       </button>
                   </td>
                   <td className="px-6 py-4 text-right text-sm font-medium">
@@ -130,19 +134,19 @@ export default function ProductsPage() {
                           <Link 
                             href={`/dashboard/shop/edit/${product._id}`} 
                             className="p-2 text-muted-foreground hover:text-brand hover:bg-brand-soft rounded-lg transition"
-                            title="Edit Produk"
+                            title={t.editProduct}
                           >
                               <Edit size={16} />
                           </Link>
                           
                           <button 
                               onClick={() => {
-                                  if(confirm("Yakin ingin menghapus produk ini?")) {
+                                  if(confirm(t.deleteConfirm)) {
                                       deleteProduct({ id: product._id });
                                   }
                               }}
                               className="p-2 text-muted-foreground hover:text-danger hover:bg-danger-soft rounded-lg transition" 
-                              title="Hapus Produk"
+                              title={t.deleteProduct}
                           >
                               <Trash2 size={16} />
                           </button>

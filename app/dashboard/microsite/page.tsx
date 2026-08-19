@@ -9,19 +9,22 @@ import { useRouter } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { errorMessage } from "@/lib/planError";
 import CreateMicrositeModal from "./_components/CreateMicrositeModal";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function MicrositeListPage() {
+  const t = getDictionary(useLocale()).dashboard.microsites;
   const microsites = useQuery(api.microsites.getMyMicrosites);
   const deleteMicrosite = useMutation(api.microsites.deleteMicrosite);
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleDelete = async (id: Id<"microsites">, title: string) => {
-    if (confirm(`Yakin ingin menghapus halaman "${title}" selamanya?`)) {
+    if (confirm(t.deleteConfirm(title))) {
       try {
         await deleteMicrosite({ id });
       } catch (e) {
-        alert("Gagal menghapus: " + errorMessage(e));
+        alert(t.deleteFailed(errorMessage(e)));
       }
     }
   };
@@ -38,12 +41,12 @@ export default function MicrositeListPage() {
       />
 
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-2xl font-bold text-foreground">Bio Link Saya</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t.title}</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="btn-saweria px-6 py-2 flex items-center gap-2"
         >
-          <Plus size={18} /> Buat Baru
+          <Plus size={18} /> {t.create}
         </button>
       </div>
 
@@ -65,7 +68,7 @@ export default function MicrositeListPage() {
               <button
                 onClick={() => handleDelete(site._id, site.title)}
                 className="text-subtle hover:text-danger p-2 hover:bg-danger-soft rounded-full transition shrink-0"
-                title="Hapus Halaman"
+                title={t.deleteTitle}
               >
                 <Trash2 size={18} />
               </button>
@@ -76,14 +79,14 @@ export default function MicrositeListPage() {
                 href={`/dashboard/microsite/${site._id}`}
                 className="flex-1 bg-muted hover:bg-brand-soft text-muted-foreground hover:text-brand py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition"
               >
-                <Edit size={14} /> Edit
+                <Edit size={14} /> {t.edit}
               </Link>
               <a
                 href={`/bio/${site.slug}`}
                 target="_blank"
                 className="flex-1 border border-border hover:border-brand hover:text-brand text-muted-foreground py-2 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition"
               >
-                Lihat <ExternalLink size={14} />
+                {t.view} <ExternalLink size={14} />
               </a>
             </div>
           </div>
@@ -92,9 +95,9 @@ export default function MicrositeListPage() {
         {/* Empty State */}
         {microsites?.length === 0 && (
           <div className="col-span-full text-center py-20 bg-muted rounded-2xl border border-dashed border-border">
-            <p className="text-muted-foreground mb-4">Belum ada Bio Link</p>
+            <p className="text-muted-foreground mb-4">{t.empty}</p>
             <button onClick={() => setIsModalOpen(true)} className="text-brand font-bold hover:underline">
-              Buat yang pertama
+              {t.emptyCta}
             </button>
           </div>
         )}

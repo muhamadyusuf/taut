@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Loader2, Save, Eye, EyeOff, Store, Link as LinkIcon, AlertCircle, Palette, Check, Paintbrush } from "lucide-react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 // --- PRESET PRIMARY COLORS ---
 const PRESET_COLORS = [
@@ -23,8 +25,6 @@ const PRESET_COLORS = [
 const SHOP_THEMES = [
   {
     key: "classic",
-    name: "Classic Blue",
-    description: "Bersih & profesional, aksen biru cerah.",
     // Warna preview sengaja literal (bukan token tema aplikasi), karena yang
     // digambarkan adalah tampilan HALAMAN TOKO PUBLIK — bukan dashboard ini.
     preview: {
@@ -37,8 +37,6 @@ const SHOP_THEMES = [
   },
   {
     key: "dark",
-    name: "Dark Elegant",
-    description: "Mewah & modern, tema gelap dengan aksen emas.",
     preview: {
       bg: "bg-gray-900",
       header: "bg-gray-800 border border-gray-700",
@@ -49,8 +47,6 @@ const SHOP_THEMES = [
   },
   {
     key: "minimal",
-    name: "Warm Minimal",
-    description: "Hangat & simpel, tampilan bersih tanpa distraksi.",
     preview: {
       bg: "bg-stone-100",
       header: "bg-stone-50 border border-stone-200",
@@ -62,6 +58,8 @@ const SHOP_THEMES = [
 ] as const;
 
 export default function ShopSettingsPage() {
+  const t = getDictionary(useLocale()).dashboard.shopSettings;
+
   // 1. Fetch Data Existing
   const settings = useQuery(api.shop.getMySettings);
   const saveSettings = useMutation(api.shop.saveShopSettings);
@@ -106,11 +104,11 @@ export default function ShopSettingsPage() {
 
     try {
         await saveSettings(form);
-        alert("Pengaturan toko berhasil disimpan!");
+        alert(t.saved);
     } catch (err: unknown) {
         console.error(err);
-        const message = err instanceof Error ? err.message : "Terjadi kesalahan";
-        alert("Gagal menyimpan: " + message);
+        const message = err instanceof Error ? err.message : t.unknownError;
+        alert(t.saveFailed(message));
     } finally {
         setIsSaving(false);
     }
@@ -128,7 +126,7 @@ export default function ShopSettingsPage() {
     return (
         <div className="flex flex-col items-center justify-center h-64 gap-2 text-muted-foreground">
             <Loader2 className="animate-spin" />
-            <span className="text-sm">Memuat pengaturan...</span>
+            <span className="text-sm">{t.loading}</span>
         </div>
     );
   }
@@ -138,8 +136,8 @@ export default function ShopSettingsPage() {
       
       {/* HEADER */}
       <div>
-        <h2 className="text-xl font-bold text-foreground">Pengaturan Toko</h2>
-        <p className="text-sm text-muted-foreground">Kelola identitas toko dan konfigurasi pembayaran Anda.</p>
+        <h2 className="text-xl font-bold text-foreground">{t.title}</h2>
+        <p className="text-sm text-muted-foreground">{t.subtitle}</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-8">
@@ -148,25 +146,25 @@ export default function ShopSettingsPage() {
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
             <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
                 <Store className="text-brand" size={20} />
-                <h3 className="font-bold text-foreground">Identitas Toko</h3>
+                <h3 className="font-bold text-foreground">{t.identityHeading}</h3>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">
                 {/* Nama Toko */}
                 <div className="col-span-2 md:col-span-1">
-                    <label className="block text-sm font-bold text-foreground mb-1">Nama Toko</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.nameLabel}</label>
                     <input 
                         required 
                         value={form.shopName} 
                         onChange={e => setForm({...form, shopName: e.target.value})}
                         className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 focus:ring-2 focus:ring-brand focus:outline-none transition" 
-                        placeholder="Contoh: Toko Berkah Abadi"
+                        placeholder={t.namePlaceholder}
                     />
                 </div>
 
                 {/* Slug URL */}
                 <div className="col-span-2 md:col-span-1">
-                    <label className="block text-sm font-bold text-foreground mb-1">URL Toko (Slug)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.slugLabel}</label>
                     <div className="flex items-center">
                         <span className="bg-muted border border-border border-r-0 rounded-l-lg px-3 py-2 text-muted-foreground text-sm font-mono whitespace-nowrap">
                             singkat.in/s/
@@ -176,15 +174,15 @@ export default function ShopSettingsPage() {
                             value={form.slug} 
                             onChange={handleSlugChange}
                             className="w-full border border-border rounded-r-lg px-3 py-2 font-mono text-sm focus:ring-2 focus:ring-brand focus:outline-none transition" 
-                            placeholder="toko-berkah"
+                            placeholder={t.slugPlaceholder}
                         />
                     </div>
-                    <p className="text-[10px] text-subtle mt-1">Hanya huruf kecil, angka, dan tanda strip (-).</p>
+                    <p className="text-[10px] text-subtle mt-1">{t.slugHint}</p>
                 </div>
 
                 {/* Logo URL */}
                 <div className="col-span-2">
-                    <label className="block text-sm font-bold text-foreground mb-1">Logo URL (Opsional)</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.logoLabel}</label>
                     <div className="flex gap-4 items-start">
                         <input 
                             value={form.logoUrl} 
@@ -198,20 +196,20 @@ export default function ShopSettingsPage() {
                             </div>
                         )}
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1">Masukkan link gambar langsung (Direct Link).</p>
+                    <p className="text-xs text-muted-foreground mt-1">{t.logoHint}</p>
                 </div>
 
                 {/* Deskripsi Toko */}
                 <div className="col-span-2">
-                    <label className="block text-sm font-bold text-foreground mb-1">Deskripsi Toko <span className="font-normal text-subtle">(Opsional)</span></label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.descriptionLabel} <span className="font-normal text-subtle">{t.optional}</span></label>
                     <textarea
                         rows={3}
                         value={form.description}
                         onChange={e => setForm({ ...form, description: e.target.value })}
                         className="w-full bg-input text-foreground border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-brand focus:outline-none transition resize-none"
-                        placeholder="Ceritakan sedikit tentang toko Anda. Teks ini akan tampil di halaman toko publik."
+                        placeholder={t.descriptionPlaceholder}
                     />
-                    <p className="text-xs text-subtle mt-1">{form.description.length}/300 karakter</p>
+                    <p className="text-xs text-subtle mt-1">{t.charCount(form.description.length)}</p>
                 </div>
             </div>
         </div>
@@ -220,9 +218,9 @@ export default function ShopSettingsPage() {
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
             <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
                 <Palette className="text-info" size={20} />
-                <h3 className="font-bold text-foreground">Template Tampilan</h3>
+                <h3 className="font-bold text-foreground">{t.themeHeading}</h3>
             </div>
-            <p className="text-sm text-muted-foreground -mt-2">Pilih tema visual untuk halaman toko publik Anda.</p>
+            <p className="text-sm text-muted-foreground -mt-2">{t.themeSubtitle}</p>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {SHOP_THEMES.map((theme) => {
@@ -255,8 +253,12 @@ export default function ShopSettingsPage() {
                                 </div>
                             </div>
 
-                            <div className={`text-xs font-bold mb-0.5 ${isSelected ? "text-brand-soft-fg" : "text-foreground"}`}>{theme.name}</div>
-                            <div className="text-xs text-muted-foreground leading-snug">{theme.description}</div>
+                            <div className={`text-xs font-bold mb-0.5 ${isSelected ? "text-brand-soft-fg" : "text-foreground"}`}>
+                                {t.themes[theme.key].name}
+                            </div>
+                            <div className="text-xs text-muted-foreground leading-snug">
+                                {t.themes[theme.key].description}
+                            </div>
 
                             {/* Accent dot */}
                             <div className={`mt-2 w-5 h-1.5 rounded-full ${theme.preview.btn}`}></div>
@@ -270,19 +272,16 @@ export default function ShopSettingsPage() {
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-5">
             <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
                 <Paintbrush className="text-info" size={20} />
-                <h3 className="font-bold text-foreground">Warna Primer</h3>
+                <h3 className="font-bold text-foreground">{t.colorHeading}</h3>
             </div>
-            <p className="text-sm text-muted-foreground -mt-2">
-                Kustomisasi warna aksen tombol, harga, dan link di halaman toko publik.
-                Biarkan &quot;Auto&quot; untuk mengikuti warna default tema.
-            </p>
+            <p className="text-sm text-muted-foreground -mt-2">{t.colorSubtitle}</p>
 
             {/* Swatch Presets */}
             <div className="flex flex-wrap gap-2.5 items-center">
                 {/* Auto (gunakan default tema) */}
                 <button
                     type="button"
-                    title="Gunakan default tema"
+                    title={t.colorAutoTitle}
                     onClick={() => setForm({ ...form, primaryColor: "" })}
                     className={`w-9 h-9 rounded-full border-2 flex items-center justify-center transition-all ${
                         !form.primaryColor
@@ -290,7 +289,7 @@ export default function ShopSettingsPage() {
                             : "border-border hover:border-border-strong"
                     }`}
                 >
-                    <span className="text-[9px] font-bold text-muted-foreground leading-none">Auto</span>
+                    <span className="text-[9px] font-bold text-muted-foreground leading-none">{t.colorAuto}</span>
                 </button>
 
                 {PRESET_COLORS.map((color) => (
@@ -312,7 +311,7 @@ export default function ShopSettingsPage() {
             {/* Custom color input */}
             <div className="flex items-center gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
-                    <label className="text-sm font-bold text-foreground">Warna Kustom:</label>
+                    <label className="text-sm font-bold text-foreground">{t.customColorLabel}</label>
                     <input
                         type="color"
                         value={form.primaryColor || "#3B82F6"}
@@ -339,7 +338,7 @@ export default function ShopSettingsPage() {
                         onClick={() => setForm({ ...form, primaryColor: "" })}
                         className="text-xs text-subtle hover:text-danger transition"
                     >
-                        Reset ke default
+                        {t.resetColor}
                     </button>
                 )}
             </div>
@@ -352,12 +351,12 @@ export default function ShopSettingsPage() {
                         style={{ backgroundColor: form.primaryColor }}
                         className="px-4 py-2 rounded-xl text-white text-sm font-bold shadow-sm pointer-events-none"
                     >
-                        + Tambah ke Keranjang
+                        {t.previewAddToCart}
                     </button>
                     <span className="text-base font-extrabold" style={{ color: form.primaryColor }}>
                         Rp 150.000
                     </span>
-                    <span className="text-xs text-subtle italic">← Preview warna primer</span>
+                    <span className="text-xs text-subtle italic">{t.previewCaption}</span>
                 </div>
             )}
         </div>
@@ -366,14 +365,14 @@ export default function ShopSettingsPage() {
         <div className="bg-card p-6 rounded-xl border border-border shadow-sm space-y-6">
             <div className="flex items-center gap-2 border-b border-border pb-4 mb-4">
                 <LinkIcon className="text-success" size={20} />
-                <h3 className="font-bold text-foreground">Pembayaran (Midtrans)</h3>
+                <h3 className="font-bold text-foreground">{t.paymentHeading}</h3>
             </div>
 
             {/* Environment Toggle */}
             <div className="p-4 bg-brand-soft rounded-lg border border-border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
-                    <h4 className="font-bold text-brand-soft-fg text-sm">Mode Environment</h4>
-                    <p className="text-xs text-muted-foreground">Pilih &apos;Sandbox&apos; untuk testing, &apos;Production&apos; untuk menerima uang asli.</p>
+                    <h4 className="font-bold text-brand-soft-fg text-sm">{t.envHeading}</h4>
+                    <p className="text-xs text-muted-foreground">{t.envHint}</p>
                 </div>
                 <div className="flex bg-card rounded-md border shadow-sm overflow-hidden shrink-0">
                     <button 
@@ -396,7 +395,7 @@ export default function ShopSettingsPage() {
 
             <div className="grid gap-6">
                 <div>
-                    <label className="block text-sm font-bold text-foreground mb-1">Client Key</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.clientKeyLabel}</label>
                     <input 
                         required 
                         value={form.clientKey} 
@@ -407,7 +406,7 @@ export default function ShopSettingsPage() {
                 </div>
 
                 <div>
-                    <label className="block text-sm font-bold text-foreground mb-1">Server Key</label>
+                    <label className="block text-sm font-bold text-foreground mb-1">{t.serverKeyLabel}</label>
                     <div className="relative">
                         <input 
                             required 
@@ -427,7 +426,7 @@ export default function ShopSettingsPage() {
                     </div>
                     <div className="flex items-start gap-2 mt-2 text-xs text-warning bg-warning-soft p-2 rounded border border-warning/25">
                         <AlertCircle size={14} className="mt-0.5 shrink-0"/>
-                        <p>Server Key bersifat <b>RAHASIA</b>. Jangan pernah membagikannya kepada siapa pun selain di panel ini.</p>
+                        <p>{t.serverKeyWarningPrefix} <b>{t.serverKeyWarningStrong}</b>{t.serverKeyWarningSuffix}</p>
                     </div>
                 </div>
             </div>
@@ -441,7 +440,7 @@ export default function ShopSettingsPage() {
                 className="btn-saweria w-full sm:w-auto px-8 py-3 rounded-xl flex justify-center items-center gap-2"
             >
                 {isSaving ? <Loader2 className="animate-spin" size={20}/> : <Save size={20}/>} 
-                Simpan Perubahan
+                {t.submit}
             </button>
         </div>
 

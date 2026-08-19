@@ -1,10 +1,13 @@
 import { Metadata } from "next";
-import QrCodesClient from "./QrCodesClient"; // Import komponen client yang tadi di-rename
+import QrCodesClient from "./QrCodesClient";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-// DEFINISIKAN JUDUL DI SINI
-export const metadata: Metadata = {
-  title: "Kode QR Saya", 
-};
+/** Judul tab ikut bahasa pilihan pengguna, sama seperti isi halamannya. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: getDictionary(locale).dashboard.pageTitles.qrCodes };
+}
 
 export default function Page() {
   return <QrCodesClient />;

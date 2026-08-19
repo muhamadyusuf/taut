@@ -14,20 +14,18 @@ import {
   YAxis,
 } from "recharts";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { Globe, Loader2, Lock, MonitorSmartphone, Share2 } from "lucide-react";
 import {
   CHART_AXIS_TICK,
   CHART_GRID,
   CHART_TOOLTIP,
 } from "@/app/_components/chartStyles";
-import { PLANS, isUnlimited } from "@/convex/plans";
+import { isUnlimited, planName } from "@/convex/plans";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale, numberLocale } from "@/lib/i18n/dateLocale";
 
-const RANGES = [
-  { days: 7, label: "7 hari" },
-  { days: 30, label: "30 hari" },
-  { days: 90, label: "90 hari" },
-];
+const RANGES = [7, 30, 90];
 
 /** Daftar peringkat sederhana dengan bilah proporsi. */
 function Breakdown({
@@ -35,11 +33,13 @@ function Breakdown({
   icon,
   rows,
   empty,
+  numLocale,
 }: {
   title: string;
   icon: React.ReactNode;
   rows: { label: string; count: number }[];
   empty: string;
+  numLocale: string;
 }) {
   const max = rows[0]?.count ?? 0;
 
@@ -59,7 +59,7 @@ function Breakdown({
               <div className="mb-1 flex items-baseline justify-between gap-3">
                 <span className="truncate text-sm text-foreground">{row.label}</span>
                 <span className="shrink-0 text-sm font-bold text-muted-foreground">
-                  {row.count.toLocaleString("id-ID")}
+                  {row.count.toLocaleString(numLocale)}
                 </span>
               </div>
               <div className="h-1.5 overflow-hidden rounded-full bg-border">
@@ -77,6 +77,9 @@ function Breakdown({
 }
 
 export default function AnalyticsClient() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.analytics;
+  const numLocale = numberLocale(locale);
   const [days, setDays] = useState(30);
   const data = useQuery(api.analytics.getOverview, { days });
   const events = useQuery(api.analytics.getRecentEvents, { limit: 15 });
@@ -92,27 +95,27 @@ export default function AnalyticsClient() {
   if (data === null) return null;
 
   const retentionLabel = isUnlimited(data.retentionDays)
-    ? "tanpa batas"
-    : `${data.retentionDays} hari`;
+    ? t.unlimited
+    : t.days(data.retentionDays);
 
   const summary = [
     {
-      label: `Klik ${data.rangeDays} hari terakhir`,
-      value: data.totalInRange.toLocaleString("id-ID"),
+      label: t.clicksInRange(data.rangeDays),
+      value: data.totalInRange.toLocaleString(numLocale),
       tone: "text-brand",
     },
     {
-      label: "Total klik sepanjang masa",
-      value: data.totalAllTime.toLocaleString("id-ID"),
+      label: t.totalAllTime,
+      value: data.totalAllTime.toLocaleString(numLocale),
       tone: "text-foreground",
     },
     {
-      label: "Tautan aktif",
-      value: data.activeLinks.toLocaleString("id-ID"),
+      label: t.activeLinks,
+      value: data.activeLinks.toLocaleString(numLocale),
       tone: "text-foreground",
     },
     {
-      label: "Tautan teratas",
+      label: t.topLink,
       value: data.topLinks[0]?.label ?? "—",
       tone: "text-success",
       small: true,
@@ -123,35 +126,33 @@ export default function AnalyticsClient() {
     <div className="mx-auto max-w-5xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Statistik</h2>
-          <p className="text-muted-foreground">
-            Ringkasan performa tautanmu. Riwayat tersimpan {retentionLabel}.
-          </p>
+          <h2 className="text-2xl font-bold text-foreground">{t.title}</h2>
+          <p className="text-muted-foreground">{t.subtitle(retentionLabel)}</p>
         </div>
 
         <div className="inline-flex items-center gap-1 rounded-full border border-border bg-card p-1">
-          {RANGES.map((r) => {
+          {RANGES.map((rangeDays) => {
             const beyondPlan =
-              !isUnlimited(data.retentionDays) && r.days > data.retentionDays;
+              !isUnlimited(data.retentionDays) && rangeDays > data.retentionDays;
             return (
               <button
-                key={r.days}
-                onClick={() => setDays(r.days)}
+                key={rangeDays}
+                onClick={() => setDays(rangeDays)}
                 disabled={beyondPlan}
                 title={
                   beyondPlan
-                    ? `Paket ${PLANS[data.plan].name} menyimpan riwayat ${retentionLabel}`
+                    ? t.rangeLocked(planName(data.plan, locale), retentionLabel)
                     : undefined
                 }
                 className={`rounded-full px-4 py-1.5 text-sm font-bold transition-colors ${
-                  days === r.days
+                  days === rangeDays
                     ? "bg-brand text-brand-contrast"
                     : beyondPlan
                       ? "cursor-not-allowed text-subtle"
                       : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {r.label}
+                {t.days(rangeDays)}
               </button>
             );
           })}
@@ -178,7 +179,7 @@ export default function AnalyticsClient() {
 
       {/* Grafik deret waktu */}
       <div className="card-saweria p-6">
-        <h3 className="mb-6 font-bold text-foreground">Klik per hari</h3>
+        <h3 className="mb-6 font-bold text-foreground">{t.chartTitle}</h3>
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data.timeseries}>
@@ -195,7 +196,7 @@ export default function AnalyticsClient() {
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(value: string) =>
-                  format(new Date(`${value}T00:00:00`), "d MMM", { locale: localeId })
+                  format(new Date(`${value}T00:00:00`), "d MMM", { locale: dateLocale(locale) })
                 }
                 minTickGap={24}
               />
@@ -204,10 +205,13 @@ export default function AnalyticsClient() {
                 {...CHART_TOOLTIP}
                 labelFormatter={(value: string) =>
                   format(new Date(`${value}T00:00:00`), "EEEE, d MMMM yyyy", {
-                    locale: localeId,
+                    locale: dateLocale(locale),
                   })
                 }
-                formatter={(value?: number) => [(value ?? 0).toLocaleString("id-ID"), "Klik"]}
+                formatter={(value?: number) => [
+                  (value ?? 0).toLocaleString(numLocale),
+                  t.clicksTooltip,
+                ]}
               />
               <Area
                 type="monotone"
@@ -226,44 +230,47 @@ export default function AnalyticsClient() {
         <>
           <div className="grid gap-6 md:grid-cols-3">
             <Breakdown
-              title="Negara"
+              title={t.countries}
               icon={<Globe size={18} className="text-brand" />}
               rows={data.topCountries}
-              empty="Belum ada data lokasi."
+              empty={t.countriesEmpty}
+              numLocale={numLocale}
             />
             <Breakdown
-              title="Perangkat"
+              title={t.devices}
               icon={<MonitorSmartphone size={18} className="text-brand" />}
               rows={data.topDevices}
-              empty="Belum ada data perangkat."
+              empty={t.devicesEmpty}
+              numLocale={numLocale}
             />
             <Breakdown
-              title="Sumber trafik"
+              title={t.referrers}
               icon={<Share2 size={18} className="text-brand" />}
               rows={data.topReferrers}
-              empty="Belum ada data perujuk."
+              empty={t.referrersEmpty}
+              numLocale={numLocale}
             />
           </div>
 
           {events && events.length > 0 && (
             <div className="card-saweria p-6">
-              <h3 className="mb-4 font-bold text-foreground">Klik terakhir</h3>
+              <h3 className="mb-4 font-bold text-foreground">{t.recentTitle}</h3>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[560px] text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-muted-foreground">
-                      <th className="pb-2 font-bold">Waktu</th>
-                      <th className="pb-2 font-bold">Tautan</th>
-                      <th className="pb-2 font-bold">Lokasi</th>
-                      <th className="pb-2 font-bold">Perangkat</th>
-                      <th className="pb-2 font-bold">Sumber</th>
+                      <th className="pb-2 font-bold">{t.colTime}</th>
+                      <th className="pb-2 font-bold">{t.colLink}</th>
+                      <th className="pb-2 font-bold">{t.colLocation}</th>
+                      <th className="pb-2 font-bold">{t.colDevice}</th>
+                      <th className="pb-2 font-bold">{t.colSource}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {events.map((e) => (
                       <tr key={e.id} className="border-b border-border last:border-0">
                         <td className="py-2.5 text-muted-foreground">
-                          {format(new Date(e.ts), "d MMM HH:mm", { locale: localeId })}
+                          {format(new Date(e.ts), "d MMM HH:mm", { locale: dateLocale(locale) })}
                         </td>
                         <td className="max-w-[160px] truncate py-2.5 text-foreground">
                           {e.linkTitle}
@@ -291,16 +298,13 @@ export default function AnalyticsClient() {
             <Lock size={20} />
           </div>
           <div className="flex-1">
-            <p className="font-bold text-foreground">
-              Dari mana pengunjungmu datang?
-            </p>
+            <p className="font-bold text-foreground">{t.lockedTitle}</p>
             <p className="text-sm text-muted-foreground">
-              Paket {PLANS.pro.name} membuka rincian negara, perangkat, dan sumber
-              trafik, plus riwayat 12 bulan — bukan {retentionLabel}.
+              {t.lockedBody(planName("pro", locale), retentionLabel)}
             </p>
           </div>
           <Link href="/dashboard/billing" className="shrink-0">
-            <button className="btn-saweria px-6 py-2.5">Lihat paket</button>
+            <button className="btn-saweria px-6 py-2.5">{t.lockedCta}</button>
           </Link>
         </div>
       )}

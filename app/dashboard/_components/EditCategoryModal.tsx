@@ -5,6 +5,8 @@ import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { X, Pencil } from "lucide-react";
 import { Id } from "@/convex/_generated/dataModel";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 interface EditCategoryModalProps {
   isOpen: boolean;
@@ -13,6 +15,9 @@ interface EditCategoryModalProps {
 }
 
 export default function EditCategoryModal({ isOpen, onClose, category }: EditCategoryModalProps) {
+  const locale = useLocale();
+  const dict = getDictionary(locale).dashboard;
+  const t = dict.categories.modal;
   const updateCategory = useMutation(api.categories.updateCategory);
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -33,7 +38,7 @@ export default function EditCategoryModal({ isOpen, onClose, category }: EditCat
       await updateCategory({ id: category._id, name: name });
       onClose();
     } catch {
-      alert("Gagal mengupdate kategori");
+      alert(t.updateFailed);
     } finally {
       setLoading(false);
     }
@@ -49,16 +54,16 @@ export default function EditCategoryModal({ isOpen, onClose, category }: EditCat
       >
         <div className="flex justify-between items-center mb-6">
           <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
-            <Pencil size={18} className="text-brand" /> Edit Kategori
+            <Pencil size={18} className="text-brand" /> {t.title}
           </h3>
-          <button onClick={onClose} aria-label="Tutup">
+          <button onClick={onClose} aria-label={t.close}>
             <X className="text-muted-foreground hover:text-foreground" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Nama Kategori</label>
+            <label className="form-label">{t.nameLabel}</label>
             <input
               autoFocus
               type="text"
@@ -75,10 +80,10 @@ export default function EditCategoryModal({ isOpen, onClose, category }: EditCat
               onClick={onClose}
               className="px-4 py-2 text-muted-foreground font-bold text-sm hover:bg-muted hover:text-foreground rounded-lg transition"
             >
-              Batal
+              {dict.common.cancel}
             </button>
             <button disabled={loading} type="submit" className="btn-saweria rounded-lg py-2 px-6">
-              {loading ? "Menyimpan..." : "Simpan"}
+              {loading ? dict.common.saving : dict.common.save}
             </button>
           </div>
         </form>

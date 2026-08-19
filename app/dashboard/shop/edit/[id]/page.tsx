@@ -6,8 +6,11 @@ import { useParams } from "next/navigation";
 import { Id } from "@/convex/_generated/dataModel";
 import { Loader2 } from "lucide-react";
 import ProductForm from "../../_components/ProductForm";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function EditProductPage() {
+  const t = getDictionary(useLocale()).dashboard.shop;
   const params = useParams();
   const productId = params.id as Id<"products">;
 
@@ -19,7 +22,7 @@ export default function EditProductPage() {
   }
 
   if (product === null) {
-    return <div className="p-10 text-center text-danger">Produk tidak ditemukan.</div>;
+    return <div className="p-10 text-center text-danger">{t.notFound}</div>;
   }
 
   // Render Form dengan mode "edit" dan data awal

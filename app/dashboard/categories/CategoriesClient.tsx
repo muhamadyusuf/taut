@@ -7,12 +7,16 @@ import { GenericId } from "convex/values";
 import { Id } from "@/convex/_generated/dataModel";
 import { FolderPlus, Trash2, Tag, Layers, ArrowRight, Pencil } from "lucide-react";
 import { format } from "date-fns";
-import { id } from "date-fns/locale";
 import Link from "next/link";
 
 import EditCategoryModal from "../_components/EditCategoryModal";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale } from "@/lib/i18n/dateLocale";
 
 export default function CategoriesPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.categories;
   const categories = useQuery(api.categories.getMyCategories);
   const createCategory = useMutation(api.categories.createCategory);
   const deleteCategory = useMutation(api.categories.deleteCategory);
@@ -34,7 +38,7 @@ export default function CategoriesPage() {
   };
 
   const handleDelete = async (categoryId: GenericId<"categories">) => {
-    if (confirm("Yakin ingin menghapus kategori ini?")) {
+    if (confirm(t.deleteConfirm)) {
       await deleteCategory({ id: categoryId });
     }
   };
@@ -55,15 +59,15 @@ export default function CategoriesPage() {
             <Layers size={28} />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-foreground">Kelola Kategori</h2>
-            <p className="text-muted-foreground text-sm">Organisir tautanmu agar lebih rapi.</p>
+            <h2 className="text-xl font-bold text-foreground">{t.title}</h2>
+            <p className="text-muted-foreground text-sm">{t.subtitle}</p>
           </div>
         </div>
 
         <form onSubmit={handleCreate} className="flex w-full md:w-auto gap-3">
           <input
             type="text"
-            placeholder="Nama Kategori Baru..."
+            placeholder={t.newPlaceholder}
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             className="input-field flex-1 md:w-64"
@@ -73,7 +77,7 @@ export default function CategoriesPage() {
             disabled={loading}
             type="submit"
             className="btn-saweria rounded-xl px-6 py-3 shrink-0"
-            aria-label="Tambah kategori"
+            aria-label={t.addAria}
           >
             {loading ? "..." : <FolderPlus size={20} />}
           </button>
@@ -84,7 +88,7 @@ export default function CategoriesPage() {
       {!categories || categories.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-[30px] bg-card/50">
           <Tag size={48} className="mx-auto text-subtle mb-4" />
-          <p className="text-muted-foreground font-medium">Belum ada kategori.</p>
+          <p className="text-muted-foreground font-medium">{t.empty}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
@@ -106,7 +110,7 @@ export default function CategoriesPage() {
                         setEditingCategory(cat);
                       }}
                       className="text-subtle hover:text-warning p-2 rounded-full hover:bg-warning-soft transition"
-                      title="Edit Nama"
+                      title={t.editTitle}
                     >
                       <Pencil size={18} />
                     </button>
@@ -118,7 +122,7 @@ export default function CategoriesPage() {
                         handleDelete(cat._id);
                       }}
                       className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition"
-                      title="Hapus Kategori"
+                      title={t.deleteTitle}
                     >
                       <Trash2 size={18} />
                     </button>
@@ -129,12 +133,12 @@ export default function CategoriesPage() {
                   {cat.name}
                 </h3>
                 <p className="text-xs text-muted-foreground">
-                  Dibuat: {format(cat.createdAt, 'd MMM yyyy', { locale: id })}
+                  {t.createdPrefix}: {format(cat.createdAt, "d MMM yyyy", { locale: dateLocale(locale) })}
                 </p>
 
                 {/* Indikator "Buka Folder" */}
                 <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity text-brand text-xs font-bold flex items-center gap-1">
-                  Buka <ArrowRight size={12} />
+                  {t.open} <ArrowRight size={12} />
                 </div>
               </div>
             </Link>

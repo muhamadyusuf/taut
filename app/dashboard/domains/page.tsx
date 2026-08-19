@@ -16,31 +16,30 @@ import {
   Trash2,
 } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
-import { PLANS } from "@/convex/plans";
+import { planName } from "@/convex/plans";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-const STATUS_VIEW: Record<
-  string,
-  { label: string; className: string; icon: React.ReactNode }
-> = {
+/** Label statusnya diambil dari kamus; yang di sini hanya warna & ikonnya. */
+const STATUS_VIEW: Record<string, { className: string; icon: React.ReactNode }> = {
   active: {
-    label: "Aktif",
     className: "bg-success-soft text-success",
     icon: <CheckCircle2 size={14} />,
   },
   pending: {
-    label: "Menunggu DNS",
     className: "bg-warning-soft text-warning",
     icon: <Clock size={14} />,
   },
   error: {
-    label: "Bermasalah",
     className: "bg-danger-soft text-danger",
     icon: <AlertCircle size={14} />,
   },
 };
 
 export default function DomainsPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.domains;
   const data = useQuery(api.domains.getMine);
   const createPending = useMutation(api.domains.createPending);
   const removeDomain = useMutation(api.domains.remove);
@@ -61,7 +60,7 @@ export default function DomainsPage() {
       // petunjuk DNS langsung muncul tanpa langkah kedua dari pengguna.
       await registerDomain({ domainId: id });
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal menambahkan domain."));
+      alert(alertMessageFor(err, t.addFailed));
     } finally {
       setBusy(null);
     }
@@ -71,20 +70,16 @@ export default function DomainsPage() {
     setBusy(id);
     try {
       const result = await checkDomain({ domainId: id });
-      if (result.status === "active") alert("Domain aktif. Tautan Anda sudah bisa dipakai.");
+      if (result.status === "active") alert(t.nowActive);
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal memeriksa domain."));
+      alert(alertMessageFor(err, t.checkFailed));
     } finally {
       setBusy(null);
     }
   };
 
   const handleRemove = async (id: Id<"domains">, domain: string) => {
-    if (
-      !confirm(
-        `Hapus ${domain}?\n\nTautan yang hidup di alamat ini akan dikembalikan ke domain utama, bukan dihapus.`
-      )
-    ) {
+    if (!confirm(t.removeConfirm(domain))) {
       return;
     }
     setBusy(id);
@@ -92,10 +87,10 @@ export default function DomainsPage() {
       const result = await removeDomain({ id });
       await unregisterDomain({ domain: result.domain }).catch(() => null);
       if (result.movedLinks > 0) {
-        alert(`Domain dihapus. ${result.movedLinks} tautan dipindahkan ke domain utama.`);
+        alert(t.removedMoved(result.movedLinks));
       }
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal menghapus domain."));
+      alert(alertMessageFor(err, t.removeFailed));
     } finally {
       setBusy(null);
     }
@@ -116,19 +111,18 @@ export default function DomainsPage() {
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand">
             <Lock size={26} />
           </div>
-          <h2 className="text-xl font-bold text-foreground">Domain sendiri</h2>
+          <h2 className="text-xl font-bold text-foreground">{t.lockedTitle}</h2>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            Tautan Anda tampil sebagai{" "}
-            <span className="font-bold text-foreground">link.brandanda.com/promo</span> —
-            tanpa jejak singkat.in sama sekali. Tersedia di paket{" "}
-            {PLANS.business.name}.
+            {t.lockedBodyPrefix}{" "}
+            <span className="font-bold text-foreground">{t.lockedBodyExample}</span>{" "}
+            {t.lockedBodySuffix(planName("business", locale))}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Paket Anda sekarang: <strong>{PLANS[data?.plan ?? "free"].name}</strong>
+            {t.currentPlan(planName(data?.plan ?? "free", locale))}
           </p>
           <Link href="/dashboard/billing" className="mt-6 inline-block">
             <button className="btn-saweria px-8 py-3">
-              Lihat paket {PLANS.business.name}
+              {t.seePlan(planName("business", locale))}
             </button>
           </Link>
         </div>
@@ -143,15 +137,17 @@ export default function DomainsPage() {
       <div>
         <h2 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Globe size={22} className="text-brand" />
-          Domain Sendiri
+          {t.title}
         </h2>
         <p className="text-muted-foreground">
-          Terpakai {data.domains.length} dari {data.limit}.
+          {t.usage(data.domains.length, data.limit)}
         </p>
       </div>
 
       {data.domains.map((row) => {
         const view = STATUS_VIEW[row.status] ?? STATUS_VIEW.pending;
+        const statusLabel =
+          t.status[row.status as keyof typeof t.status] ?? t.status.pending;
         return (
           <div key={row._id} className="card-saweria space-y-4 p-6">
             <div className="flex flex-wrap items-center gap-3">
@@ -159,7 +155,7 @@ export default function DomainsPage() {
                 className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold ${view.className}`}
               >
                 {view.icon}
-                {view.label}
+                {statusLabel}
               </span>
               <p className="min-w-0 flex-1 truncate font-bold text-foreground">
                 {row.domain}
@@ -174,13 +170,13 @@ export default function DomainsPage() {
                 ) : (
                   <RefreshCw size={14} />
                 )}
-                Periksa
+                {t.check}
               </button>
               <button
                 onClick={() => handleRemove(row._id, row.domain)}
                 disabled={busy === row._id}
                 className="rounded-lg p-2 text-subtle transition hover:bg-danger-soft hover:text-danger"
-                title="Hapus domain"
+                title={t.removeTitle}
               >
                 <Trash2 size={18} />
               </button>
@@ -193,9 +189,7 @@ export default function DomainsPage() {
             {/* Petunjuk DNS ditampilkan apa adanya dari Vercel */}
             {row.verification && row.verification.length > 0 && (
               <div className="rounded-xl border border-border bg-muted/40 p-4">
-                <p className="mb-3 text-sm font-bold text-foreground">
-                  Tambahkan record berikut di penyedia DNS Anda:
-                </p>
+                <p className="mb-3 text-sm font-bold text-foreground">{t.dnsHeading}</p>
                 <div className="space-y-3">
                   {row.verification.map((record, i) => (
                     <div
@@ -214,17 +208,14 @@ export default function DomainsPage() {
                       <button
                         onClick={() => navigator.clipboard.writeText(record.value)}
                         className="self-start rounded-lg p-1.5 text-subtle hover:text-brand"
-                        title="Salin nilai"
+                        title={t.copyValue}
                       >
                         <Copy size={14} />
                       </button>
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-xs text-subtle">
-                  Perubahan DNS bisa memakan waktu beberapa menit hingga
-                  beberapa jam. Tekan Periksa setelah record tersimpan.
-                </p>
+                <p className="mt-3 text-xs text-subtle">{t.dnsHint}</p>
               </div>
             )}
           </div>
@@ -233,17 +224,17 @@ export default function DomainsPage() {
 
       {atLimit ? (
         <div className="surface-panel p-5 text-sm text-muted-foreground">
-          Jatah domain paket {PLANS[data.plan].name} sudah terpakai semua.
+          {t.atLimit(planName(data.plan, locale))}
         </div>
       ) : (
         <form onSubmit={handleAdd} className="card-saweria space-y-4 p-6">
           <label className="block text-sm font-bold text-foreground">
-            Tambah domain
+            {t.addLabel}
           </label>
           <input
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="link.brandanda.com"
+            placeholder={t.addPlaceholder}
             className="input-field w-full"
             required
           />
@@ -253,12 +244,11 @@ export default function DomainsPage() {
             className="btn-saweria flex items-center gap-2 px-8 py-3"
           >
             {busy === "add" && <Loader2 size={16} className="animate-spin" />}
-            Tambah domain
+            {t.addButton}
           </button>
           <p className="text-xs text-muted-foreground">
-            Gunakan subdomain milik Anda sendiri seperti{" "}
-            <strong>link.brandanda.com</strong>. Domain utama sebuah situs
-            biasanya sudah dipakai untuk situsnya sendiri.
+            {t.addHintPrefix} <strong>{t.addPlaceholder}</strong>
+            {t.addHintSuffix}
           </p>
         </form>
       )}

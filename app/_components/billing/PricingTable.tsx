@@ -9,6 +9,8 @@ import {
   PLAN_IDS,
   formatIDR,
   planHighlights,
+  planName,
+  planTagline,
   yearlySavingPercent,
   type PlanId,
 } from "@/convex/plans";
@@ -26,7 +28,8 @@ type Props = {
    */
   onSelect?: (plan: PlanId, cycle: BillingCycle) => void;
   busyPlan?: PlanId | null;
-  /** Dipakai halaman harga publik (locale terdeteksi dari cookie). Dasbor tetap default ID. */
+  /** Bahasa tampilan. Halaman harga publik membacanya dari cookie di server;
+   *  dasbor meneruskan hasil useLocale(). */
   locale?: Locale;
 };
 
@@ -83,6 +86,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
           const isPopular = planId === POPULAR;
           const price = cycle === "yearly" ? plan.priceYearly : plan.priceMonthly;
           const busy = busyPlan === planId;
+          const name = planName(planId, locale);
 
           return (
             <div
@@ -99,9 +103,9 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
               )}
 
               <div className="mb-5">
-                <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                <h3 className="text-xl font-bold text-foreground">{name}</h3>
                 <p className="mt-1 min-h-10 text-sm text-muted-foreground">
-                  {plan.tagline}
+                  {planTagline(planId, locale)}
                 </p>
               </div>
 
@@ -111,7 +115,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
                 ) : (
                   <>
                     <p className="text-4xl font-bold text-foreground">
-                      {formatIDR(price)}
+                      {formatIDR(price, locale)}
                     </p>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {cycle === "yearly" ? t.perYear : t.perMonth}
@@ -121,7 +125,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
               </div>
 
               <ul className="mb-6 flex-1 space-y-2.5">
-                {planHighlights(planId).map((item) => (
+                {planHighlights(planId, locale).map((item) => (
                   <li key={item} className="flex items-start gap-2 text-sm">
                     <Check
                       size={16}
@@ -167,7 +171,7 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
                       {t.preparing}
                     </>
                   ) : (
-                    t.choosePlan(plan.name)
+                    t.choosePlan(name)
                   )}
                 </button>
               ) : (
@@ -175,14 +179,14 @@ export default function PricingTable({ currentPlan, onSelect, busyPlan, locale =
                   <SignedIn>
                     <Link href="/dashboard/billing" className="block">
                       <button className="btn-saweria w-full py-3">
-                        {t.choosePlan(plan.name)}
+                        {t.choosePlan(name)}
                       </button>
                     </Link>
                   </SignedIn>
                   <SignedOut>
                     <SignInButton mode="modal">
                       <button className="btn-saweria w-full py-3">
-                        {t.choosePlan(plan.name)}
+                        {t.choosePlan(name)}
                       </button>
                     </SignInButton>
                   </SignedOut>

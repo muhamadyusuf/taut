@@ -5,12 +5,14 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Check, Loader2, Lock, Smartphone, X } from "lucide-react";
-import { PLANS, isUnlimited, type PlanId } from "@/convex/plans";
+import { isUnlimited, planName, type PlanId } from "@/convex/plans";
 import {
   MICROSITE_SLUG_MIN,
   sanitizeMicrositeSlug,
 } from "@/convex/micrositeSlug";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Formulir pembuatan halaman bio.
@@ -30,6 +32,8 @@ export default function CreateMicrositeModal({
   onClose: () => void;
   onCreated: (id: string) => void;
 }) {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.createMicrositeModal;
   const createMicrosite = useMutation(api.microsites.createMicrosite);
   const me = useQuery(api.users.getMe);
 
@@ -69,11 +73,11 @@ export default function CreateMicrositeModal({
     try {
       const id = await createMicrosite({
         slug,
-        title: title.trim() || "Halaman Baru",
+        title: title.trim() || t.defaultTitle,
       });
       onCreated(id);
     } catch (err) {
-      setError(alertMessageFor(err, "Gagal membuat halaman bio."));
+      setError(alertMessageFor(err, t.createFailed));
     } finally {
       setLoading(false);
     }
@@ -92,17 +96,13 @@ export default function CreateMicrositeModal({
               <Smartphone size={22} />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
-                Buat Halaman Bio
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Satu alamat untuk semua tautanmu.
-              </p>
+              <h2 className="text-lg font-bold text-foreground">{t.title}</h2>
+              <p className="text-xs text-muted-foreground">{t.subtitle}</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t.close}
             className="rounded-full p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X size={20} />
@@ -117,36 +117,31 @@ export default function CreateMicrositeModal({
               <Lock size={20} />
             </div>
             <p className="font-bold text-foreground">
-              Jatah halaman bio paket {PLANS[plan].name} sudah terpakai
+              {t.atLimitTitle(planName(plan, locale))}
             </p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Terpakai {used} dari {limit}. Hapus salah satu, atau naikkan paket
-              untuk menambah.
+              {t.atLimitBody(used, limit)}
             </p>
             <Link href="/dashboard/billing" onClick={onClose}>
-              <button className="btn-saweria mt-4 px-6 py-2.5">
-                Lihat paket
-              </button>
+              <button className="btn-saweria mt-4 px-6 py-2.5">{t.seePlans}</button>
             </Link>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="form-label">Nama Halaman</label>
+              <label className="form-label">{t.nameLabel}</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Toko Saya"
+                placeholder={t.namePlaceholder}
                 autoFocus
                 className="input-field w-full"
               />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Bisa diubah kapan saja nanti.
-              </p>
+              <p className="mt-1 text-xs text-muted-foreground">{t.nameHint}</p>
             </div>
 
             <div>
-              <label className="form-label">Alamat Halaman</label>
+              <label className="form-label">{t.slugLabel}</label>
               <div className="flex items-center overflow-hidden rounded-xl border border-border bg-input transition focus-within:border-brand focus-within:ring-4 focus-within:ring-ring">
                 <span className="whitespace-nowrap border-r border-border px-4 py-4 text-sm font-medium text-muted-foreground">
                   {process.env.NEXT_PUBLIC_APP_URL}/bio/
@@ -154,7 +149,7 @@ export default function CreateMicrositeModal({
                 <input
                   value={slugInput}
                   onChange={(e) => setSlugInput(e.target.value)}
-                  placeholder="toko-saya"
+                  placeholder={t.slugPlaceholder}
                   required
                   className="w-full bg-transparent p-4 text-sm font-bold text-brand focus:outline-none"
                 />
@@ -164,7 +159,7 @@ export default function CreateMicrositeModal({
                   supaya perubahan otomatis tidak pernah mengejutkan. */}
               {slug && slug !== slugInput.trim() && (
                 <p className="mt-2 text-xs text-muted-foreground">
-                  Akan disimpan sebagai{" "}
+                  {t.willSaveAs}{" "}
                   <span className="font-bold text-foreground">{slug}</span>
                 </p>
               )}
@@ -176,24 +171,20 @@ export default function CreateMicrositeModal({
                   }`}
                 >
                   {availability.available ? <Check size={14} /> : <X size={14} />}
-                  {availability.available
-                    ? "Alamat ini tersedia."
-                    : availability.reason}
+                  {availability.available ? t.available : availability.reason}
                 </p>
               )}
 
               {slugInput.length > 0 && slug.length < MICROSITE_SLUG_MIN && (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Minimal {MICROSITE_SLUG_MIN} karakter — huruf kecil, angka,
-                  dan tanda hubung.
+                  {t.tooShort(MICROSITE_SLUG_MIN)}
                 </p>
               )}
             </div>
 
             {!isUnlimited(limit) && (
               <p className="text-xs text-muted-foreground">
-                Terpakai {used} dari {limit} halaman bio pada paket{" "}
-                {PLANS[plan].name}.
+                {t.usage(used, limit, planName(plan, locale))}
               </p>
             )}
 
@@ -209,7 +200,7 @@ export default function CreateMicrositeModal({
                 onClick={onClose}
                 className="rounded-full px-6 py-3 text-sm font-bold text-muted-foreground transition hover:bg-muted hover:text-foreground"
               >
-                Batal
+                {t.cancel}
               </button>
               <button
                 type="submit"
@@ -217,7 +208,7 @@ export default function CreateMicrositeModal({
                 className="btn-saweria flex items-center gap-2 px-8 py-3 font-bold disabled:opacity-50"
               >
                 {loading && <Loader2 size={16} className="animate-spin" />}
-                Buat Halaman
+                {t.submit}
               </button>
             </div>
           </form>

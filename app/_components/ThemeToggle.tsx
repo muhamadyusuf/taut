@@ -3,6 +3,8 @@
 import { useSyncExternalStore } from "react";
 import { useTheme } from "next-themes";
 import { Monitor, Moon, Sun } from "lucide-react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 /**
  * Tiga mode tema.
@@ -14,9 +16,9 @@ import { Monitor, Moon, Sun } from "lucide-react";
  * localStorage dan menang atas pengaturan OS sampai dikembalikan ke "system".
  */
 const MODES = [
-  { value: "system", label: "Sistem", icon: Monitor },
-  { value: "light", label: "Terang", icon: Sun },
-  { value: "dark", label: "Gelap", icon: Moon },
+  { value: "system", icon: Monitor },
+  { value: "light", icon: Sun },
+  { value: "dark", icon: Moon },
 ] as const;
 
 type Mode = (typeof MODES)[number]["value"];
@@ -56,13 +58,14 @@ function useThemeMode() {
  * Dipakai di halaman Pengaturan.
  */
 export function ThemeSwitcher({ className = "" }: { className?: string }) {
+  const t = getDictionary(useLocale()).themeToggle;
   const { mode, setTheme, mounted } = useThemeMode();
 
   return (
     <div
       className={`inline-flex items-center gap-1 rounded-full border border-border bg-muted p-1 ${className}`}
       role="radiogroup"
-      aria-label="Pilih tema tampilan"
+      aria-label={t.groupAria}
     >
       {MODES.map((opt) => {
         const active = mounted && mode === opt.value;
@@ -73,7 +76,7 @@ export function ThemeSwitcher({ className = "" }: { className?: string }) {
             role="radio"
             aria-checked={active}
             onClick={() => setTheme(opt.value)}
-            title={opt.label}
+            title={t.modes[opt.value]}
             className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition-all ${
               active
                 ? "bg-card text-brand shadow-sm"
@@ -81,7 +84,7 @@ export function ThemeSwitcher({ className = "" }: { className?: string }) {
             }`}
           >
             <opt.icon size={14} />
-            <span className="hidden sm:inline">{opt.label}</span>
+            <span className="hidden sm:inline">{t.modes[opt.value]}</span>
           </button>
         );
       })}
@@ -94,6 +97,7 @@ export function ThemeSwitcher({ className = "" }: { className?: string }) {
  * supaya user paham kenapa tampilannya terang/gelap.
  */
 export function ThemeModeHint({ className = "" }: { className?: string }) {
+  const t = getDictionary(useLocale()).themeToggle;
   const { mode, resolvedTheme, mounted } = useThemeMode();
 
   // Jangan render teks apa pun sebelum mount — isinya bergantung localStorage.
@@ -101,10 +105,8 @@ export function ThemeModeHint({ className = "" }: { className?: string }) {
 
   const text =
     mode === "system"
-      ? `Mengikuti pengaturan komputer Anda — saat ini ${
-          resolvedTheme === "dark" ? "gelap" : "terang"
-        }.`
-      : `Diatur manual ke mode ${mode === "dark" ? "gelap" : "terang"}.`;
+      ? t.followingSystem(resolvedTheme === "dark" ? t.modes.dark : t.modes.light)
+      : t.manual(mode === "dark" ? t.modes.dark : t.modes.light);
 
   return <p className={`text-sm text-muted-foreground ${className}`}>{text}</p>;
 }
@@ -117,23 +119,25 @@ export function ThemeModeHint({ className = "" }: { className?: string }) {
  * komputernya tanpa harus membuka halaman Pengaturan.
  */
 export default function ThemeToggle({ className = "" }: { className?: string }) {
+  const t = getDictionary(useLocale()).themeToggle;
   const { mode, resolvedTheme, setTheme, mounted } = useThemeMode();
 
   const index = MODES.findIndex((m) => m.value === mode);
   const next = MODES[(index + 1) % MODES.length];
 
   const current = MODES[index] ?? MODES[0];
+  const nextLabel = t.modes[next.value].toLowerCase();
   const description =
     mode === "system"
-      ? `Tema: mengikuti sistem (${resolvedTheme === "dark" ? "gelap" : "terang"})`
-      : `Tema: ${current.label.toLowerCase()}`;
+      ? t.shortFollowingSystem(resolvedTheme === "dark" ? t.modes.dark : t.modes.light)
+      : t.shortManual(t.modes[current.value].toLowerCase());
 
   return (
     <button
       type="button"
       onClick={() => setTheme(next.value)}
-      aria-label={`${description}. Klik untuk ganti ke ${next.label.toLowerCase()}.`}
-      title={`${description} — klik untuk ${next.label.toLowerCase()}`}
+      aria-label={t.switchAria(description, nextLabel)}
+      title={t.switchTitle(description, nextLabel)}
       className={`relative grid h-10 w-10 place-items-center rounded-full border border-border bg-card text-muted-foreground transition-colors hover:border-brand hover:text-brand active:scale-95 ${className}`}
     >
       {/* Ketiga ikon selalu dirender; yang tampil dipilih lewat opacity/rotate.

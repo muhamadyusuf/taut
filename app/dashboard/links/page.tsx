@@ -1,10 +1,13 @@
 import { Metadata } from "next";
-import LinksClient from "./LinksClient"; // Import komponen client yang tadi di-rename
+import LinksClient from "./LinksClient";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-// DEFINISIKAN JUDUL DI SINI
-export const metadata: Metadata = {
-  title: "Tautan Saya", 
-};
+/** Judul tab ikut bahasa pilihan pengguna, sama seperti isi halamannya. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: getDictionary(locale).dashboard.pageTitles.links };
+}
 
 export default function Page() {
   return <LinksClient />;

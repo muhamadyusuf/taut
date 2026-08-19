@@ -3,6 +3,8 @@
 import useDrivePicker from "react-google-drive-picker";
 import { Image as ImageIcon, CheckCircle, AlertTriangle, Loader2, Wrench, X } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 // --- KONFIGURASI ---
 const GOOGLE_CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
@@ -27,6 +29,7 @@ interface Permission {
 }
 
 export default function DrivePicker({ label, currentUrl, onSelect }: DrivePickerProps) {
+  const t = getDictionary(useLocale()).dashboard.drivePicker;
   const [openPicker, authResponse] = useDrivePicker();
   
   // State
@@ -106,7 +109,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
             return;
         }
 
-        if (!res.ok) throw new Error("Gagal API Cek Izin");
+        if (!res.ok) throw new Error(t.permissionCheckFailed);
 
         const data = await res.json();
         const permissions: Permission[] = data.permissions || [];
@@ -122,7 +125,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
   // 4. MAGIC FIX (Auto Public)
   const makePublic = async () => {
       if (!accessToken || !fileId) {
-          alert("Sesi akses kadaluarsa. Silakan klik tombol Drive lagi untuk login ulang.");
+          alert(t.sessionExpired);
           clearSession();
           return;
       }
@@ -145,7 +148,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
 
           if (!res.ok) {
               const errData = await res.json();
-              throw new Error(errData.error?.message || "Gagal mengubah izin.");
+              throw new Error(errData.error?.message || t.permissionChangeFailed);
           }
 
           await verifyPublicPermission(fileId, accessToken);
@@ -156,16 +159,16 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
              const separator = baseUrl.includes('?') ? '&' : '?';
              onSelect(`${baseUrl}${separator}t=${Date.now()}`); 
           }
-          alert("Berhasil! File sekarang sudah publik.");
+          alert(t.madePublic);
       } catch (err: unknown) {
-          const message = err instanceof Error ? err.message : "Kesalahan tidak diketahui";
+          const message = err instanceof Error ? err.message : t.unknownError;
           
           // Jika gagal karena token, hapus token agar user login ulang
           if (message.includes("Token") || message.includes("401")) {
              clearSession();
-             alert("Sesi Google habis. Silakan klik tombol 'Ganti File' untuk login ulang.");
+             alert(t.googleExpired);
           } else {
-             alert("Gagal: " + message);
+             alert(t.failedPrefix + message);
           }
       } finally {
           setIsFixing(false);
@@ -214,8 +217,8 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
         <label className="text-xs font-bold text-muted-foreground uppercase flex items-center gap-2">
             {label} {status === 'invalid' && <span className="animate-pulse w-2 h-2 bg-danger rounded-full"></span>}
         </label>
-        {status === 'checking' && <span className="text-[10px] bg-brand-soft text-brand-soft-fg px-2 py-1 rounded-full flex items-center gap-1 font-bold"><Loader2 size={10} className="animate-spin"/> Cek Izin...</span>}
-        {status === 'valid' && <span className="text-[10px] bg-success-soft text-success px-2 py-1 rounded-full flex items-center gap-1 font-bold"><CheckCircle size={12}/> Publik</span>}
+        {status === 'checking' && <span className="text-[10px] bg-brand-soft text-brand-soft-fg px-2 py-1 rounded-full flex items-center gap-1 font-bold"><Loader2 size={10} className="animate-spin"/> {t.checkingPermission}</span>}
+        {status === 'valid' && <span className="text-[10px] bg-success-soft text-success px-2 py-1 rounded-full flex items-center gap-1 font-bold"><CheckCircle size={12}/> {t.public}</span>}
       </div>
 
       <div className="flex gap-4 items-start">
@@ -237,7 +240,7 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
                     type="button"
                     onClick={handleRemove}
                     className="absolute -top-2 -right-2 bg-card text-muted-foreground hover:text-danger border border-border rounded-full p-1 shadow-md hover:bg-danger-soft hover:border-danger/30 transition-all z-10 opacity-100 scale-100"
-                    title="Hapus gambar"
+                    title={t.removeImage}
                 >
                     <X size={12} strokeWidth={3} />
                 </button>
@@ -250,21 +253,21 @@ export default function DrivePicker({ label, currentUrl, onSelect }: DrivePicker
         <div className="flex-1 space-y-2">
             <button type="button" onClick={handleOpenPicker} className="w-full bg-card border border-border hover:border-brand hover:bg-brand-soft text-foreground font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition text-xs">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/1/12/Google_Drive_icon_%282020%29.svg" className="w-4 h-4" alt="Drive"/>
-                {currentUrl ? "Ganti File" : "Pilih dari Drive"}
+                {currentUrl ? t.changeFile : t.pickFile}
             </button>
             
             {status === 'invalid' && (
                 <div className="text-[10px] text-danger bg-card p-2.5 rounded-lg border border-danger/30 shadow-sm animate-in slide-in-from-top-2">
                     <div className="flex gap-2 mb-2">
                         <AlertTriangle size={16} className="shrink-0 text-danger"/>
-                        <div><p className="font-bold">Gambar Tidak Muncul?</p><p className="leading-tight opacity-80">File ini masih Private.</p></div>
+                        <div><p className="font-bold">{t.invalidTitle}</p><p className="leading-tight opacity-80">{t.invalidBody}</p></div>
                     </div>
                     {accessToken ? (
                         <button type="button" onClick={makePublic} disabled={isFixing} className="w-full bg-danger hover:opacity-90 text-white py-1.5 px-3 rounded flex items-center justify-center gap-1.5 font-bold transition shadow-sm disabled:opacity-50">
-                            {isFixing ? <><Loader2 size={12} className="animate-spin"/> Memproses...</> : <><Wrench size={12}/> Ubah ke Publik Sekarang</>}
+                            {isFixing ? <><Loader2 size={12} className="animate-spin"/> {t.makingPublic}</> : <><Wrench size={12}/> {t.makePublic}</>}
                         </button>
                     ) : (
-                        <div className="text-center italic opacity-60 mt-1 text-[9px]">*Klik tombol Drive diatas untuk login ulang & memperbaiki izin.</div>
+                        <div className="text-center italic opacity-60 mt-1 text-[9px]">{t.reloginHint}</div>
                     )}
                 </div>
             )}

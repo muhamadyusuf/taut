@@ -289,49 +289,158 @@ export function isWithinLimit(
 }
 
 // ---------------------------------------------------------------------------
-// LABEL BAHASA INDONESIA (untuk pesan error & UI)
+// LABEL DUA BAHASA (untuk pesan error & UI)
 // ---------------------------------------------------------------------------
 
-export const FEATURE_LABELS: Record<FeatureKey, string> = {
-  link_expiry: "Kedaluwarsa tautan",
-  link_password: "Tautan berkata sandi",
-  bulk_import: "Impor massal",
-  geo_targeting: "Targeting lokasi & perangkat",
-  ab_rotator: "Rotator A/B",
-  retargeting_pixel: "Pixel retargeting",
-  skip_interstitial: "Tanpa halaman iklan",
-  whitelabel_interstitial: "Halaman antara bermerek sendiri",
-  branded_qr: "QR berlogo & berwarna",
-  vector_qr: "Unduh QR vektor (SVG/PDF)",
-  bulk_qr: "QR massal",
-  detailed_analytics: "Analitik lengkap",
-  export_report: "Ekspor laporan",
-  scheduled_report: "Laporan terjadwal",
-  public_dashboard: "Dasbor publik",
-  subdomain: "Subdomain sendiri",
-  custom_domain: "Domain sendiri",
-  remove_branding: "Hapus branding singkat.in",
-  certificate_generator: "Generator sertifikat",
-  certificate_verification: "Verifikasi sertifikat publik",
-  form_file_upload: "Unggah berkas di formulir",
-  form_logic: "Logika percabangan formulir",
-  api_access: "Akses API",
-  webhooks: "Webhook",
-  team: "Anggota tim",
+/**
+ * Bahasa yang dikenal katalog paket.
+ *
+ * Sengaja tidak mengimpor tipe Locale dari lib/i18n: file ini juga dibaca
+ * runtime Convex, dan menariknya ke sini berarti menyeret modul sisi klien ke
+ * dalam bundel backend. Dua-duanya tetap "id" | "en", dan tsc akan mengeluh
+ * kalau salah satunya berubah tanpa yang lain.
+ */
+export type PlanLocale = "id" | "en";
+
+/** Nama & tagline paket per bahasa. Backend selalu memakai "id" (default). */
+export const PLAN_COPY: Record<PlanLocale, Record<PlanId, { name: string; tagline: string }>> = {
+  id: {
+    free: {
+      name: "Gratis",
+      tagline: "Semua yang dibutuhkan untuk mulai memendekkan tautan.",
+    },
+    pro: {
+      name: "Pro",
+      tagline: "Untuk kreator dan pemilik usaha yang serius menggarap tautannya.",
+    },
+    business: {
+      name: "Bisnis",
+      tagline: "Untuk tim, agensi, dan institusi yang butuh domain & API sendiri.",
+    },
+  },
+  en: {
+    free: {
+      name: "Free",
+      tagline: "Everything you need to start shortening links.",
+    },
+    pro: {
+      name: "Pro",
+      tagline: "For creators and business owners who take their links seriously.",
+    },
+    business: {
+      name: "Business",
+      tagline: "For teams, agencies, and institutions that need their own domain & API.",
+    },
+  },
 };
 
-export const LIMIT_LABELS: Record<LimitKey, string> = {
-  links: "tautan",
-  microsites: "halaman bio",
-  forms: "formulir",
-  formResponsesPerForm: "respons per formulir",
-  products: "produk",
-  certificatesPerMonth: "sertifikat bulan ini",
-  subdomains: "subdomain",
-  customDomains: "domain sendiri",
-  analyticsRetentionDays: "hari retensi analitik",
-  teamSeats: "anggota tim",
+/** Nama paket sesuai bahasa tampilan. Pakai ini di UI, bukan PLANS[id].name. */
+export function planName(planId: PlanId, locale: PlanLocale = "id"): string {
+  return PLAN_COPY[locale][planId].name;
+}
+
+/** Tagline paket sesuai bahasa tampilan. */
+export function planTagline(planId: PlanId, locale: PlanLocale = "id"): string {
+  return PLAN_COPY[locale][planId].tagline;
+}
+
+const FEATURE_LABELS_BY_LOCALE: Record<PlanLocale, Record<FeatureKey, string>> = {
+  id: {
+    link_expiry: "Kedaluwarsa tautan",
+    link_password: "Tautan berkata sandi",
+    bulk_import: "Impor massal",
+    geo_targeting: "Targeting lokasi & perangkat",
+    ab_rotator: "Rotator A/B",
+    retargeting_pixel: "Pixel retargeting",
+    skip_interstitial: "Tanpa halaman iklan",
+    whitelabel_interstitial: "Halaman antara bermerek sendiri",
+    branded_qr: "QR berlogo & berwarna",
+    vector_qr: "Unduh QR vektor (SVG/PDF)",
+    bulk_qr: "QR massal",
+    detailed_analytics: "Analitik lengkap",
+    export_report: "Ekspor laporan",
+    scheduled_report: "Laporan terjadwal",
+    public_dashboard: "Dasbor publik",
+    subdomain: "Subdomain sendiri",
+    custom_domain: "Domain sendiri",
+    remove_branding: "Hapus branding singkat.in",
+    certificate_generator: "Generator sertifikat",
+    certificate_verification: "Verifikasi sertifikat publik",
+    form_file_upload: "Unggah berkas di formulir",
+    form_logic: "Logika percabangan formulir",
+    api_access: "Akses API",
+    webhooks: "Webhook",
+    team: "Anggota tim",
+  },
+  en: {
+    link_expiry: "Link expiry",
+    link_password: "Password-protected links",
+    bulk_import: "Bulk import",
+    geo_targeting: "Location & device targeting",
+    ab_rotator: "A/B rotator",
+    retargeting_pixel: "Retargeting pixel",
+    skip_interstitial: "No interstitial ads",
+    whitelabel_interstitial: "White-label interstitial page",
+    branded_qr: "Branded & colored QR",
+    vector_qr: "Vector QR download (SVG/PDF)",
+    bulk_qr: "Bulk QR",
+    detailed_analytics: "Full analytics",
+    export_report: "Report export",
+    scheduled_report: "Scheduled reports",
+    public_dashboard: "Public dashboard",
+    subdomain: "Your own subdomain",
+    custom_domain: "Your own domain",
+    remove_branding: "Remove singkat.in branding",
+    certificate_generator: "Certificate generator",
+    certificate_verification: "Public certificate verification",
+    form_file_upload: "File upload in forms",
+    form_logic: "Form branching logic",
+    api_access: "API access",
+    webhooks: "Webhooks",
+    team: "Team members",
+  },
 };
+
+const LIMIT_LABELS_BY_LOCALE: Record<PlanLocale, Record<LimitKey, string>> = {
+  id: {
+    links: "tautan",
+    microsites: "halaman bio",
+    forms: "formulir",
+    formResponsesPerForm: "respons per formulir",
+    products: "produk",
+    certificatesPerMonth: "sertifikat bulan ini",
+    subdomains: "subdomain",
+    customDomains: "domain sendiri",
+    analyticsRetentionDays: "hari retensi analitik",
+    teamSeats: "anggota tim",
+  },
+  en: {
+    links: "links",
+    microsites: "bio pages",
+    forms: "forms",
+    formResponsesPerForm: "responses per form",
+    products: "products",
+    certificatesPerMonth: "certificates this month",
+    subdomains: "subdomains",
+    customDomains: "custom domains",
+    analyticsRetentionDays: "days of analytics retention",
+    teamSeats: "team members",
+  },
+};
+
+/** Label fitur Bahasa Indonesia — dipakai pesan error backend. */
+export const FEATURE_LABELS: Record<FeatureKey, string> = FEATURE_LABELS_BY_LOCALE.id;
+
+/** Label kuota Bahasa Indonesia — dipakai pesan error backend. */
+export const LIMIT_LABELS: Record<LimitKey, string> = LIMIT_LABELS_BY_LOCALE.id;
+
+export function featureLabel(feature: FeatureKey, locale: PlanLocale = "id"): string {
+  return FEATURE_LABELS_BY_LOCALE[locale][feature];
+}
+
+export function limitLabel(key: LimitKey, locale: PlanLocale = "id"): string {
+  return LIMIT_LABELS_BY_LOCALE[locale][key];
+}
 
 /** Paket termurah yang punya fitur tertentu — dipakai untuk ajakan upgrade. */
 export function cheapestPlanWith(feature: FeatureKey): PlanId | null {
@@ -348,39 +457,38 @@ export function cheapestPlanWith(feature: FeatureKey): PlanId | null {
  * dari yang benar-benar ditegakkan backend. Menambah fitur ke sebuah paket
  * cukup dilakukan di satu tempat, dan halaman harga ikut berubah sendiri.
  */
-export function planHighlights(planId: PlanId): string[] {
+export function planHighlights(planId: PlanId, locale: PlanLocale = "id"): string[] {
   const limits = PLANS[planId].limits;
-  const out: string[] = ["Tautan pendek tanpa batas"];
+  const t = HIGHLIGHT_COPY[locale];
+  const num = (value: number) => value.toLocaleString(locale === "en" ? "en-US" : "id-ID");
+  const out: string[] = [t.unlimitedLinks];
 
-  const countLine = (limit: number, satuan: string) =>
-    isUnlimited(limit) ? `${satuan} tanpa batas` : `${limit} ${satuan}`;
-
-  out.push(countLine(limits.microsites, "halaman bio"));
-  out.push(countLine(limits.forms, "formulir"));
+  out.push(t.count(limits.microsites, t.units.microsites));
+  out.push(t.count(limits.forms, t.units.forms));
   out.push(
     isUnlimited(limits.formResponsesPerForm)
-      ? "Respons formulir tanpa batas"
-      : `${limits.formResponsesPerForm.toLocaleString("id-ID")} respons per formulir`
+      ? t.unlimitedResponses
+      : t.responses(num(limits.formResponsesPerForm))
   );
   out.push(
     isUnlimited(limits.certificatesPerMonth)
-      ? "Sertifikat tanpa batas"
-      : `${limits.certificatesPerMonth} sertifikat per bulan`
+      ? t.unlimitedCertificates
+      : t.certificates(num(limits.certificatesPerMonth))
   );
   out.push(
     isUnlimited(limits.analyticsRetentionDays)
-      ? "Riwayat statistik tanpa batas"
-      : `Riwayat statistik ${limits.analyticsRetentionDays} hari`
+      ? t.unlimitedRetention
+      : t.retention(limits.analyticsRetentionDays)
   );
 
   if (limits.subdomains > 0) {
-    out.push(`${limits.subdomains} subdomain nama.singkat.in`);
+    out.push(t.subdomains(limits.subdomains));
   }
   if (limits.customDomains > 0) {
-    out.push(`${limits.customDomains} domain sendiri`);
+    out.push(t.customDomains(limits.customDomains));
   }
   if (limits.teamSeats > 1) {
-    out.push(`${limits.teamSeats} anggota tim`);
+    out.push(t.teamSeats(limits.teamSeats));
   }
 
   // Fitur yang paling menentukan keputusan beli, diurutkan sengaja.
@@ -397,11 +505,59 @@ export function planHighlights(planId: PlanId): string[] {
   ];
 
   for (const feature of HIGHLIGHTED) {
-    if (planHasFeature(planId, feature)) out.push(FEATURE_LABELS[feature]);
+    if (planHasFeature(planId, feature)) out.push(featureLabel(feature, locale));
   }
 
   return out;
 }
+
+/** Kalimat poin kartu harga per bahasa — dipisah supaya rumusnya tetap satu. */
+const HIGHLIGHT_COPY: Record<
+  PlanLocale,
+  {
+    unlimitedLinks: string;
+    units: { microsites: string; forms: string };
+    count: (limit: number, unit: string) => string;
+    unlimitedResponses: string;
+    responses: (n: string) => string;
+    unlimitedCertificates: string;
+    certificates: (n: string) => string;
+    unlimitedRetention: string;
+    retention: (days: number) => string;
+    subdomains: (n: number) => string;
+    customDomains: (n: number) => string;
+    teamSeats: (n: number) => string;
+  }
+> = {
+  id: {
+    unlimitedLinks: "Tautan pendek tanpa batas",
+    units: { microsites: "halaman bio", forms: "formulir" },
+    count: (limit, unit) => (isUnlimited(limit) ? `${unit} tanpa batas` : `${limit} ${unit}`),
+    unlimitedResponses: "Respons formulir tanpa batas",
+    responses: (n) => `${n} respons per formulir`,
+    unlimitedCertificates: "Sertifikat tanpa batas",
+    certificates: (n) => `${n} sertifikat per bulan`,
+    unlimitedRetention: "Riwayat statistik tanpa batas",
+    retention: (days) => `Riwayat statistik ${days} hari`,
+    subdomains: (n) => `${n} subdomain nama.singkat.in`,
+    customDomains: (n) => `${n} domain sendiri`,
+    teamSeats: (n) => `${n} anggota tim`,
+  },
+  en: {
+    unlimitedLinks: "Unlimited short links",
+    units: { microsites: "bio pages", forms: "forms" },
+    count: (limit, unit) => (isUnlimited(limit) ? `Unlimited ${unit}` : `${limit} ${unit}`),
+    unlimitedResponses: "Unlimited form responses",
+    responses: (n) => `${n} responses per form`,
+    unlimitedCertificates: "Unlimited certificates",
+    certificates: (n) => `${n} certificates per month`,
+    unlimitedRetention: "Unlimited analytics history",
+    retention: (days) => `${days}-day analytics history`,
+    subdomains: (n) => `${n} name.singkat.in subdomain`,
+    customDomains: (n) => `${n} custom domain`,
+    teamSeats: (n) => `${n} team members`,
+  },
+};
 
 
 // ---------------------------------------------------------------------------
@@ -425,8 +581,13 @@ export const EVENT_PASS = {
   price: 149_000,
 } as const;
 
-export function formatIDR(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
+/** Nama paket acara sesuai bahasa tampilan. */
+export function eventPassName(locale: PlanLocale = "id"): string {
+  return locale === "en" ? "Event Pass" : EVENT_PASS.name;
+}
+
+export function formatIDR(amount: number, locale: PlanLocale = "id"): string {
+  return new Intl.NumberFormat(locale === "en" ? "en-US" : "id-ID", {
     style: "currency",
     currency: "IDR",
     maximumFractionDigits: 0,

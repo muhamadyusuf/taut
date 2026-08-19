@@ -11,8 +11,10 @@ import {
   Plus, Trash2, Save, GripVertical, ArrowLeft, Copy, ExternalLink,
   BarChart2, AlertCircle, ChevronDown, Settings2, Palette, Layers, Check, Download, QrCode as QrIcon,
 } from "lucide-react";
-import { FORM_THEMES, DEFAULT_FORM_THEME } from "@/lib/formThemeConfig";
+import { FORM_THEMES, DEFAULT_FORM_THEME, formThemeLabel } from "@/lib/formThemeConfig";
 import DrivePicker from "../../microsite/_components/DrivePicker";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 type QuestionType =
   | "short_answer"
@@ -55,13 +57,13 @@ interface FormData {
   sections: Section[];
 }
 
-const QUESTION_TYPES: { value: QuestionType; label: string }[] = [
-  { value: "short_answer", label: "Jawaban Singkat" },
-  { value: "paragraph", label: "Paragraf" },
-  { value: "multiple_choice", label: "Pilihan Ganda" },
-  { value: "checkboxes", label: "Kotak Centang" },
-  { value: "dropdown", label: "Dropdown" },
-  { value: "linear_scale", label: "Skala Linear" },
+const QUESTION_TYPES: QuestionType[] = [
+  "short_answer",
+  "paragraph",
+  "multiple_choice",
+  "checkboxes",
+  "dropdown",
+  "linear_scale",
 ];
 
 function newQuestion(): Question {
@@ -85,6 +87,10 @@ function newSection(): Section {
 
 export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"forms"> }> }) {
   const { id } = use(params);
+
+  const locale = useLocale();
+  const dict = getDictionary(locale).dashboard;
+  const t = dict.formBuilder;
 
   const formQuery = useQuery(api.forms.getFormById, { id });
   const updateForm = useMutation(api.forms.updateForm);
@@ -112,14 +118,12 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
 
   if (formQuery === null) {
     return (
-      <div className="p-10 text-center text-danger">
-        Formulir tidak ditemukan atau bukan milik Anda.
-      </div>
+      <div className="p-10 text-center text-danger">{t.notFound}</div>
     );
   }
 
   if (!formData) {
-    return <div className="p-10 text-center animate-pulse text-muted-foreground">Memuat Formulir...</div>;
+    return <div className="p-10 text-center animate-pulse text-muted-foreground">{t.loading}</div>;
   }
 
   // --- SECTION HELPERS ---
@@ -136,7 +140,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
   };
 
   const deleteSection = (sIndex: number) => {
-    if (!confirm("Hapus bagian ini beserta semua pertanyaan di dalamnya?")) return;
+    if (!confirm(t.deleteSectionConfirm)) return;
     handleChange((prev) => {
       const next = [...prev.sections];
       next.splice(sIndex, 1);
@@ -168,7 +172,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
     const needsOptions = type === "multiple_choice" || type === "checkboxes" || type === "dropdown";
     const patch: Partial<Question> = { type };
     if (needsOptions) {
-      patch.options = current.options?.length ? current.options : ["Opsi 1"];
+      patch.options = current.options?.length ? current.options : [t.optionDefault(1)];
     } else {
       patch.options = undefined;
     }
@@ -185,7 +189,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
   };
 
   const deleteQuestion = (sIndex: number, qIndex: number) => {
-    if (!confirm("Hapus pertanyaan ini?")) return;
+    if (!confirm(t.deleteQuestionConfirm)) return;
     handleChange((prev) => {
       const sections = [...prev.sections];
       const questions = [...sections[sIndex].questions];
@@ -200,7 +204,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       const sections = [...prev.sections];
       const questions = [...sections[sIndex].questions];
       const options = [...(questions[qIndex].options || [])];
-      options.push(`Opsi ${options.length + 1}`);
+      options.push(t.optionDefault(options.length + 1));
       questions[qIndex] = { ...questions[qIndex], options };
       sections[sIndex] = { ...sections[sIndex], questions };
       return { ...prev, sections };
@@ -279,8 +283,8 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       });
       setIsDirty(false);
     } catch (e) {
-      const message = e instanceof Error ? e.message : "Terjadi kesalahan";
-      alert("Gagal menyimpan: " + message);
+      const message = e instanceof Error ? e.message : dict.common.genericError;
+      alert(t.saveFailed(message));
     } finally {
       setLoading(false);
     }
@@ -289,7 +293,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
   const copyPublicLink = () => {
     const url = `${process.env.NEXT_PUBLIC_APP_URL}/f/${formData.slug}`;
     navigator.clipboard.writeText(url);
-    alert("Link formulir berhasil disalin! 🎉");
+    alert(t.copiedAlert);
   };
 
   const downloadQR = () => {
@@ -314,8 +318,8 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
             <ArrowLeft size={20} />
           </Link>
           <h1 className="text-xl font-bold flex items-center gap-2 truncate">
-            {formData.title || "Formulir Tanpa Judul"}
-            {isDirty && <span className="w-2 h-2 bg-warning rounded-full animate-pulse shrink-0" title="Perubahan belum disimpan" />}
+            {formData.title || t.untitled}
+            {isDirty && <span className="w-2 h-2 bg-warning rounded-full animate-pulse shrink-0" title={t.unsavedTitle} />}
           </h1>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -323,7 +327,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
             href={`/dashboard/forms/${formData._id}/responses`}
             className="btn-ghost rounded-full px-4 py-2 flex items-center gap-2 text-sm"
           >
-            <BarChart2 size={16} /> Jawaban
+            <BarChart2 size={16} /> {t.responses}
           </Link>
           <button
             onClick={handleSave}
@@ -332,7 +336,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
               isDirty ? "bg-brand text-brand-contrast hover:bg-brand-hover" : "bg-muted text-subtle cursor-not-allowed"
             }`}
           >
-            <Save size={16} /> {loading ? "Menyimpan..." : "Simpan"}
+            <Save size={16} /> {loading ? dict.common.saving : dict.common.save}
           </button>
         </div>
       </div>
@@ -341,7 +345,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       <div className="card-saweria p-6 space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-foreground font-bold">
-            <Settings2 size={18} /> Status Formulir
+            <Settings2 size={18} /> {t.statusHeading}
           </div>
           <button
             onClick={() =>
@@ -356,7 +360,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                 : "bg-muted text-muted-foreground"
             }`}
           >
-            {formData.status === "published" ? "Terpublikasi" : "Draft — Klik untuk Terbitkan"}
+            {formData.status === "published" ? t.statusPublished : t.statusDraft}
           </button>
         </div>
 
@@ -365,14 +369,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
             <span className="text-sm text-muted-foreground truncate flex-1">
               {process.env.NEXT_PUBLIC_APP_URL}/f/{formData.slug}
             </span>
-            <button onClick={copyPublicLink} className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition" title="Salin Link">
+            <button onClick={copyPublicLink} className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition" title={t.copyTitle}>
               <Copy size={14} />
             </button>
             <a
               href={`/f/${formData.slug}`}
               target="_blank"
               className="text-subtle hover:text-brand p-2 rounded-full hover:bg-brand-soft transition"
-              title="Buka Formulir"
+              title={t.openTitle}
             >
               <ExternalLink size={14} />
             </a>
@@ -386,7 +390,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
             onChange={(e) => handleChange((prev) => ({ ...prev, acceptingResponses: e.target.checked }))}
             className="w-4 h-4 accent-brand"
           />
-          <span className="text-sm text-muted-foreground">Menerima jawaban baru</span>
+          <span className="text-sm text-muted-foreground">{t.acceptingResponses}</span>
         </label>
       </div>
 
@@ -394,7 +398,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       {formData.status === "published" && (
         <div className="card-saweria p-6 space-y-4">
           <div className="flex items-center gap-2 text-foreground font-bold">
-            <QrIcon size={18} /> QR Code Formulir
+            <QrIcon size={18} /> {t.qrHeading}
           </div>
           <div className="flex items-center gap-6">
             <div ref={qrRef} className="bg-white p-2 rounded-lg border border-border shrink-0">
@@ -411,12 +415,12 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
               />
             </div>
             <div className="space-y-2">
-              <p className="text-sm text-muted-foreground">Pindai atau unduh untuk kebutuhan materi promosi formulir ini.</p>
+              <p className="text-sm text-muted-foreground">{t.qrHint}</p>
               <button
                 onClick={downloadQR}
                 className="btn-ghost rounded-full px-4 py-2 flex items-center gap-2 text-sm"
               >
-                <Download size={16} /> Download PNG
+                <Download size={16} /> {t.qrDownload}
               </button>
             </div>
           </div>
@@ -426,31 +430,31 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       {/* Basic Info */}
       <div className="card-saweria p-6 md:p-8 space-y-4">
         <div>
-          <label className="form-label">Judul Formulir</label>
+          <label className="form-label">{t.titleLabel}</label>
           <input
             type="text"
             value={formData.title}
             onChange={(e) => handleChange((prev) => ({ ...prev, title: e.target.value }))}
             className="input-field font-bold text-lg"
-            placeholder="Judul Formulir"
+            placeholder={t.titlePlaceholder}
           />
         </div>
         <div>
-          <label className="form-label">Deskripsi</label>
+          <label className="form-label">{t.descriptionLabel}</label>
           <textarea
             value={formData.description || ""}
             onChange={(e) => handleChange((prev) => ({ ...prev, description: e.target.value }))}
             className="input-field h-20 resize-none"
-            placeholder="Deskripsi formulir (opsional)"
+            placeholder={t.descriptionPlaceholder}
           />
         </div>
         <DrivePicker
-          label="Gambar Header Formulir"
+          label={t.headerImageLabel}
           currentUrl={formData.headerImageUrl}
           onSelect={(url) => handleChange((prev) => ({ ...prev, headerImageUrl: url }))}
         />
         <div>
-          <label className="form-label">URL Formulir (Slug)</label>
+          <label className="form-label">{t.slugLabel}</label>
           <div className="flex items-center border border-border rounded-xl bg-muted overflow-hidden focus-within:ring-4 focus-within:ring-ring focus-within:border-brand transition">
             <span className="pl-3 text-subtle text-sm shrink-0">/f/</span>
             <input
@@ -462,13 +466,13 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
           </div>
         </div>
         <div>
-          <label className="form-label">Pesan Setelah Submit</label>
+          <label className="form-label">{t.confirmationLabel}</label>
           <input
             type="text"
             value={formData.confirmationMessage || ""}
             onChange={(e) => handleChange((prev) => ({ ...prev, confirmationMessage: e.target.value }))}
             className="input-field"
-            placeholder="Terima kasih! Jawaban Anda telah tercatat."
+            placeholder={t.confirmationPlaceholder}
           />
         </div>
       </div>
@@ -476,7 +480,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       {/* Theme Picker */}
       <div className="card-saweria p-6 md:p-8 space-y-4">
         <div className="flex items-center gap-2 text-foreground font-bold">
-          <Palette size={18} /> Tema Formulir
+          <Palette size={18} /> {t.themeHeading}
         </div>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
           {Object.entries(FORM_THEMES).map(([key, theme]) => (
@@ -488,12 +492,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                   ? "border-brand ring-2 ring-ring"
                   : "border-transparent hover:border-border"
               }`}
-              title={theme.label}
+              title={formThemeLabel(key, locale)}
             >
               <div className={`w-9 h-9 rounded-full ${theme.swatch} flex items-center justify-center shrink-0`}>
                 {(formData.theme || DEFAULT_FORM_THEME) === key && <Check size={16} className="text-white" />}
               </div>
-              <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">{theme.label}</span>
+              <span className="text-[10px] font-medium text-muted-foreground text-center leading-tight">
+                {formThemeLabel(key, locale)}
+              </span>
             </button>
           ))}
         </div>
@@ -502,7 +508,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       {/* Sections & Questions Builder */}
       <div className="flex justify-between items-center pt-2">
         <h3 className="font-bold text-foreground flex items-center gap-2">
-          <Layers size={18} /> Bagian &amp; Pertanyaan
+          <Layers size={18} /> {t.builderHeading}
         </h3>
       </div>
 
@@ -528,20 +534,24 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                         <div className="flex-1 space-y-2 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="bg-brand-soft text-brand-soft-fg text-[10px] font-bold px-2 py-1 rounded-full shrink-0">
-                              Bagian {sIndex + 1} dari {formData.sections.length}
+                              {t.sectionBadge(sIndex + 1, formData.sections.length)}
                             </span>
                           </div>
                           <input
                             type="text"
                             value={section.title || ""}
                             onChange={(e) => updateSection(sIndex, { title: e.target.value })}
-                            placeholder={sIndex === 0 ? "Judul bagian (opsional)" : `Bagian ${sIndex + 1}`}
+                            placeholder={
+                              sIndex === 0
+                                ? t.sectionTitlePlaceholderFirst
+                                : t.sectionTitlePlaceholder(sIndex + 1)
+                            }
                             className="input-field font-bold"
                           />
                           <textarea
                             value={section.description || ""}
                             onChange={(e) => updateSection(sIndex, { description: e.target.value })}
-                            placeholder="Deskripsi bagian (opsional)"
+                            placeholder={t.sectionDescriptionPlaceholder}
                             className="input-field h-16 resize-none text-sm"
                           />
                         </div>
@@ -549,7 +559,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                           <button
                             onClick={() => deleteSection(sIndex)}
                             className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition shrink-0"
-                            title="Hapus Bagian"
+                            title={t.deleteSectionTitle}
                           >
                             <Trash2 size={16} />
                           </button>
@@ -579,7 +589,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                             type="text"
                                             value={q.label}
                                             onChange={(e) => updateQuestion(sIndex, qIndex, { label: e.target.value })}
-                                            placeholder="Pertanyaan"
+                                            placeholder={t.questionPlaceholder}
                                             className="input-field flex-1 font-semibold"
                                             autoFocus={q.label === ""}
                                           />
@@ -589,9 +599,9 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                               onChange={(e) => changeQuestionType(sIndex, qIndex, e.target.value as QuestionType)}
                                               className="input-field pr-8 appearance-none cursor-pointer sm:w-52"
                                             >
-                                              {QUESTION_TYPES.map((t) => (
-                                                <option key={t.value} value={t.value}>
-                                                  {t.label}
+                                              {QUESTION_TYPES.map((type) => (
+                                                <option key={type} value={type}>
+                                                  {t.questionTypes[type]}
                                                 </option>
                                               ))}
                                             </select>
@@ -603,7 +613,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                           type="text"
                                           value={q.description || ""}
                                           onChange={(e) => updateQuestion(sIndex, qIndex, { description: e.target.value })}
-                                          placeholder="Deskripsi pertanyaan (opsional)"
+                                          placeholder={t.questionDescriptionPlaceholder}
                                           className="w-full bg-transparent text-sm text-muted-foreground outline-none placeholder:text-subtle"
                                         />
 
@@ -631,7 +641,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                               onClick={() => addOption(sIndex, qIndex)}
                                               className="text-brand text-xs font-bold flex items-center gap-1 pl-6 hover:underline"
                                             >
-                                              <Plus size={12} /> Tambah opsi
+                                              <Plus size={12} /> {t.addOption}
                                             </button>
                                           </div>
                                         )}
@@ -648,7 +658,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                                 <option key={n} value={n}>{n}</option>
                                               ))}
                                             </select>
-                                            <span className="text-subtle text-sm">sampai</span>
+                                            <span className="text-subtle text-sm">{t.scaleTo}</span>
                                             <select
                                               value={q.scaleMax ?? 5}
                                               onChange={(e) => updateQuestion(sIndex, qIndex, { scaleMax: Number(e.target.value) })}
@@ -662,14 +672,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                               type="text"
                                               value={q.scaleMinLabel || ""}
                                               onChange={(e) => updateQuestion(sIndex, qIndex, { scaleMinLabel: e.target.value })}
-                                              placeholder="Label terendah (opsional)"
+                                              placeholder={t.scaleMinLabel}
                                               className="input-field flex-1 py-2 min-w-35"
                                             />
                                             <input
                                               type="text"
                                               value={q.scaleMaxLabel || ""}
                                               onChange={(e) => updateQuestion(sIndex, qIndex, { scaleMaxLabel: e.target.value })}
-                                              placeholder="Label tertinggi (opsional)"
+                                              placeholder={t.scaleMaxLabel}
                                               className="input-field flex-1 py-2 min-w-35"
                                             />
                                           </div>
@@ -683,12 +693,12 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                                               onChange={(e) => updateQuestion(sIndex, qIndex, { required: e.target.checked })}
                                               className="w-4 h-4 accent-brand"
                                             />
-                                            <span className="text-xs font-bold text-muted-foreground">Wajib diisi</span>
+                                            <span className="text-xs font-bold text-muted-foreground">{t.required}</span>
                                           </label>
                                           <button
                                             onClick={() => deleteQuestion(sIndex, qIndex)}
                                             className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition"
-                                            title="Hapus Pertanyaan"
+                                            title={t.deleteQuestionTitle}
                                           >
                                             <Trash2 size={16} />
                                           </button>
@@ -703,7 +713,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
 
                             {section.questions.length === 0 && (
                               <div className="text-center p-6 border-2 border-dashed border-border rounded-xl text-subtle text-sm">
-                                Belum ada pertanyaan di bagian ini.
+                                {t.emptySection}
                               </div>
                             )}
 
@@ -711,7 +721,7 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
                               onClick={() => addQuestion(sIndex)}
                               className="btn-ghost rounded-full px-4 py-2 text-sm flex items-center gap-1"
                             >
-                              <Plus size={16} /> Tambah Pertanyaan
+                              <Plus size={16} /> {t.addQuestion}
                             </button>
                           </div>
                         )}
@@ -727,14 +737,14 @@ export default function FormBuilderPage({ params }: { params: Promise<{ id: Id<"
       </DragDropContext>
 
       <button onClick={addSection} className="btn-saweria rounded-full px-5 py-3 text-sm flex items-center gap-2 mx-auto">
-        <Plus size={16} /> Tambah Bagian (Step Baru)
+        <Plus size={16} /> {t.addSection}
       </button>
 
       {formData.sections.every((s) => s.questions.length === 0) && (
         <div className="text-center p-12 border-2 border-dashed border-border rounded-xl text-subtle flex flex-col items-center gap-2">
           <AlertCircle size={32} className="opacity-20" />
-          <p>Belum ada pertanyaan.</p>
-          <p className="text-xs">Klik &quot;Tambah Pertanyaan&quot; untuk memulai.</p>
+          <p>{t.emptyTitle}</p>
+          <p className="text-xs">{t.emptyHint}</p>
         </div>
       )}
     </div>

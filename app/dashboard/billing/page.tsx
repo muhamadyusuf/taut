@@ -4,28 +4,36 @@ import { useState } from "react";
 import { useAction, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { AlertCircle, CheckCircle2, Clock, Loader2, Receipt, Ticket } from "lucide-react";
 import {
   EVENT_PASS,
-  PLANS,
+  eventPassName,
   formatIDR,
+  isPlanId,
   isUnlimited,
+  planName,
   type PlanId,
 } from "@/convex/plans";
 import PricingTable, { type BillingCycle } from "@/app/_components/billing/PricingTable";
 import { loadSnap } from "@/lib/midtransSnap";
 import { errorMessage } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale, numberLocale } from "@/lib/i18n/dateLocale";
 
 /** Baris pemakaian kuota dengan bilah sederhana. */
 function QuotaRow({
   label,
   used,
   limit,
+  numLocale,
+  unlimitedLabel,
 }: {
   label: string;
   used: number;
   limit: number;
+  numLocale: string;
+  unlimitedLabel: string;
 }) {
   const unlimited = isUnlimited(limit);
   const ratio = unlimited ? 0 : Math.min(used / Math.max(limit, 1), 1);
@@ -40,8 +48,10 @@ function QuotaRow({
             nearFull ? "text-warning" : "text-muted-foreground"
           }`}
         >
-          {used.toLocaleString("id-ID")}
-          {unlimited ? " / tanpa batas" : ` / ${limit.toLocaleString("id-ID")}`}
+          {used.toLocaleString(numLocale)}
+          {unlimited
+            ? ` / ${unlimitedLabel}`
+            : ` / ${limit.toLocaleString(numLocale)}`}
         </span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-border">
@@ -57,6 +67,9 @@ function QuotaRow({
 }
 
 export default function BillingPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.billing;
+  const numLocale = numberLocale(locale);
   const me = useQuery(api.users.getMe);
   const invoices = useQuery(api.billing.myInvoices);
   const createCheckout = useAction(api.billingActions.createSubscriptionCheckout);
@@ -77,20 +90,13 @@ export default function BillingPage() {
       const snap = await loadSnap(checkout.clientKey, checkout.isProduction);
 
       snap.pay(checkout.token, {
-        onSuccess: () =>
-          setNotice(
-            "Pembayaran berhasil. Paket Anda aktif dalam beberapa detik setelah dikonfirmasi Midtrans."
-          ),
-        onPending: () =>
-          setNotice(
-            "Pembayaran sedang diproses. Paket aktif otomatis begitu pembayaran Anda lunas."
-          ),
-        onError: () => setNotice("Pembayaran gagal. Belum ada biaya yang ditagihkan."),
-        onClose: () =>
-          setNotice("Jendela pembayaran ditutup. Tagihan tersimpan dan bisa dilanjutkan."),
+        onSuccess: () => setNotice(t.paySuccess),
+        onPending: () => setNotice(t.payPending),
+        onError: () => setNotice(t.payError),
+        onClose: () => setNotice(t.payClosed),
       });
     } catch (err) {
-      setNotice(errorMessage(err, "Gagal menyiapkan pembayaran."));
+      setNotice(errorMessage(err, t.checkoutFailed));
     } finally {
       setBusyPlan(null);
     }
@@ -103,17 +109,13 @@ export default function BillingPage() {
       const checkout = await createEventCheckout({});
       const snap = await loadSnap(checkout.clientKey, checkout.isProduction);
       snap.pay(checkout.token, {
-        onSuccess: () =>
-          setNotice(
-            `${EVENT_PASS.quota} kuota sertifikat aktif dalam beberapa detik setelah dikonfirmasi Midtrans.`
-          ),
-        onPending: () =>
-          setNotice("Pembayaran diproses. Kuota aktif otomatis begitu lunas."),
-        onError: () => setNotice("Pembayaran gagal. Belum ada biaya yang ditagihkan."),
-        onClose: () => setNotice("Jendela pembayaran ditutup."),
+        onSuccess: () => setNotice(t.eventSuccess(EVENT_PASS.quota)),
+        onPending: () => setNotice(t.eventPending),
+        onError: () => setNotice(t.payError),
+        onClose: () => setNotice(t.payClosedShort),
       });
     } catch (err) {
-      setNotice(errorMessage(err, "Gagal menyiapkan pembayaran."));
+      setNotice(errorMessage(err, t.checkoutFailed));
     } finally {
       setBusyPlan(null);
     }
@@ -134,10 +136,8 @@ export default function BillingPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-foreground">Paket &amp; Tagihan</h2>
-        <p className="text-muted-foreground">
-          Kelola langganan dan lihat sisa kuota Anda.
-        </p>
+        <h2 className="text-2xl font-bold text-foreground">{t.title}</h2>
+        <p className="text-muted-foreground">{t.subtitle}</p>
       </div>
 
       {notice && (
@@ -152,25 +152,25 @@ export default function BillingPage() {
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="text-sm font-bold uppercase text-muted-foreground">
-              Paket aktif
+              {t.activePlanLabel}
             </p>
             <p className="mt-1 text-3xl font-bold text-foreground">
-              {PLANS[plan].name}
+              {planName(plan, locale)}
             </p>
 
             {me?.legacyFree && (
               <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 text-xs font-bold text-success">
                 <CheckCircle2 size={13} />
-                Akun awal — kuota inti tanpa batas selamanya
+                {t.legacyBadge}
               </p>
             )}
 
             {me?.planExpiresAt && (
               <p className="mt-2 flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock size={14} />
-                Aktif sampai{" "}
+                {t.activeUntil}{" "}
                 {format(new Date(me.planExpiresAt), "d MMMM yyyy", {
-                  locale: localeId,
+                  locale: dateLocale(locale),
                 })}
               </p>
             )}
@@ -180,20 +180,32 @@ export default function BillingPage() {
         {limits && usage && (
           <div className="mt-6 grid gap-5 border-t border-border pt-6 sm:grid-cols-2">
             <QuotaRow
-              label="Halaman bio"
+              label={t.quota.microsites}
               used={usage.microsites}
               limit={limits.microsites}
+              numLocale={numLocale}
+              unlimitedLabel={t.quotaUnlimited}
             />
-            <QuotaRow label="Formulir" used={usage.forms} limit={limits.forms} />
             <QuotaRow
-              label={`Sertifikat (${usage.period})`}
+              label={t.quota.forms}
+              used={usage.forms}
+              limit={limits.forms}
+              numLocale={numLocale}
+              unlimitedLabel={t.quotaUnlimited}
+            />
+            <QuotaRow
+              label={t.quota.certificates(usage.period)}
               used={usage.certificatesSent}
               limit={limits.certificatesPerMonth}
+              numLocale={numLocale}
+              unlimitedLabel={t.quotaUnlimited}
             />
             <QuotaRow
-              label="Produk toko"
+              label={t.quota.products}
               used={usage.products}
               limit={limits.products}
+              numLocale={numLocale}
+              unlimitedLabel={t.quotaUnlimited}
             />
           </div>
         )}
@@ -205,26 +217,26 @@ export default function BillingPage() {
           <div className="flex-1">
             <div className="flex items-center gap-2">
               <Ticket size={18} className="text-brand" />
-              <h3 className="font-bold text-foreground">{EVENT_PASS.name}</h3>
+              <h3 className="font-bold text-foreground">{eventPassName(locale)}</h3>
             </div>
             <p className="mt-2 max-w-lg text-sm text-muted-foreground">
-              {EVENT_PASS.quota.toLocaleString("id-ID")} sertifikat, berlaku{" "}
-              {EVENT_PASS.validDays} hari. Sekali bayar, tanpa langganan — untuk
-              panitia yang menggarap satu kegiatan. Kuotanya ditambahkan di atas
-              jatah paket Anda.
+              {t.eventPassBody(
+                EVENT_PASS.quota.toLocaleString(numLocale),
+                EVENT_PASS.validDays
+              )}
             </p>
 
             {eventPasses && eventPasses.remaining > 0 && (
               <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-success-soft px-3 py-1 text-xs font-bold text-success">
                 <CheckCircle2 size={13} />
-                Sisa kuota acara: {eventPasses.remaining.toLocaleString("id-ID")}
+                {t.eventPassRemaining(eventPasses.remaining.toLocaleString(numLocale))}
               </p>
             )}
           </div>
 
           <div className="text-right">
             <p className="text-2xl font-bold text-foreground">
-              {formatIDR(EVENT_PASS.price)}
+              {formatIDR(EVENT_PASS.price, locale)}
             </p>
             <button
               onClick={handleEventPass}
@@ -234,7 +246,7 @@ export default function BillingPage() {
               {busyPlan === "event" && (
                 <Loader2 size={16} className="animate-spin" />
               )}
-              Beli sekarang
+              {t.eventPassBuy}
             </button>
           </div>
         </div>
@@ -242,11 +254,12 @@ export default function BillingPage() {
 
       {/* Pilihan paket */}
       <div>
-        <h3 className="mb-6 text-lg font-bold text-foreground">Ubah paket</h3>
+        <h3 className="mb-6 text-lg font-bold text-foreground">{t.changePlan}</h3>
         <PricingTable
           currentPlan={plan}
           onSelect={handleSelect}
           busyPlan={busyPlan === "event" ? null : busyPlan}
+          locale={locale}
         />
       </div>
 
@@ -255,16 +268,16 @@ export default function BillingPage() {
         <div className="card-saweria p-6">
           <h3 className="mb-4 flex items-center gap-2 font-bold text-foreground">
             <Receipt size={18} className="text-brand" />
-            Riwayat tagihan
+            {t.invoicesHeading}
           </h3>
           <div className="overflow-x-auto">
             <table className="w-full min-w-[520px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left text-muted-foreground">
-                  <th className="pb-2 font-bold">Tanggal</th>
-                  <th className="pb-2 font-bold">Paket</th>
-                  <th className="pb-2 font-bold">Jumlah</th>
-                  <th className="pb-2 font-bold">Status</th>
+                  <th className="pb-2 font-bold">{t.invoiceDate}</th>
+                  <th className="pb-2 font-bold">{t.invoicePlan}</th>
+                  <th className="pb-2 font-bold">{t.invoiceAmount}</th>
+                  <th className="pb-2 font-bold">{t.invoiceStatus}</th>
                 </tr>
               </thead>
               <tbody>
@@ -272,16 +285,18 @@ export default function BillingPage() {
                   <tr key={inv._id} className="border-b border-border last:border-0">
                     <td className="py-3 text-muted-foreground">
                       {format(new Date(inv.createdAt), "d MMM yyyy", {
-                        locale: localeId,
+                        locale: dateLocale(locale),
                       })}
                     </td>
                     <td className="py-3 text-foreground">
-                      {PLANS[inv.plan as PlanId]?.name ?? inv.plan}{" "}
+                      {isPlanId(inv.plan) ? planName(inv.plan, locale) : inv.plan}{" "}
                       <span className="text-muted-foreground">
-                        ({inv.billingCycle === "yearly" ? "tahunan" : "bulanan"})
+                        ({inv.billingCycle === "yearly" ? t.cycleYearly : t.cycleMonthly})
                       </span>
                     </td>
-                    <td className="py-3 text-foreground">{formatIDR(inv.amount)}</td>
+                    <td className="py-3 text-foreground">
+                      {formatIDR(inv.amount, locale)}
+                    </td>
                     <td className="py-3">
                       <span
                         className={`rounded-full px-2.5 py-1 text-xs font-bold ${
@@ -293,12 +308,12 @@ export default function BillingPage() {
                         }`}
                       >
                         {inv.status === "active"
-                          ? "Lunas"
+                          ? t.statusPaid
                           : inv.status === "pending"
-                            ? "Menunggu"
+                            ? t.statusPending
                             : inv.status === "expired"
-                              ? "Berakhir"
-                              : "Gagal"}
+                              ? t.statusExpired
+                              : t.statusFailed}
                       </span>
                     </td>
                   </tr>

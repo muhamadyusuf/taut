@@ -5,10 +5,15 @@ import Link from "next/link";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Loader2, Lock, Palette, Save } from "lucide-react";
-import { PLANS } from "@/convex/plans";
+import { planName } from "@/convex/plans";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function BrandingPage() {
+  const locale = useLocale();
+  const dict = getDictionary(locale).dashboard;
+  const t = dict.branding;
   const data = useQuery(api.brand.getMyBrand);
   const saveBrand = useMutation(api.brand.saveBrand);
 
@@ -50,7 +55,7 @@ export default function BrandingPage() {
       });
       setSavedAt(Date.now());
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal menyimpan pengaturan merek."));
+      alert(alertMessageFor(err, t.saveFailed));
     } finally {
       setSaving(false);
     }
@@ -72,21 +77,16 @@ export default function BrandingPage() {
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand">
             <Lock size={26} />
           </div>
-          <h2 className="text-xl font-bold text-foreground">
-            Halaman antara bermerek Anda sendiri
-          </h2>
+          <h2 className="text-xl font-bold text-foreground">{t.lockedTitle}</h2>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            Alih-alih menghapus jeda lima detik, paket{" "}
-            {PLANS.business.name} menyerahkannya kepada Anda: logo, warna, dan
-            pesan Anda sendiri yang muncul sebelum pengunjung diteruskan ke
-            tujuan.
+            {t.lockedBody(planName("business", locale))}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Paket Anda sekarang: <strong>{PLANS[data?.plan ?? "free"].name}</strong>
+            {t.currentPlan(planName(data?.plan ?? "free", locale))}
           </p>
           <Link href="/dashboard/billing" className="mt-6 inline-block">
             <button className="btn-saweria px-8 py-3">
-              Lihat paket {PLANS.business.name}
+              {t.seePlan(planName("business", locale))}
             </button>
           </Link>
         </div>
@@ -99,23 +99,17 @@ export default function BrandingPage() {
       <div>
         <h2 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Palette size={22} className="text-brand" />
-          Halaman Antara
+          {t.title}
         </h2>
-        <p className="text-muted-foreground">
-          Atur tampilan yang dilihat pengunjung sebelum diteruskan ke tautan
-          tujuan Anda.
-        </p>
+        <p className="text-muted-foreground">{t.subtitle}</p>
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Saklar utama */}
         <div className="card-saweria flex items-start justify-between gap-4 p-6">
           <div>
-            <p className="font-bold text-foreground">Pakai halaman bermerek</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Kalau dimatikan, tautan Anda melompat langsung ke tujuan tanpa
-              halaman antara sama sekali.
-            </p>
+            <p className="font-bold text-foreground">{t.toggleTitle}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{t.toggleHint}</p>
           </div>
           <button
             type="button"
@@ -137,21 +131,21 @@ export default function BrandingPage() {
         <div className="card-saweria space-y-5 p-6">
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              Nama merek <span className="text-danger">*</span>
+              {t.nameLabel} <span className="text-danger">*</span>
             </label>
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               maxLength={60}
               required
-              placeholder="Nama bisnis atau organisasi Anda"
+              placeholder={t.namePlaceholder}
               className="input-field w-full"
             />
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              URL logo
+              {t.logoLabel}
             </label>
             <input
               value={logoUrl}
@@ -160,13 +154,13 @@ export default function BrandingPage() {
               className="input-field w-full"
             />
             <p className="mt-1 text-xs text-muted-foreground">
-              Harus https. Bentuk persegi paling rapi.
+              {t.logoHint}
             </p>
           </div>
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              Warna utama
+              {t.colorLabel}
             </label>
             <div className="flex items-center gap-3">
               <input
@@ -174,7 +168,7 @@ export default function BrandingPage() {
                 value={primaryColor}
                 onChange={(e) => setPrimaryColor(e.target.value)}
                 className="h-11 w-14 cursor-pointer rounded-lg border border-border bg-card"
-                aria-label="Pilih warna utama"
+                aria-label={t.colorAria}
               />
               <input
                 value={primaryColor}
@@ -187,13 +181,13 @@ export default function BrandingPage() {
 
           <div>
             <label className="mb-1.5 block text-sm font-bold text-foreground">
-              Pesan singkat
+              {t.taglineLabel}
             </label>
             <input
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
               maxLength={120}
-              placeholder="Satu kalimat tentang Anda"
+              placeholder={t.taglinePlaceholder}
               className="input-field w-full"
             />
           </div>
@@ -201,19 +195,19 @@ export default function BrandingPage() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className="mb-1.5 block text-sm font-bold text-foreground">
-                Label tombol
+                {t.ctaLabelLabel}
               </label>
               <input
                 value={ctaLabel}
                 onChange={(e) => setCtaLabel(e.target.value)}
                 maxLength={30}
-                placeholder="Kunjungi situs kami"
+                placeholder={t.ctaLabelPlaceholder}
                 className="input-field w-full"
               />
             </div>
             <div>
               <label className="mb-1.5 block text-sm font-bold text-foreground">
-                Tujuan tombol
+                {t.ctaUrlLabel}
               </label>
               <input
                 value={ctaUrl}
@@ -236,10 +230,10 @@ export default function BrandingPage() {
             ) : (
               <Save size={16} />
             )}
-            Simpan
+            {dict.common.save}
           </button>
           {savedAt && (
-            <span className="text-sm text-success">Tersimpan.</span>
+            <span className="text-sm text-success">{t.saved}</span>
           )}
         </div>
       </form>

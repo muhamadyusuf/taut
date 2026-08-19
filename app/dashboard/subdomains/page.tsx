@@ -13,10 +13,14 @@ import {
   X,
 } from "lucide-react";
 import type { Id } from "@/convex/_generated/dataModel";
-import { PLANS, isUnlimited } from "@/convex/plans";
+import { isUnlimited, planName } from "@/convex/plans";
 import { alertMessageFor } from "@/lib/planError";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function SubdomainsPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.subdomains;
   const data = useQuery(api.subdomains.getMine);
   const claim = useMutation(api.subdomains.claim);
   const release = useMutation(api.subdomains.release);
@@ -38,29 +42,23 @@ export default function SubdomainsPage() {
       await claim({ subdomain: draft.trim() });
       setDraft("");
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal mengambil subdomain."));
+      alert(alertMessageFor(err, t.claimFailed));
     } finally {
       setBusy(false);
     }
   };
 
   const handleRelease = async (id: Id<"subdomains">, name: string) => {
-    if (
-      !confirm(
-        `Lepaskan ${name}.singkat.in?\n\nTautan yang hidup di alamat ini akan dikembalikan ke domain utama, bukan dihapus. Alamat lamanya akan berhenti bekerja.`
-      )
-    ) {
+    if (!confirm(t.releaseConfirm(name))) {
       return;
     }
     try {
       const result = await release({ id });
       alert(
-        result.movedLinks > 0
-          ? `Subdomain dilepas. ${result.movedLinks} tautan dipindahkan ke domain utama.`
-          : "Subdomain dilepas."
+        result.movedLinks > 0 ? t.releasedMoved(result.movedLinks) : t.released
       );
     } catch (err) {
-      alert(alertMessageFor(err, "Gagal melepas subdomain."));
+      alert(alertMessageFor(err, t.releaseFailed));
     }
   };
 
@@ -79,27 +77,24 @@ export default function SubdomainsPage() {
           <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-brand-soft text-brand">
             <Lock size={26} />
           </div>
-          <h2 className="text-xl font-bold text-foreground">
-            Alamat sendiri: nama.singkat.in
-          </h2>
+          <h2 className="text-xl font-bold text-foreground">{t.lockedTitle}</h2>
           <p className="mx-auto mt-3 max-w-md text-muted-foreground">
-            Tautan Anda tampil sebagai{" "}
-            <span className="font-bold text-foreground">tokosaya.singkat.in/promo</span>{" "}
-            alih-alih menumpang di alamat bersama. Tersedia mulai paket{" "}
-            {PLANS.pro.name}.
+            {t.lockedBodyPrefix}{" "}
+            <span className="font-bold text-foreground">{t.lockedBodyExample}</span>{" "}
+            {t.lockedBodySuffix(planName("pro", locale))}
           </p>
           <p className="mt-2 text-sm text-muted-foreground">
-            Paket Anda sekarang: <strong>{PLANS[data?.plan ?? "free"].name}</strong>
+            {t.currentPlan(planName(data?.plan ?? "free", locale))}
           </p>
           <Link href="/dashboard/billing" className="mt-6 inline-block">
-            <button className="btn-saweria px-8 py-3">Lihat paket</button>
+            <button className="btn-saweria px-8 py-3">{t.seePlans}</button>
           </Link>
         </div>
       </div>
     );
   }
 
-  const limitLabel = isUnlimited(data.limit) ? "tanpa batas" : `${data.limit}`;
+  const limitLabel = isUnlimited(data.limit) ? t.unlimited : `${data.limit}`;
   const atLimit = !isUnlimited(data.limit) && data.subdomains.length >= data.limit;
 
   return (
@@ -107,11 +102,10 @@ export default function SubdomainsPage() {
       <div>
         <h2 className="flex items-center gap-2 text-2xl font-bold text-foreground">
           <Globe size={22} className="text-brand" />
-          Subdomain
+          {t.title}
         </h2>
         <p className="text-muted-foreground">
-          Alamat sendiri untuk tautanmu. Terpakai {data.subdomains.length} dari{" "}
-          {limitLabel}.
+          {t.usage(data.subdomains.length, limitLabel)}
         </p>
       </div>
 
@@ -131,13 +125,13 @@ export default function SubdomainsPage() {
                   {row.subdomain}.singkat.in
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Aktif. Pilih alamat ini saat membuat tautan baru.
+                  {t.activeHint}
                 </p>
               </div>
               <button
                 onClick={() => handleRelease(row._id, row.subdomain)}
                 className="rounded-lg p-2 text-subtle transition hover:bg-danger-soft hover:text-danger"
-                title="Lepaskan subdomain"
+                title={t.releaseTitle}
               >
                 <Trash2 size={18} />
               </button>
@@ -149,21 +143,19 @@ export default function SubdomainsPage() {
       {/* Formulir klaim */}
       {atLimit ? (
         <div className="surface-panel p-5 text-sm text-muted-foreground">
-          Jatah subdomain paket {PLANS[data.plan].name} sudah terpakai semua.
-          Lepaskan salah satu, atau naik ke paket {PLANS.business.name} untuk
-          menambah.
+          {t.atLimit(planName(data.plan, locale), planName("business", locale))}
         </div>
       ) : (
         <form onSubmit={handleClaim} className="card-saweria space-y-4 p-6">
           <label className="block text-sm font-bold text-foreground">
-            Ambil subdomain baru
+            {t.claimLabel}
           </label>
 
           <div className="flex items-stretch gap-0">
             <input
               value={draft}
               onChange={(e) => setDraft(e.target.value.toLowerCase())}
-              placeholder="tokosaya"
+              placeholder={t.claimPlaceholder}
               maxLength={32}
               className="input-field w-full rounded-r-none"
               required
@@ -181,9 +173,7 @@ export default function SubdomainsPage() {
               }`}
             >
               {availability.available ? <Check size={14} /> : <X size={14} />}
-              {availability.available
-                ? "Tersedia."
-                : availability.reason}
+              {availability.available ? t.available : availability.reason}
             </p>
           )}
 
@@ -193,13 +183,10 @@ export default function SubdomainsPage() {
             className="btn-saweria flex items-center gap-2 px-8 py-3 disabled:opacity-50"
           >
             {busy && <Loader2 size={16} className="animate-spin" />}
-            Ambil subdomain
+            {t.claimButton}
           </button>
 
-          <p className="text-xs text-muted-foreground">
-            Huruf kecil, angka, dan tanda hubung. Nama yang menyerupai merek
-            atau lembaga resmi dicadangkan demi keamanan seluruh pengguna.
-          </p>
+          <p className="text-xs text-muted-foreground">{t.claimHint}</p>
         </form>
       )}
     </div>

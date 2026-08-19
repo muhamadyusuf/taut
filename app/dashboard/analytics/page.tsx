@@ -1,9 +1,13 @@
 import { Metadata } from "next";
 import AnalyticsClient from "./AnalyticsClient";
+import { getLocale } from "@/lib/i18n/locale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
-export const metadata: Metadata = {
-  title: "Statistik",
-};
+/** Judul tab ikut bahasa pilihan pengguna, sama seperti isi halamannya. */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  return { title: getDictionary(locale).dashboard.pageTitles.analytics };
+}
 
 export default function Page() {
   return <AnalyticsClient />;

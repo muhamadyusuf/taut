@@ -6,14 +6,19 @@ import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import Link from "next/link";
 import { format } from "date-fns";
-import { id as localeId } from "date-fns/locale";
 import { ArrowLeft, Trash2, Inbox, Download, FileSpreadsheet, FileText, Award, Loader2 } from "lucide-react";
 import { exportResponsesToExcel, exportResponsesToPdf, buildResponsesCsv } from "@/lib/exportUtils";
 import { requestGoogleAccessToken } from "@/lib/googleAuth";
 import { createGoogleSheetFromCsv } from "@/lib/googleDrive";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
+import { dateLocale } from "@/lib/i18n/dateLocale";
 
 export default function FormResponsesPage({ params }: { params: Promise<{ id: Id<"forms"> }> }) {
   const { id } = use(params);
+
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.formResponses;
 
   const form = useQuery(api.forms.getFormById, { id });
   const responses = useQuery(api.forms.getResponses, { formId: id });
@@ -24,7 +29,7 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
   const exportRef = useRef<HTMLDivElement>(null);
 
   const handleDelete = async (responseId: Id<"form_responses">) => {
-    if (confirm("Hapus jawaban ini?")) {
+    if (confirm(t.deleteConfirm)) {
       await deleteResponse({ id: responseId });
     }
   };
@@ -50,10 +55,14 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
       const questions = form.sections.flatMap((s) => s.questions);
       const csv = buildResponsesCsv(questions, responses);
       const accessToken = await requestGoogleAccessToken();
-      const link = await createGoogleSheetFromCsv(accessToken, `${form.title} - Jawaban`, csv);
+      const link = await createGoogleSheetFromCsv(
+        accessToken,
+        `${form.title} - ${t.sheetTitleSuffix}`,
+        csv
+      );
       window.open(link, "_blank");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Gagal membuat Google Sheet.");
+      alert(err instanceof Error ? err.message : t.sheetFailed);
     } finally {
       setIsExportingSheet(false);
       setExportOpen(false);
@@ -71,11 +80,11 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
   }, []);
 
   if (form === null) {
-    return <div className="p-10 text-center text-danger">Formulir tidak ditemukan atau bukan milik Anda.</div>;
+    return <div className="p-10 text-center text-danger">{t.notFound}</div>;
   }
 
   if (!form || !responses) {
-    return <div className="p-10 text-center animate-pulse text-muted-foreground">Memuat Jawaban...</div>;
+    return <div className="p-10 text-center animate-pulse text-muted-foreground">{t.loading}</div>;
   }
 
   const allQuestions = form.sections.flatMap((section) => section.questions);
@@ -88,9 +97,7 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
         </Link>
         <div>
           <h1 className="text-xl font-bold text-foreground">{form.title}</h1>
-          <p className="text-sm text-muted-foreground">
-            {responses.length} jawaban masuk
-          </p>
+          <p className="text-sm text-muted-foreground">{t.countSuffix(responses.length)}</p>
         </div>
 
         <div className="ml-auto flex items-center gap-2">
@@ -98,7 +105,7 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
             href={`/dashboard/forms/${id}/certificate`}
             className="bg-card border border-border hover:border-brand text-foreground font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition text-sm"
           >
-            <Award size={16} /> Sertifikat
+            <Award size={16} /> {t.certificate}
           </Link>
 
           <div className="relative" ref={exportRef}>
@@ -107,18 +114,18 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
               disabled={responses.length === 0}
               className="bg-brand hover:opacity-90 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 transition text-sm disabled:opacity-50"
             >
-              <Download size={16} /> Export
+              <Download size={16} /> {t.export}
             </button>
             {exportOpen && (
               <div className="absolute right-0 mt-2 w-56 bg-card border border-border rounded-lg shadow-lg z-20 overflow-hidden">
                 <button onClick={handleExportExcel} className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted flex items-center gap-2">
-                  <FileSpreadsheet size={15} className="text-success" /> Excel (.xlsx)
+                  <FileSpreadsheet size={15} className="text-success" /> {t.exportExcel}
                 </button>
                 <button onClick={handleExportPdf} className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted flex items-center gap-2">
-                  <FileText size={15} className="text-danger" /> PDF
+                  <FileText size={15} className="text-danger" /> {t.exportPdf}
                 </button>
                 <button onClick={handleExportGoogleSheet} disabled={isExportingSheet} className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted flex items-center gap-2 disabled:opacity-50">
-                  {isExportingSheet ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} className="text-brand" />} Google Sheet
+                  {isExportingSheet ? <Loader2 size={15} className="animate-spin" /> : <FileSpreadsheet size={15} className="text-brand" />} {t.exportGoogleSheet}
                 </button>
               </div>
             )}
@@ -129,17 +136,17 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
       {responses.length === 0 ? (
         <div className="text-center py-16 border-2 border-dashed border-border rounded-[30px] bg-card/50">
           <Inbox size={48} className="mx-auto text-subtle mb-4" />
-          <p className="text-muted-foreground font-medium">Belum ada jawaban yang masuk.</p>
+          <p className="text-muted-foreground font-medium">{t.empty}</p>
         </div>
       ) : (
         <div className="card-saweria overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">
-                <th className="text-left font-bold text-muted-foreground p-4 whitespace-nowrap">Waktu</th>
+                <th className="text-left font-bold text-muted-foreground p-4 whitespace-nowrap">{t.timeColumn}</th>
                 {allQuestions.map((q) => (
                   <th key={q.id} className="text-left font-bold text-muted-foreground p-4 min-w-45">
-                    {q.label || "Tanpa Judul"}
+                    {q.label || t.untitledQuestion}
                   </th>
                 ))}
                 <th className="p-4"></th>
@@ -149,7 +156,7 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
               {responses.map((res) => (
                 <tr key={res._id} className="border-b border-border last:border-0 hover:bg-muted/50 transition">
                   <td className="p-4 whitespace-nowrap text-muted-foreground">
-                    {format(res.submittedAt, "d MMM yyyy, HH:mm", { locale: localeId })}
+                    {format(res.submittedAt, "d MMM yyyy, HH:mm", { locale: dateLocale(locale) })}
                   </td>
                   {allQuestions.map((q) => {
                     const answer = res.answers.find((a) => a.questionId === q.id);
@@ -165,7 +172,7 @@ export default function FormResponsesPage({ params }: { params: Promise<{ id: Id
                     <button
                       onClick={() => handleDelete(res._id)}
                       className="text-subtle hover:text-danger p-2 rounded-full hover:bg-danger-soft transition"
-                      title="Hapus Jawaban"
+                      title={t.deleteTitle}
                     >
                       <Trash2 size={16} />
                     </button>

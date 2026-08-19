@@ -11,6 +11,8 @@ import LinkProtectionFields, {
   protectionToArgs,
   type ProtectionState,
 } from "./LinkProtectionFields";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 interface EditLinkModalProps {
   isOpen: boolean;
@@ -28,6 +30,7 @@ interface EditLinkModalProps {
 }
 
 export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkModalProps) {
+  const t = getDictionary(useLocale()).dashboard.editLinkModal;
   const updateLink = useMutation(api.links.updateLink);
   const saveProtection = useMutation(api.links.setLinkProtection);
   const categories = useQuery(api.categories.getMyCategories);
@@ -98,7 +101,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
       await updateLink({
         id: linkData._id, // ID KUNCI UTAMA
         originalUrl: url,
-        title: title || "Untitled Link",
+        title: title || t.untitled,
         customSlug: slug,
         categoryIds: selectedCats
       });
@@ -114,7 +117,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
       // Pesan aslinya ditampilkan apa adanya: penolakan yang bisa
       // ditindaklanjuti (tanggal di masa lalu, sandi terlalu pendek, slug
       // terpakai) sebelumnya sama-sama tampil sebagai "kesalahan sistem".
-      setError(errorMessage(err, "Gagal menyimpan perubahan."));
+      setError(errorMessage(err, t.genericError));
     } finally {
       setLoading(false);
     }
@@ -132,12 +135,12 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
             <div className="bg-brand-soft p-2 rounded-full text-brand">
               <Pencil size={20} />
             </div>
-            <h3 className="font-bold text-lg text-foreground">Edit Link</h3>
+            <h3 className="font-bold text-lg text-foreground">{t.title}</h3>
           </div>
           <button
             onClick={onClose}
             className="text-muted-foreground hover:text-foreground hover:bg-border p-2 rounded-full transition"
-            aria-label="Tutup"
+            aria-label={t.close}
           >
             <X size={20} />
           </button>
@@ -146,7 +149,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-8 space-y-6 overflow-y-auto">
           <div>
-            <label className="form-label">Destination URL</label>
+            <label className="form-label">{t.destinationUrl}</label>
             <input
               required
               type="url"
@@ -157,7 +160,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
           </div>
 
           <div>
-            <label className="form-label">Judul</label>
+            <label className="form-label">{t.titleLabel}</label>
             <input
               type="text"
               value={title}
@@ -167,7 +170,7 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
           </div>
 
           <div>
-            <label className="form-label">Update Kategori</label>
+            <label className="form-label">{t.categoryLabel}</label>
             <div className="flex flex-wrap gap-2">
               {categories?.map((cat) => (
                 <button
@@ -184,11 +187,11 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
                 </button>
               ))}
             </div>
-            <p className="text-[10px] text-subtle mt-2">*Pilih ulang kategori untuk link ini.</p>
+            <p className="text-[10px] text-subtle mt-2">{t.categoryHint}</p>
           </div>
 
           <div>
-            <label className="form-label">Custom Link</label>
+            <label className="form-label">{t.customLinkLabel}</label>
             <div className="flex items-center border border-border rounded-xl bg-input focus-within:border-brand focus-within:ring-4 focus-within:ring-ring transition overflow-hidden">
               <span className="px-4 text-muted-foreground text-sm border-r border-border py-4 font-medium whitespace-nowrap">
                 {process.env.NEXT_PUBLIC_APP_URL}/
@@ -223,10 +226,10 @@ export default function EditLinkModal({ isOpen, onClose, linkData }: EditLinkMod
               onClick={onClose}
               className="px-6 py-3 text-muted-foreground font-bold text-sm hover:bg-muted hover:text-foreground rounded-full transition"
             >
-              Batal
+              {t.cancel}
             </button>
             <button disabled={loading} type="submit" className="btn-saweria py-3 px-8 font-bold">
-              {loading ? "Menyimpan..." : "Simpan Perubahan"}
+              {loading ? t.submitting : t.submit}
             </button>
           </div>
         </form>

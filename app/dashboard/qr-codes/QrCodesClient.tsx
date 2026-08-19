@@ -10,8 +10,12 @@ import { Download, FileCode2, Loader2, QrCode as QrIcon } from "lucide-react";
 import { DEFAULT_QR_STYLE } from "@/convex/qrDefaults";
 import { downloadCanvasAsPng, downloadSvgNode } from "@/lib/qrDownload";
 import QrStyleEditor from "./QrStyleEditor";
+import { useLocale } from "@/lib/i18n/useLocale";
+import { getDictionary } from "@/lib/i18n/dictionaries";
 
 export default function QrCodesPage() {
+  const locale = useLocale();
+  const t = getDictionary(locale).dashboard.qrCodes;
   const links = useQuery(api.links.getMyLinks);
   const qrConfig = useQuery(api.qr.getMySettings);
 
@@ -34,13 +38,13 @@ export default function QrCodesPage() {
 
   const handlePng = (id: string, shortCode: string) => {
     if (!downloadCanvasAsPng(canvasRefs.current[id], `qr-${shortCode}.png`)) {
-      alert("QR belum selesai digambar. Coba lagi sebentar lagi.");
+      alert(t.pngNotReady);
     }
   };
 
   const handleSvg = (id: string, shortCode: string) => {
     if (!downloadSvgNode(svgRefs.current[id] ?? null, `qr-${shortCode}.svg`)) {
-      alert("QR vektor belum siap. Coba lagi sebentar lagi.");
+      alert(t.svgNotReady);
     }
   };
 
@@ -54,29 +58,25 @@ export default function QrCodesPage() {
 
   return (
     <div className="mx-auto max-w-6xl">
-      <h2 className="mb-2 text-2xl font-bold text-foreground">QR Codes</h2>
-      <p className="mb-8 text-muted-foreground">
-        Unduh QR code untuk kebutuhan materi promosimu.
-      </p>
+      <h2 className="mb-2 text-2xl font-bold text-foreground">{t.title}</h2>
+      <p className="mb-8 text-muted-foreground">{t.subtitle}</p>
 
       <QrStyleEditor
         style={style}
         canCustomize={qrConfig?.canCustomize ?? false}
         plan={qrConfig?.plan ?? "free"}
-        previewValue={linkUrl(links[0]?.shortCode ?? "contoh")}
+        previewValue={linkUrl(links[0]?.shortCode ?? t.sampleSlug)}
       />
 
       {links.length === 0 && (
         <div className="rounded-[30px] border-2 border-dashed border-border py-20 text-center">
           <QrIcon size={40} className="mx-auto mb-3 text-subtle" />
-          <p className="font-medium text-muted-foreground">
-            Belum ada link untuk dibuatkan QR.
-          </p>
+          <p className="font-medium text-muted-foreground">{t.emptyTitle}</p>
           <Link
             href="/dashboard/links"
             className="mt-3 inline-block font-bold text-brand hover:underline"
           >
-            Buat tautan pertama
+            {t.emptyCta}
           </Link>
         </div>
       )}
@@ -159,7 +159,7 @@ export default function QrCodesPage() {
                 <button
                   onClick={() => handleSvg(link._id, link.shortCode)}
                   className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted py-2 text-sm font-semibold text-muted-foreground transition hover:bg-brand-soft hover:text-brand"
-                  title="Vektor, tidak pecah saat dicetak besar"
+                  title={t.svgTitle}
                 >
                   <FileCode2 size={16} /> SVG
                 </button>
@@ -167,7 +167,7 @@ export default function QrCodesPage() {
                 <Link href="/dashboard/billing" className="flex-1">
                   <button
                     className="flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-border py-2 text-sm font-semibold text-subtle transition hover:border-brand hover:text-brand"
-                    title="Unduhan vektor tersedia di paket berbayar"
+                    title={t.svgLockedTitle}
                   >
                     <FileCode2 size={16} /> SVG
                   </button>
@@ -179,10 +179,7 @@ export default function QrCodesPage() {
       </div>
 
       {canDownloadVector && (
-        <p className="mt-8 text-center text-xs text-muted-foreground">
-          Berkas SVG memakai modul kotak dan resolusi 1024px agar paling aman
-          dibaca pemindai saat dicetak besar.
-        </p>
+        <p className="mt-8 text-center text-xs text-muted-foreground">{t.svgFooter}</p>
       )}
     </div>
   );
