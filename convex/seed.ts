@@ -1,14 +1,8 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { SEED_ARTICLES } from "./seedData";
-
-const ADMIN_EMAIL = "muhamadyusuf0012@gmail.com";
-
-function assertAdmin(email: string | undefined) {
-  if (email !== ADMIN_EMAIL) {
-    throw new Error("Unauthorized: Admin only");
-  }
-}
+// Peran admin dibaca dari kolom `role`, sama seperti sisa backend.
+import { assertAdmin } from "./entitlements";
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -29,8 +23,7 @@ function defaultStartAt(now: number) {
  */
 export const getSeedStatus = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const existing = await ctx.db.query("articles").collect();
     const slugs = new Set(existing.map((a) => a.slug));
@@ -60,8 +53,8 @@ export const seedScheduledArticles = mutation({
     intervalDays: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertAdmin(ctx);
     const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
 
     const now = Date.now();
     const interval = Math.max(1, args.intervalDays ?? 3) * DAY;
@@ -118,8 +111,7 @@ export const seedScheduledArticles = mutation({
  */
 export const removeUnpublishedSeedArticles = mutation({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const now = Date.now();
     const seedSlugs = new Set(SEED_ARTICLES.map((s) => s.slug));

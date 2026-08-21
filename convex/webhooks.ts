@@ -15,6 +15,7 @@ import {
   requireIdentity,
 } from "./entitlements";
 import { planHasFeature } from "./plans";
+import { isPrivateHost } from "./abuse";
 
 export const SUPPORTED_EVENTS = ["link.created", "link.clicked"] as const;
 
@@ -71,6 +72,13 @@ export const create = mutation({
     // membuatnya terbaca siapa pun di jalur jaringan.
     if (parsed.protocol !== "https:") {
       throw new Error("URL webhook harus memakai https.");
+    }
+
+    // Endpoint di jaringan lokal tidak pernah bisa dijangkau dari server kami,
+    // tapi mendaftarkannya berarti setiap kejadian memicu permintaan keluar ke
+    // alamat internal — jalur yang enak dipakai memindai jaringan dari dalam.
+    if (isPrivateHost(parsed.hostname.toLowerCase())) {
+      throw new Error("URL webhook tidak boleh menunjuk ke jaringan lokal.");
     }
 
     const events = args.events.filter((e) =>

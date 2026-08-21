@@ -11,7 +11,8 @@ import { v } from "convex/values";
 import { internalMutation, internalQuery } from "./_generated/server";
 import { getEntitlementsForUser } from "./entitlements";
 import { planHasFeature } from "./plans";
-import { inspectUrl } from "./abuse";
+import { assertRateLimit, inspectUrl } from "./abuse";
+import { normalizeSlug } from "./links";
 
 export const listLinksForApi = internalQuery({
   args: { userId: v.string(), limit: v.optional(v.number()) },
@@ -54,10 +55,31 @@ export const createLinkForApi = internalMutation({
       return { error: "Paket Anda tidak mencakup akses API." };
     }
 
+    // Batas laju yang sama dengan pembuatan lewat dasbor. Kunci API justru
+    // jalur yang paling mudah dipakai skrip, jadi melewatkannya di sini berarti
+    // pembatas di createLink hanya menahan orang yang memakai tombol.
+    try {
+      await assertRateLimit(ctx, "create_link", args.userId, ent.plan);
+    } catch (error) {
+      return { error: error instanceof Error ? error.message : "Terlalu banyak permintaan." };
+    }
+
     const verdict = inspectUrl(args.originalUrl);
     if (!verdict.ok) return { error: verdict.reason };
 
-    let shortCode = args.customSlug?.trim() ?? "";
+    let shortCode = "";
+
+    // Slug lewat API melewati validasi yang sama dengan slug lewat dasbor:
+    // daftar kata cadangan dan bentuk karakter yang sah. Tanpa ini, API bisa
+    // mendaftarkan "dashboard" atau kode berisi garis miring yang tersimpan
+    // rapi di basis data tapi tidak pernah bisa dibuka.
+    if (args.customSlug && args.customSlug.trim() !== "") {
+      try {
+        shortCode = normalizeSlug(args.customSlug);
+      } catch (error) {
+        return { error: error instanceof Error ? error.message : "Kode pendek tidak valid." };
+      }
+    }
 
     const taken = async (code: string) =>
       await ctx.db

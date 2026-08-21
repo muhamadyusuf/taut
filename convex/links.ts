@@ -8,7 +8,13 @@ import {
   getEntitlementsForUser,
   requireIdentity,
 } from "./entitlements";
-import { assertRateLimit, inspectUrl, linkStatusOf } from "./abuse";
+import {
+  assertAttemptQuota,
+  assertRateLimit,
+  inspectUrl,
+  linkStatusOf,
+  recordFailedAttempt,
+} from "./abuse";
 import { internal } from "./_generated/api";
 import { planHasFeature } from "./plans";
 
@@ -81,6 +87,35 @@ const RESERVED_SLUGS = new Set([
 
 function isReservedSlug(slug: string): boolean {
   return RESERVED_SLUGS.has(slug.trim().toLowerCase());
+}
+
+/**
+ * Bentuk kode pendek yang sah.
+ *
+ * Kode pendek menjadi satu segmen URL di akar domain, jadi karakter di luar
+ * daftar ini bukan sekadar tidak rapi: spasi dan garis miring membuat tautan
+ * yang tersimpan tidak pernah bisa dibuka, dan aksara non-latin yang mirip
+ * huruf biasa adalah bahan penyamaran alamat.
+ */
+const SLUG_PATTERN = /^[A-Za-z0-9._-]{1,64}$/;
+
+/**
+ * Memeriksa kode pendek pilihan pengguna dan mengembalikan bentuk bakunya.
+ * Melempar, bukan mengembalikan null, supaya pemanggil tidak bisa lupa memeriksa.
+ */
+export function normalizeSlug(raw: string): string {
+  const slug = raw.trim();
+
+  if (!SLUG_PATTERN.test(slug)) {
+    throw new Error(
+      "Kode pendek hanya boleh berisi huruf, angka, titik, garis bawah, dan tanda hubung (maksimal 64 karakter)."
+    );
+  }
+  if (isReservedSlug(slug)) {
+    throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
+  }
+
+  return slug;
 }
 
 
@@ -160,14 +195,9 @@ export const createLink = mutation({
 
     let shortCode: string;
 
-    // 2. CEK APAKAH SLUG MASUK DAFTAR TERLARANG
-    if (args.customSlug && isReservedSlug(args.customSlug)) {
-        throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
-    }
-
-    // ... (Logic generate shortCode sama seperti sebelumnya) ...
+    // 2. VALIDASI BENTUK + DAFTAR TERLARANG
     if (args.customSlug && args.customSlug.trim() !== "") {
-      shortCode = args.customSlug.trim();
+      shortCode = normalizeSlug(args.customSlug);
       if (await shortCodeTaken(ctx, subdomain, shortCode)) {
         throw new Error("Link custom ini sudah dipakai di alamat tersebut.");
       }
@@ -278,10 +308,10 @@ export const updateLink = mutation({
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
 
-    if (args.customSlug && isReservedSlug(args.customSlug)) {
-      throw new Error("Nama link ini tidak boleh digunakan (Reserved Word).");
-    }
-    
+    // Kode pendek kosong akan membuat tautannya tidak pernah bisa dibuka lagi,
+    // jadi diperlakukan sama dengan kode yang bentuknya salah.
+    const newSlug = normalizeSlug(args.customSlug);
+
     // 1. Ambil data link lama
     const existingLink = await ctx.db.get(args.id);
     if (!existingLink || existingLink.userId !== identity.subject) {
@@ -289,9 +319,7 @@ export const updateLink = mutation({
     }
 
     // 2. Validasi Slug (Hanya jika slug berubah)
-    const newSlug = args.customSlug.trim();
-    
-    // Jika user mengosongkan slug, atau slug-nya sama dengan yang lama, aman.
+    // Jika slug-nya sama dengan yang lama, aman.
     // TAPI jika slug BEDA dari yang lama, kita harus cek ketersediaan.
     const newSubdomain = await resolveOwnedSubdomain(
       ctx,
@@ -384,8 +412,23 @@ export const unlockAndIncrement = mutation({
 
     if (!link || !link.passwordHash) return { ok: false as const };
 
+    // Sandi tautan pendek hampir selalu pendek dan dibagikan lewat pesan
+    // singkat. Tanpa pembatas, seluruh ruang tebakannya bisa disapu dalam
+    // hitungan menit dari satu skrip. Yang dihitung hanya tebakan yang salah,
+    // jadi tautan yang dibuka banyak orang dengan sandi benar tidak ikut kena.
+    const attemptKey = `unlock:${link._id}`;
+    await assertAttemptQuota(ctx, attemptKey, 20);
+
+    if (linkStatusOf(link) === "blocked") return { ok: false as const };
+
+    const gate = accessGateOf(link);
+    if (gate !== "open") return { ok: false as const };
+
     const attempt = await hashPassword(args.password, link.shortCode);
-    if (attempt !== link.passwordHash) return { ok: false as const };
+    if (attempt !== link.passwordHash) {
+      await recordFailedAttempt(ctx, attemptKey);
+      return { ok: false as const };
+    }
 
     const now = Date.now();
     await ctx.db.patch(link._id, { clicks: link.clicks + 1 });
@@ -407,6 +450,25 @@ export const unlockAndIncrement = mutation({
     return { ok: true as const, originalUrl: link.originalUrl };
   },
 });
+
+/**
+ * Apakah sebuah tautan masih boleh diteruskan.
+ *
+ * Dipakai jalur baca (getUrlByCode) maupun jalur tulis (getLinkAndIncrement)
+ * supaya keduanya menjawab hal yang sama. Sebelum ini hanya query yang
+ * memeriksanya, sementara mutation-nya mengembalikan URL tujuan apa adanya —
+ * dan mutation itu bisa dipanggil siapa pun langsung dari console browser,
+ * jadi kedaluwarsa maupun sandi praktis tidak menahan apa-apa.
+ */
+function accessGateOf(link: Doc<"links">): "open" | "expired-date" | "expired-clicks" {
+  if (link.expiresAt !== undefined && link.expiresAt <= Date.now()) {
+    return "expired-date";
+  }
+  if (link.maxClicks !== undefined && link.clicks >= link.maxClicks) {
+    return "expired-clicks";
+  }
+  return "open";
+}
 
 /**
  * Sidik jari sandi tautan.
@@ -559,12 +621,10 @@ export const getUrlByCode = query({
     // Kedaluwarsa diperiksa saat dibaca, bukan lewat pekerjaan terjadwal:
     // tautan yang lewat tanggalnya harus mati pada detik itu juga, bukan
     // menunggu cron berikutnya menyapu.
-    const expiredByDate =
-      link.expiresAt !== undefined && link.expiresAt <= Date.now();
-    const expiredByClicks =
-      link.maxClicks !== undefined && link.clicks >= link.maxClicks;
+    const gate = accessGateOf(link);
+    const expiredByDate = gate === "expired-date";
 
-    if (expiredByDate || expiredByClicks) {
+    if (gate !== "open") {
       return {
         originalUrl: "",
         shortCode: link.shortCode,
@@ -662,6 +722,16 @@ export const getLinkAndIncrement = mutation({
       .first();
 
     if (!link) return null;
+
+    // Penjagaan yang sama persis dengan getUrlByCode. Halaman antara memang
+    // sudah menahan diri sendiri, tapi yang menahan penyerang adalah kode di
+    // sisi server ini — bukan komponen React yang bisa dilewati.
+    if (linkStatusOf(link) === "blocked") return null;
+    if (accessGateOf(link) !== "open") return null;
+
+    // Tautan bersandi hanya boleh dibuka lewat unlockAndIncrement, yang menukar
+    // sandi yang benar dengan tujuannya.
+    if (link.passwordHash) return null;
 
     const now = Date.now();
 

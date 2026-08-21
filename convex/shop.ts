@@ -1,5 +1,45 @@
 import { v } from "convex/values";
 import { mutation, query, internalQuery, internalMutation } from "./_generated/server";
+import type { Doc } from "./_generated/dataModel";
+import { assertWithinLimit, countOwned } from "./entitlements";
+
+/**
+ * Kolom toko yang aman dilihat siapa pun.
+ *
+ * shop_settings menyimpan serverKey Midtrans milik penjual — kunci yang bisa
+ * dipakai menarik dana, membatalkan transaksi, dan membaca seluruh riwayat
+ * pembayaran mereka. Mengembalikan dokumen mentah ke halaman toko berarti
+ * kunci itu ikut terkirim ke setiap pengunjung, jadi jalur publik hanya boleh
+ * lewat pemetaan ini.
+ */
+function publicShopFields(shop: Doc<"shop_settings">) {
+  return {
+    userId: shop.userId,
+    slug: shop.slug,
+    shopName: shop.shopName,
+    logoUrl: shop.logoUrl,
+    description: shop.description,
+    theme: shop.theme,
+    primaryColor: shop.primaryColor,
+  };
+}
+
+/** Produk sebagaimana boleh dilihat pembeli: tanpa tautan berkas digitalnya. */
+function publicProductFields(product: Doc<"products">) {
+  // fileUrl sengaja tidak ikut: itu berkas yang baru berhak diunduh setelah
+  // pembayaran lunas, dan menyertakannya di daftar produk membuat barang
+  // berbayar bisa diambil siapa saja tanpa membayar.
+  return {
+    _id: product._id,
+    userId: product.userId,
+    title: product.title,
+    description: product.description,
+    price: product.price,
+    stock: product.stock,
+    imageUrl: product.imageUrl,
+    isActive: product.isActive,
+  };
+}
 
 // ------------------------------------------------------------------
 // BAGIAN 1: PENGATURAN TOKO (Identity & Keys)
@@ -79,10 +119,12 @@ export const getMySettings = query({
 export const getShopBySlug = query({
   args: { slug: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const shop = await ctx.db
       .query("shop_settings")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
+
+    return shop ? publicShopFields(shop) : null;
   },
 });
 
@@ -103,6 +145,11 @@ export const createProduct = mutation({
   handler: async (ctx, args) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) throw new Error("Unauthorized");
+
+    // Kuota paket: Gratis 3 produk, Pro 50, Bisnis tanpa batas. Tanpa penjaga
+    // ini angka di halaman harga tidak berarti apa-apa.
+    const existingCount = await countOwned(ctx, "products", identity.subject);
+    await assertWithinLimit(ctx, "products", existingCount);
 
     await ctx.db.insert("products", {
       userId: identity.subject,
@@ -196,11 +243,19 @@ export const getMyProducts = query({
   },
 });
 
-// Ambil 1 Produk by ID (Untuk Form Edit)
+// Ambil 1 Produk by ID (Untuk Form Edit) — hanya pemiliknya
 export const getProductById = query({
   args: { id: v.id("products") },
   handler: async (ctx, args) => {
-    return await ctx.db.get(args.id);
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
+    const product = await ctx.db.get(args.id);
+    // Dokumen mentah memuat fileUrl. Yang boleh melihatnya hanya pemilik
+    // produk, karena halaman ini memang formulir sunting miliknya.
+    if (!product || product.userId !== identity.subject) return null;
+
+    return product;
   },
 });
 
@@ -208,11 +263,13 @@ export const getProductById = query({
 export const getProductsBySeller = query({
   args: { userId: v.string() },
   handler: async (ctx, args) => {
-    return await ctx.db
+    const products = await ctx.db
       .query("products")
       .withIndex("by_userId", (q) => q.eq("userId", args.userId))
       .filter(q => q.eq(q.field("isActive"), true)) // Hanya yang aktif
       .collect();
+
+    return products.map(publicProductFields);
   },
 });
 
@@ -234,8 +291,17 @@ export const getMyOrders = query({
   },
 });
 
-// Update Status Order + Logika Stok (Dipanggil Webhook & updateOrderStatusInternal)
-export const updateOrderStatusInternal = mutation({
+/**
+ * Update Status Order + Logika Stok.
+ *
+ * WAJIB internal: satu-satunya yang boleh memutuskan sebuah pesanan lunas
+ * adalah notifikasi Midtrans yang tanda tangannya sudah diverifikasi di
+ * convex/midtransActions.ts. Sewaktu fungsi ini masih mutation publik, siapa
+ * pun bisa memanggilnya dari console browser dengan order id tebakan dan
+ * menandai pesanannya sendiri "paid" tanpa membayar sepeser pun — atau
+ * menembak status "failed" berulang kali untuk menggelembungkan stok penjual.
+ */
+export const updateOrderStatusInternal = internalMutation({
     args: { midtransOrderId: v.string(), status: v.string() },
     handler: async (ctx, args) => {
         const order = await ctx.db.query("orders")

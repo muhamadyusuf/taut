@@ -50,6 +50,12 @@ export const createTransaction = action({
         if (!product) {
             throw new Error(`Produk tidak ditemukan.`);
         }
+        // Penjual dikirim dari halaman toko, jadi harus dicocokkan ulang di
+        // sini: tanpa ini sebuah keranjang bisa berisi produk milik orang lain
+        // sementara pembayarannya diarahkan ke akun Midtrans penjual ini.
+        if (product.userId !== args.sellerId) {
+            throw new Error(`Produk "${product.title}" bukan milik toko ini.`);
+        }
         if (!product.isActive) {
             throw new Error(`Produk "${product.title}" sudah tidak tersedia.`);
         }

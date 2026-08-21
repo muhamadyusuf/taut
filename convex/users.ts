@@ -44,6 +44,8 @@ export const ensureCurrent = mutation({
 
     const existing = await getUserByClerkId(ctx, identity.subject);
 
+    const isBootstrapAdmin = !!email && BOOTSTRAP_ADMIN_EMAILS.includes(email);
+
     if (existing) {
       // Hanya tulis kalau memang ada yang berubah — mutation ini dipanggil di
       // setiap kunjungan dasbor, jadi jangan bikin tulisan sia-sia.
@@ -52,18 +54,23 @@ export const ensureCurrent = mutation({
         existing.name !== name ||
         existing.imageUrl !== imageUrl;
 
+      // Baris yang terlanjur ada sebelum jalur bootstrap ini dipasang bisa saja
+      // masih berperan "user". Seluruh backend kini menentukan admin dari kolom
+      // `role` semata, jadi tanpa perbaikan di sini pemilik aplikasi bisa
+      // terkunci dari panel adminnya sendiri.
+      const needsPromotion = isBootstrapAdmin && existing.role !== "admin";
+
       const staleSeen = (existing.lastSeenAt ?? 0) < now - 60 * 60 * 1000;
 
-      if (changed || staleSeen) {
+      if (changed || staleSeen || needsPromotion) {
         await ctx.db.patch(existing._id, {
           ...(changed ? { email, name, imageUrl } : {}),
+          ...(needsPromotion ? { role: "admin" } : {}),
           lastSeenAt: now,
         });
       }
       return existing._id;
     }
-
-    const isBootstrapAdmin = !!email && BOOTSTRAP_ADMIN_EMAILS.includes(email);
 
     return await ctx.db.insert("users", {
       clerkId: identity.subject,

@@ -28,8 +28,14 @@ export const getMyMicrosites = query({
 export const getMicrositeById = query({
   args: { id: v.id("microsites") },
   handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) return null;
+
     const microsite = await ctx.db.get(args.id);
-    if (!microsite) return null;
+    // Ini query untuk editor, jadi yang berhak hanya pemiliknya. Halaman bio
+    // yang memang dilihat publik punya jalurnya sendiri: getPublicMicrosite.
+    if (!microsite || microsite.userId !== identity.subject) return null;
+
     return microsite;
   },
 });

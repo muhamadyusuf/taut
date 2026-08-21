@@ -46,7 +46,7 @@ const PRIVATE_PREFIXES = [
   "fe80", // IPv6 link-local
 ];
 
-function isPrivateHost(host: string): boolean {
+export function isPrivateHost(host: string): boolean {
   if (PRIVATE_EXACT.has(host)) return true;
   if (host.endsWith(".local") || host.endsWith(".internal")) return true;
   if (PRIVATE_PREFIXES.some((prefix) => host.startsWith(prefix))) return true;
@@ -124,6 +124,64 @@ const LINKS_PER_HOUR: Record<PlanId, number> = {
   pro: 300,
   business: 1000,
 };
+
+/**
+ * Pembatas percobaan yang gagal — dipakai untuk hal yang tidak punya identitas
+ * pemanggil, misalnya menebak sandi sebuah tautan.
+ *
+ * Sengaja dipecah dua: yang menahan diperiksa lebih dulu tanpa menulis apa pun,
+ * dan pencatatnya hanya bertambah saat percobaannya SALAH. Kalau setiap
+ * pembukaan ikut dihitung, satu tautan bersandi yang dibagikan ke satu kelas
+ * akan mengunci dirinya sendiri di peserta ke-21 — pembatas yang justru
+ * memakan pengguna sahnya.
+ */
+export async function assertAttemptQuota(
+  ctx: MutationCtx,
+  key: string,
+  limit: number,
+  windowMs: number = HOUR_MS
+): Promise<void> {
+  const now = Date.now();
+
+  const existing = await ctx.db
+    .query("rate_limits")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .first();
+
+  if (!existing) return;
+  if (now - existing.windowStart >= windowMs) return;
+
+  if (existing.count >= limit) {
+    const menit = Math.ceil((existing.windowStart + windowMs - now) / 60000);
+    throw new Error(`Terlalu banyak percobaan. Coba lagi dalam ${menit} menit.`);
+  }
+}
+
+/** Menambah pencatat percobaan gagal untuk kunci yang sama. */
+export async function recordFailedAttempt(
+  ctx: MutationCtx,
+  key: string,
+  windowMs: number = HOUR_MS
+): Promise<void> {
+  const now = Date.now();
+
+  const existing = await ctx.db
+    .query("rate_limits")
+    .withIndex("by_key", (q) => q.eq("key", key))
+    .first();
+
+  if (!existing) {
+    await ctx.db.insert("rate_limits", { key, windowStart: now, count: 1 });
+    return;
+  }
+
+  if (now - existing.windowStart >= windowMs) {
+    await ctx.db.patch(existing._id, { windowStart: now, count: 1 });
+    return;
+  }
+
+  await ctx.db.patch(existing._id, { count: existing.count + 1 });
+}
 
 export async function assertRateLimit(
   ctx: MutationCtx,

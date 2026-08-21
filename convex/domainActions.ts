@@ -1,7 +1,7 @@
 "use node";
 
 import { v } from "convex/values";
-import { action } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 
@@ -177,13 +177,19 @@ export const checkDomain = action({
   },
 });
 
-/** Melepas domain dari proyek Vercel. Dipanggil sebelum baris dihapus. */
-export const unregisterDomain = action({
+/**
+ * Melepas domain dari proyek Vercel.
+ *
+ * Internal, dan dijadwalkan oleh domains.remove setelah baris pemiliknya
+ * dihapus. Sewaktu ini masih action publik yang menerima nama domain apa
+ * adanya, pengguna mana pun yang sudah login bisa memanggilnya dengan domain
+ * milik penyewa lain — atau dengan singkat.in sendiri — dan mencabutnya dari
+ * proyek Vercel. Kepemilikan tidak bisa diperiksa di sini karena barisnya sudah
+ * tiada saat pemanggilan; karena itu yang boleh memanggil hanya backend.
+ */
+export const unregisterDomain = internalAction({
   args: { domain: v.string() },
   handler: async (ctx, args): Promise<{ ok: boolean }> => {
-    const identity = await ctx.auth.getUserIdentity();
-    if (!identity) throw new Error("Unauthorized");
-
     try {
       const { token, projectId, teamQuery } = vercelConfig();
       await vercelFetch(

@@ -45,7 +45,6 @@ export default function DomainsPage() {
   const removeDomain = useMutation(api.domains.remove);
   const registerDomain = useAction(api.domainActions.registerDomain);
   const checkDomain = useAction(api.domainActions.checkDomain);
-  const unregisterDomain = useAction(api.domainActions.unregisterDomain);
 
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
@@ -84,8 +83,9 @@ export default function DomainsPage() {
     }
     setBusy(id);
     try {
+      // Pelepasan domain di Vercel dijalankan backend sebagai kelanjutan
+      // removeDomain — klien tidak lagi memanggilnya sendiri.
       const result = await removeDomain({ id });
-      await unregisterDomain({ domain: result.domain }).catch(() => null);
       if (result.movedLinks > 0) {
         alert(t.removedMoved(result.movedLinks));
       }

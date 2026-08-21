@@ -1,14 +1,12 @@
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
-
-const ADMIN_EMAIL = "muhamadyusuf0012@gmail.com";
-
-function assertAdmin(email: string | undefined) {
-  if (email !== ADMIN_EMAIL) {
-    throw new Error("Unauthorized: Admin only");
-  }
-}
+// Peran admin dibaca dari kolom `role` di tabel users — sumber yang sama
+// dengan seluruh backend. Versi sebelumnya mencocokkan alamat email yang
+// ditulis di dalam kode, sehingga admin yang ditambahkan lewat kolom `role`
+// tetap tidak bisa mengelola artikel, dan mencabut hak seseorang berarti
+// mengubah kode lalu deploy ulang.
+import { assertAdmin, isAdmin } from "./entitlements";
 
 // Ubah judul menjadi slug URL-friendly
 function slugify(input: string) {
@@ -66,8 +64,7 @@ async function uniqueSlug(
 // Semua artikel (draft + terbit) untuk tabel admin
 export const getAllArticlesAdmin = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const now = Date.now();
     const articles = await ctx.db.query("articles").order("desc").collect();
@@ -94,8 +91,7 @@ export const getAllArticlesAdmin = query({
 export const getArticleById = query({
   args: { id: v.id("articles") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
     return await ctx.db.get(args.id);
   },
 });
@@ -104,8 +100,7 @@ export const getArticleById = query({
 export const checkSlugAvailability = query({
   args: { slug: v.string(), ignoreId: v.optional(v.id("articles")) },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const clean = slugify(args.slug);
     if (!clean) return { available: false, slug: clean };
@@ -125,8 +120,7 @@ export const checkSlugAvailability = query({
 // Daftar kategori yang sudah pernah dipakai (untuk saran di editor)
 export const getArticleCategories = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const articles = await ctx.db.query("articles").collect();
     const names = new Set<string>();
@@ -150,8 +144,8 @@ export const createArticle = mutation({
     publishedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    await assertAdmin(ctx);
     const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
 
     const now = Date.now();
     const slug = await uniqueSlug(ctx, args.slug || args.title);
@@ -191,8 +185,7 @@ export const updateArticle = mutation({
     publishedAt: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const current = await ctx.db.get(args.id);
     if (!current) throw new Error("Artikel tidak ditemukan");
@@ -223,8 +216,7 @@ export const updateArticle = mutation({
 export const setArticleStatus = mutation({
   args: { id: v.id("articles"), status: v.string() },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const article = await ctx.db.get(args.id);
     if (!article) throw new Error("Artikel tidak ditemukan");
@@ -243,8 +235,7 @@ export const setArticleStatus = mutation({
 export const deleteArticle = mutation({
   args: { id: v.id("articles") },
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
     await ctx.db.delete(args.id);
   },
 });
@@ -252,8 +243,7 @@ export const deleteArticle = mutation({
 // Ringkasan untuk kartu statistik di halaman admin
 export const getArticleStats = query({
   handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
-    assertAdmin(identity?.email);
+    await assertAdmin(ctx);
 
     const articles = await ctx.db.query("articles").collect();
     const now = Date.now();
@@ -354,10 +344,8 @@ export const getArticleBySlug = query({
       article.status === "published" &&
       (article.publishedAt ?? article.createdAt) <= Date.now();
 
-    if (!isLive) {
-      const identity = await ctx.auth.getUserIdentity();
-      if (identity?.email !== ADMIN_EMAIL) return null;
-    }
+    // Draft & artikel terjadwal hanya terbuka untuk admin (mode pratinjau).
+    if (!isLive && !(await isAdmin(ctx))) return null;
 
     return {
       ...article,

@@ -1,7 +1,7 @@
 "use node"; // WAJIB DI SINI
 import { v } from "convex/values";
 import { internalAction } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import Midtrans from "midtrans-client";
 
 export const verifyAndProcessWebhook = internalAction({
@@ -68,7 +68,7 @@ export const verifyAndProcessWebhook = internalAction({
       }
 
       // 5. UPDATE DB (Panggil Mutation)
-      await ctx.runMutation(api.shop.updateOrderStatusInternal, {
+      await ctx.runMutation(internal.shop.updateOrderStatusInternal, {
         midtransOrderId: orderId,
         status: newStatus,
       });

@@ -9,6 +9,7 @@
 
 import { v } from "convex/values";
 import { internalMutation, mutation, query } from "./_generated/server";
+import { internal } from "./_generated/api";
 import {
   assertFeature,
   assertWithinLimit,
@@ -222,6 +223,14 @@ export const remove = mutation({
     }
 
     await ctx.db.delete(args.id);
+
+    // Pelepasan di sisi Vercel dijadwalkan dari sini, bukan dipanggil klien:
+    // begitu barisnya hilang tidak ada lagi cara memastikan pemanggil memang
+    // pemiliknya, jadi satu-satunya pemanggil yang sah adalah backend ini.
+    await ctx.scheduler.runAfter(0, internal.domainActions.unregisterDomain, {
+      domain: row.domain,
+    });
+
     return { movedLinks: affected.length, domain: row.domain };
   },
 });
