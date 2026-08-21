@@ -5,6 +5,7 @@ import {
   countOwned,
   isWithinLimitForUser,
 } from "./entitlements";
+import { recordSecurityEvent } from "./securityLog";
 
 const questionValidator = v.object({
   id: v.string(),
@@ -198,11 +199,34 @@ export const submitResponse = mutation({
         value: v.array(v.string()),
       })
     ),
+    /**
+     * Kolom umpan dari halaman pengisian. Manusia tidak pernah mengisinya —
+     * kolomnya tidak terlihat dan tidak bisa dijangkau papan ketik.
+     * Opsional supaya kiriman dari versi halaman yang lebih lama tetap masuk.
+     */
+    trap: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const form = await ctx.db.get(args.formId);
     if (!form || form.status !== "published" || !form.acceptingResponses) {
       throw new Error("Formulir ini tidak lagi menerima jawaban.");
+    }
+
+    // Umpan termakan: hampir pasti robot pengisi formulir. Jawabannya dibuang
+    // diam-diam, dan pemanggilnya justru dijawab seolah berhasil.
+    //
+    // Berhenti dengan galat akan salah di dua sisi. Pertama, mutation Convex
+    // adalah satu transaksi — melempar berarti catatan jebakan di atas ikut
+    // dibatalkan, dan tidak ada yang tercatat sama sekali. Kedua, bot yang
+    // menerima galat akan dicoba ulang oleh pembuatnya sampai tembus; bot yang
+    // "berhasil" akan pergi dengan puas dan tidak kembali.
+    if (args.trap && args.trap.trim() !== "") {
+      await recordSecurityEvent(ctx, {
+        kind: "honeypot_field",
+        target: `/f/${form.slug}`,
+        detail: `Kolom umpan terisi: "${args.trap.slice(0, 100)}"`,
+      });
+      return;
     }
 
     // Kuota respons mengikuti paket PEMILIK formulir, bukan paket pengisi —

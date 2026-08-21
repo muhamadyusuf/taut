@@ -16,6 +16,7 @@ import {
   recordFailedAttempt,
 } from "./abuse";
 import { internal } from "./_generated/api";
+import { recordSecurityEvent } from "./securityLog";
 import { planHasFeature } from "./plans";
 
 /**
@@ -83,6 +84,12 @@ const RESERVED_SLUGS = new Set([
   "go",
   "qr",
   "v", // verifikasi sertifikat publik
+
+  // Sasaran rewrite middleware. Ini route sungguhan, jadi tautan pendek dengan
+  // nama yang sama akan kalah dan tidak pernah bisa dibuka.
+  "sub",
+  "domain",
+  "trap",
 ]);
 
 function isReservedSlug(slug: string): boolean {
@@ -426,7 +433,19 @@ export const unlockAndIncrement = mutation({
 
     const attempt = await hashPassword(args.password, link.shortCode);
     if (attempt !== link.passwordHash) {
-      await recordFailedAttempt(ctx, attemptKey);
+      const failures = await recordFailedAttempt(ctx, attemptKey);
+
+      // Salah ketik sekali dua kali adalah hal biasa dan tidak layak masuk
+      // catatan keamanan. Yang layak dicatat adalah pola: percobaan kelima ke
+      // atas pada tautan yang sama dalam satu jam.
+      if (failures >= 5) {
+        await recordSecurityEvent(ctx, {
+          kind: "password_bruteforce",
+          target: `/${link.shortCode}`,
+          detail: `${failures} tebakan sandi gagal dalam satu jam.`,
+        });
+      }
+
       return { ok: false as const };
     }
 
@@ -726,7 +745,17 @@ export const getLinkAndIncrement = mutation({
     // Penjagaan yang sama persis dengan getUrlByCode. Halaman antara memang
     // sudah menahan diri sendiri, tapi yang menahan penyerang adalah kode di
     // sisi server ini — bukan komponen React yang bisa dilewati.
-    if (linkStatusOf(link) === "blocked") return null;
+    if (linkStatusOf(link) === "blocked") {
+      // Halaman antara tidak pernah memanggil ini untuk tautan terblokir, jadi
+      // yang sampai ke sini memanggilnya sendiri — persis pola orang yang
+      // sedang mencari cara melewati pemblokiran.
+      await recordSecurityEvent(ctx, {
+        kind: "blocked_link_access",
+        target: `/${link.shortCode}`,
+        detail: link.flagReason ?? "Tautan berstatus blocked.",
+      });
+      return null;
+    }
     if (accessGateOf(link) !== "open") return null;
 
     // Tautan bersandi hanya boleh dibuka lewat unlockAndIncrement, yang menukar

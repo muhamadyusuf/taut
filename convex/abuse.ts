@@ -12,6 +12,7 @@ import { v } from "convex/values";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { internalMutation, mutation, query } from "./_generated/server";
 import { getEntitlements, assertAdmin } from "./entitlements";
+import { recordSecurityEvent } from "./securityLog";
 import type { PlanId } from "./plans";
 
 // ---------------------------------------------------------------------------
@@ -152,17 +153,26 @@ export async function assertAttemptQuota(
   if (now - existing.windowStart >= windowMs) return;
 
   if (existing.count >= limit) {
+    // Sengaja TIDAK mencatat di sini. Handler ini berakhir dengan melempar, dan
+    // mutation Convex membatalkan seluruh tulisannya saat itu terjadi — catatan
+    // apa pun di baris ini akan lenyap tanpa jejak. Yang mencatat adalah
+    // recordFailedAttempt di bawah, yang dipanggil pada jalur yang berakhir
+    // normal. Lihat convex/securityLog.ts.
     const menit = Math.ceil((existing.windowStart + windowMs - now) / 60000);
     throw new Error(`Terlalu banyak percobaan. Coba lagi dalam ${menit} menit.`);
   }
 }
 
-/** Menambah pencatat percobaan gagal untuk kunci yang sama. */
+/**
+ * Menambah pencatat percobaan gagal untuk kunci yang sama.
+ * Mengembalikan jumlah kegagalan dalam jendela berjalan, supaya pemanggil bisa
+ * membedakan salah ketik sekali dari penyisiran yang sedang berlangsung.
+ */
 export async function recordFailedAttempt(
   ctx: MutationCtx,
   key: string,
   windowMs: number = HOUR_MS
-): Promise<void> {
+): Promise<number> {
   const now = Date.now();
 
   const existing = await ctx.db
@@ -172,15 +182,17 @@ export async function recordFailedAttempt(
 
   if (!existing) {
     await ctx.db.insert("rate_limits", { key, windowStart: now, count: 1 });
-    return;
+    return 1;
   }
 
   if (now - existing.windowStart >= windowMs) {
     await ctx.db.patch(existing._id, { windowStart: now, count: 1 });
-    return;
+    return 1;
   }
 
-  await ctx.db.patch(existing._id, { count: existing.count + 1 });
+  const count = existing.count + 1;
+  await ctx.db.patch(existing._id, { count });
+  return count;
 }
 
 export async function assertRateLimit(
@@ -210,13 +222,26 @@ export async function assertRateLimit(
   }
 
   if (existing.count >= limit) {
+    // Tanpa pencatatan: lihat catatan yang sama di assertAttemptQuota.
     const menit = Math.ceil((existing.windowStart + HOUR_MS - now) / 60000);
     throw new Error(
       `Terlalu banyak tautan dibuat dalam satu jam (batas ${limit}). Coba lagi dalam ${menit} menit.`
     );
   }
 
-  await ctx.db.patch(existing._id, { count: existing.count + 1 });
+  const count = existing.count + 1;
+  await ctx.db.patch(existing._id, { count });
+
+  // Dicatat pada panggilan yang MENGHABISKAN jatah, bukan pada panggilan
+  // berikutnya yang ditolak: panggilan inilah yang masih berakhir normal,
+  // sehingga catatannya ikut tersimpan.
+  if (count >= limit) {
+    await recordSecurityEvent(ctx, {
+      kind: "rate_limited",
+      target: key,
+      detail: `Jatah ${limit} tautan per jam (paket ${plan}) habis.`,
+    });
+  }
 }
 
 // ---------------------------------------------------------------------------

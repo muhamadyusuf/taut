@@ -35,6 +35,8 @@ import type * as plans from "../plans.js";
 import type * as publicApi from "../publicApi.js";
 import type * as qr from "../qr.js";
 import type * as qrDefaults from "../qrDefaults.js";
+import type * as security from "../security.js";
+import type * as securityLog from "../securityLog.js";
 import type * as seed from "../seed.js";
 import type * as seedData_batch01 from "../seedData/batch01.js";
 import type * as seedData_batch02 from "../seedData/batch02.js";
@@ -90,6 +92,8 @@ declare const fullApi: ApiFromModules<{
   publicApi: typeof publicApi;
   qr: typeof qr;
   qrDefaults: typeof qrDefaults;
+  security: typeof security;
+  securityLog: typeof securityLog;
   seed: typeof seed;
   "seedData/batch01": typeof seedData_batch01;
   "seedData/batch02": typeof seedData_batch02;

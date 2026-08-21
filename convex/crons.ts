@@ -37,4 +37,18 @@ crons.daily(
   {}
 );
 
+/**
+ * Membuang catatan keamanan yang sudah lewat masa simpan (90 hari).
+ *
+ * Catatan itu memuat alamat IP dan identitas orang. Menyimpannya selamanya
+ * bukan kehati-hatian melainkan penimbunan: yang berguna untuk menindak sebuah
+ * insiden adalah beberapa bulan terakhir, bukan tiga tahun lalu.
+ */
+crons.daily(
+  "buang catatan keamanan kedaluwarsa",
+  { hourUTC: 20, minuteUTC: 15 }, // 03:15 WIB
+  internal.security.purgeOldEvents,
+  {}
+);
+
 export default crons;

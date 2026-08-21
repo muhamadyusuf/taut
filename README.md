@@ -34,3 +34,23 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Jebakan keamanan (honeypot)
+
+Alamat umpan seperti `/.env` dan `/wp-login.php`, kolom tersembunyi di formulir
+publik, dan beberapa fungsi Convex bernama menggoda dicatat ke halaman admin
+**Jebakan** (`/admin/security`) beserta identitas akun, kota, dan alamat IP
+pengetuknya.
+
+Jebakan tingkat URL mengirim laporannya dari Next.js ke Convex, jadi keduanya
+harus memegang rahasia yang sama:
+
+```bash
+npx convex env set TRAP_INGEST_SECRET "<nilai-acak-panjang>"
+```
+
+Nilai yang sama dipasang sebagai environment variable `TRAP_INGEST_SECRET` di
+Next.js (Vercel / `.env.local`). Tanpa itu, ketukan pada alamat umpan tetap
+dijawab 404 tetapi tidak tercatat, dan alasannya tertulis di log server.
+
+Catatan keamanan terhapus otomatis setelah 90 hari.

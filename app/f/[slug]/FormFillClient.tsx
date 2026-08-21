@@ -40,6 +40,9 @@ interface FormShape {
 
 export default function FormFillClient({ form }: { form: FormShape }) {
   const submitResponse = useMutation(api.forms.submitResponse);
+
+  /** Kolom umpan: tetap kosong sepanjang manusia yang mengisi formulir ini. */
+  const [trapValue, setTrapValue] = useState("");
   const theme = getFormTheme(form.theme);
 
   const [step, setStep] = useState(0);
@@ -125,6 +128,9 @@ export default function FormFillClient({ form }: { form: FormShape }) {
       await submitResponse({
         formId: form._id,
         answers: Object.entries(answers).map(([questionId, value]) => ({ questionId, value })),
+        // Isi kolom umpan ikut dikirim apa adanya. Manusia tidak pernah
+        // mengisinya — kolomnya tidak terlihat dan tidak bisa difokus keyboard.
+        trap: trapValue,
       });
       setSubmitted(true);
     } catch (err) {
@@ -137,6 +143,30 @@ export default function FormFillClient({ form }: { form: FormShape }) {
   return (
     <div className={`min-h-screen py-10 px-4 ${theme.pageBg}`}>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-4">
+        {/* KOLOM UMPAN.
+
+            Perangkap bot paling tua dan masih paling ampuh: kolom yang tidak
+            terlihat manusia, tapi terbaca robot pengisi formulir yang membaca
+            HTML dan mengisi setiap input yang ditemukannya.
+
+            Disembunyikan lewat CSS, bukan type="hidden": banyak bot melewati
+            input tersembunyi bawaan HTML, tapi tetap menyantap yang tampak
+            seperti kolom biasa. tabIndex={-1} dan autoComplete="off" menjaga
+            pengguna papan ketik dan pengisi otomatis peramban tidak tersandung
+            ke sini, dan aria-hidden menjauhkannya dari pembaca layar. */}
+        <div aria-hidden className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+          <label htmlFor="website-url">Jangan isi kolom ini</label>
+          <input
+            id="website-url"
+            name="website-url"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={trapValue}
+            onChange={(e) => setTrapValue(e.target.value)}
+          />
+        </div>
+
         {/* Header */}
         <div className={`card-saweria overflow-hidden ${!form.headerImageUrl ? `border-t-8 ${theme.headerBar}` : ""}`}>
           {form.headerImageUrl && (

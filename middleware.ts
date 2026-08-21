@@ -6,6 +6,21 @@ const isProtectedRoute = createRouteMatcher([
   '/admin(.*)',
 ]);
 
+/**
+ * CATATAN PENTING SOAL NAMA FOLDER TUJUAN REWRITE
+ *
+ * Sasaran rewrite di berkas ini — /sub, /domain, /trap — TIDAK BOLEH diberi
+ * awalan garis bawah. Folder berawalan "_" adalah private folder di App Router
+ * dan sengaja dikeluarkan dari tabel route, sehingga rewrite ke sana selalu
+ * berakhir 404. Sebelumnya folder-folder ini bernama app/_sub dan app/_domain,
+ * dan akibatnya seluruh subdomain penyewa maupun domain pelanggan — dua fitur
+ * berbayar — menjawab 404 tanpa ada yang salah di kode halamannya sendiri.
+ *
+ * Karena kini menjadi route sungguhan, ketiga nama itu ikut didaftarkan sebagai
+ * slug cadangan di convex/links.ts supaya tidak ada tautan pendek yang
+ * bertabrakan dengannya.
+ */
+
 /** Domain utama tempat aplikasi ini dilayani. */
 const ROOT_DOMAIN = "singkat.in";
 
@@ -14,6 +29,53 @@ const ROOT_DOMAIN = "singkat.in";
  * Harus sinkron dengan RESERVED_SUBDOMAINS di convex/subdomains.ts.
  */
 const SYSTEM_HOSTS = new Set(["app", "www", "api", "admin"]);
+
+/**
+ * ALAMAT UMPAN.
+ *
+ * Tidak satu pun dari ini pernah dilayani aplikasi. Yang mengetuknya bukan
+ * pengunjung yang tersesat: ini daftar belanja pemindai otomatis dan orang yang
+ * sedang mencari-cari celah — berkas rahasia, panel admin CMS lain, dan
+ * endpoint "naikkan paket" yang sengaja disebut-sebut di bundel aplikasi.
+ *
+ * Awalan, bukan kecocokan persis: /.git/config dan /.git/HEAD sama-sama patut
+ * dicatat, dan mengejar setiap variasinya satu per satu tidak ada habisnya.
+ */
+const TRAP_PREFIXES = [
+  // Berkas rahasia yang bocor karena salah konfigurasi
+  "/.env",
+  "/.git",
+  "/.aws",
+  "/config.json",
+  "/credentials",
+
+  // Panel & jalur milik tumpukan teknologi lain — aplikasi ini bukan WordPress
+  "/wp-admin",
+  "/wp-login.php",
+  "/wp-content",
+  "/xmlrpc.php",
+  "/phpmyadmin",
+  "/administrator",
+  "/admin.php",
+  "/cgi-bin",
+
+  // Endpoint diagnostik yang sering terbuka tanpa sengaja
+  "/actuator",
+  "/server-status",
+  "/debug",
+
+  // Umpan buatan sendiri: nama-nama ini ditanam di bundel aplikasi lewat
+  // app/_components/security/HoneypotBait.tsx, jadi yang menemukannya memang
+  // sedang membaca kode kami untuk mencari pintu belakang.
+  "/api/admin/grant-plan",
+  "/api/internal/users",
+  "/api/v1/admin",
+];
+
+function trapPrefixFor(pathname: string): string | null {
+  const path = pathname.toLowerCase();
+  return TRAP_PREFIXES.find((prefix) => path.startsWith(prefix)) ?? null;
+}
 
 /**
  * Mengambil nama penyewa dari sebuah host.
@@ -70,6 +132,25 @@ export default clerkMiddleware(async (auth, req) => {
   const isAppDomain = hostname.split(":")[0] === `app.${ROOT_DOMAIN}`;
   const isMainDomain = hostname.split(":")[0] === ROOT_DOMAIN;
 
+  // --- ATURAN 0: JEBAKAN ---
+  // Paling depan, sebelum logika penyewa maupun domain pelanggan: alamat umpan
+  // harus tetap tertangkap dari host mana pun, termasuk subdomain penyewa yang
+  // ikut menyandang nama domain kita.
+  const trap = trapPrefixFor(url.pathname);
+  if (trap) {
+    // Path asli dititipkan lewat header karena setelah rewrite yang terbaca
+    // route hanyalah "/_trap/...".
+    const rewritten = new URL(`/trap${url.pathname}`, req.url);
+    return NextResponse.rewrite(rewritten, {
+      request: {
+        headers: new Headers({
+          ...Object.fromEntries(req.headers),
+          "x-trap-target": `${hostname}${url.pathname}`,
+        }),
+      },
+    });
+  }
+
   // --- ATURAN 1: PROTEKSI ROUTE (Dashboard Wajib Login) ---
   if (isProtectedRoute(req)) {
     const { userId, redirectToSignIn } = await auth();
@@ -93,7 +174,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     const path = url.pathname === "/" ? "" : url.pathname;
     return NextResponse.rewrite(
-      new URL(`/_sub/${tenant}${path}`, req.url)
+      new URL(`/sub/${tenant}${path}`, req.url)
     );
   }
 
@@ -112,7 +193,7 @@ export default clerkMiddleware(async (auth, req) => {
 
     const host = hostname.split(":")[0].toLowerCase();
     const path = url.pathname === "/" ? "" : url.pathname;
-    return NextResponse.rewrite(new URL(`/_domain/${host}${path}`, req.url));
+    return NextResponse.rewrite(new URL(`/domain/${host}${path}`, req.url));
   }
 
   // --- ATURAN 4: app.singkat.in root -> dashboard ---
@@ -133,5 +214,9 @@ export const config = {
   matcher: [
     '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
     '/(api|trpc)(.*)',
+    // Alamat umpan berekstensi (mis. /wp-login.php, /xmlrpc.php) sengaja
+    // didaftarkan terpisah: pola pertama menyaring berkas statis berdasarkan
+    // ekstensi, dan sebagian umpan justru berbentuk seperti itu.
+    '/(.*).php',
   ],
 };

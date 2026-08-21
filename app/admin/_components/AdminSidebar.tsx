@@ -12,6 +12,7 @@ import {
   Megaphone,
   Newspaper,
   ShieldAlert,
+  Radar,
 } from "lucide-react";
 
 const menuItems = [
@@ -22,6 +23,7 @@ const menuItems = [
   { name: "Artikel", href: "/admin/articles", icon: Newspaper },
   { name: "Iklan", href: "/admin/ads", icon: Megaphone },
   { name: "Penyalahgunaan", href: "/admin/abuse", icon: ShieldAlert },
+  { name: "Jebakan", href: "/admin/security", icon: Radar },
 ];
 
 export default function AdminSidebar() {

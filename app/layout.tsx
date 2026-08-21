@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import ConvexClientProvider from "./ConvexClientProvider";
+import HoneypotBait from "./_components/security/HoneypotBait";
 import { GoogleAnalytics } from '@next/third-parties/google';
 
 // 1. Definisikan URL Production Anda (Sangat Penting untuk SEO)
@@ -105,7 +106,11 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-background text-foreground antialiased">
-        <ConvexClientProvider>{children}</ConvexClientProvider>
+        <ConvexClientProvider>
+          {children}
+          {/* Tidak menggambar apa pun. Lihat komentar di berkasnya. */}
+          <HoneypotBait />
+        </ConvexClientProvider>
       </body>
       <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ""} />
     </html>

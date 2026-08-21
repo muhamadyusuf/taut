@@ -47,7 +47,32 @@ export type Entitlements = {
 export async function requireIdentity(ctx: Ctx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) throw new Error("Unauthorized");
+  await assertNotBlocked(ctx, identity.subject);
   return identity;
+}
+
+/**
+ * Menahan akun yang sudah diblokir admin.
+ *
+ * Diperiksa di lapisan identitas, bukan di tiap fitur satu per satu: akun yang
+ * diblokir harus berhenti di semua pintu sekaligus, dan daftar pintu itu terus
+ * bertambah setiap fitur baru ditulis.
+ */
+export async function assertNotBlocked(ctx: Ctx, clerkId: string): Promise<void> {
+  const user = await getUserByClerkId(ctx, clerkId);
+  if (!user?.blockedAt) return;
+
+  // Penolakan ini TIDAK dicatat, dan itu disengaja: handler berakhir dengan
+  // melempar, sehingga tulisan apa pun di sini akan dibatalkan bersama seluruh
+  // transaksi. Mencatatnya hanya akan menghasilkan kode yang terlihat bekerja
+  // padahal tidak. Riwayat pelanggaran akun yang bersangkutan toh sudah ada di
+  // halaman keamanan — itulah yang jadi dasar pemblokirannya.
+  throw new ConvexError({
+    code: "ACCOUNT_BLOCKED",
+    message: user.blockReason
+      ? `Akun Anda dinonaktifkan: ${user.blockReason}`
+      : "Akun Anda dinonaktifkan. Hubungi dukungan bila menurut Anda ini keliru.",
+  });
 }
 
 export async function getUserByClerkId(
@@ -90,7 +115,7 @@ export async function getEntitlementsForUser(
   };
 }
 
-/** Entitlement user yang sedang login. */
+/** Entitlement user yang sedang login. Akun terblokir ditolak di sini juga. */
 export async function getEntitlements(ctx: Ctx): Promise<Entitlements> {
   const identity = await requireIdentity(ctx);
   const ent = await getEntitlementsForUser(ctx, identity.subject);
@@ -356,8 +381,25 @@ export async function isAdmin(ctx: Ctx): Promise<boolean> {
   return user?.role === "admin";
 }
 
-export async function assertAdmin(ctx: Ctx): Promise<void> {
-  if (!(await isAdmin(ctx))) {
+/**
+ * Menahan siapa pun yang bukan admin, lalu mengembalikan clerkId si admin.
+ *
+ * Nilai kembaliannya dipakai halaman keamanan untuk mencegah admin memblokir
+ * dirinya sendiri. Penolakan ikut dicatat: memanggil fungsi admin tanpa hak
+ * bukan kekeliruan yang wajar terjadi — pemanggilnya harus tahu lebih dulu
+ * nama fungsinya.
+ */
+export async function assertAdmin(ctx: Ctx): Promise<string | null> {
+  const identity = await ctx.auth.getUserIdentity();
+  const user = identity ? await getUserByClerkId(ctx, identity.subject) : null;
+
+  if (user?.role !== "admin") {
+    // Sama seperti assertNotBlocked: melempar membatalkan transaksi, jadi
+    // mencatat di sini sia-sia. Yang menangkap orang yang mencari-cari fungsi
+    // admin adalah umpan di convex/security.ts — fungsi bernama menggoda yang
+    // sengaja BERAKHIR NORMAL supaya catatannya tersimpan.
     throw new Error("Unauthorized: Admin only");
   }
+
+  return user.clerkId;
 }

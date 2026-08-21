@@ -153,4 +153,62 @@ http.route({
   }),
 });
 
+/**
+ * PENERIMA LAPORAN JEBAKAN DARI SISI NEXT.JS
+ *
+ * Fungsi Convex dipanggil browser lewat websocket dan tidak pernah melihat
+ * alamat IP, header geo, maupun User-Agent. Semua itu hanya terbaca di Next.js,
+ * jadi jebakan tingkat URL mencatatnya di sana lalu mengirimkannya ke sini.
+ *
+ * Dijaga rahasia bersama, bukan dibiarkan terbuka: catatan keamanan yang bisa
+ * diisi siapa saja dari internet berhenti menjadi bukti dan berubah menjadi
+ * tempat sampah — pelaku tinggal mengarang seribu kejadian palsu atas nama
+ * orang lain untuk menenggelamkan jejaknya sendiri.
+ *
+ * Butuh environment variable TRAP_INGEST_SECRET di dashboard Convex, dengan
+ * nilai yang sama seperti di Next.js. Tanpa itu endpoint menolak semua kiriman.
+ */
+http.route({
+  path: "/trap-report",
+  method: "POST",
+  handler: httpAction(async (ctx, request) => {
+    const expected = process.env.TRAP_INGEST_SECRET;
+    if (!expected) {
+      return new Response("Jebakan belum dikonfigurasi", { status: 503 });
+    }
+
+    const provided = request.headers.get("x-trap-secret") ?? "";
+    if (provided !== expected) {
+      return new Response("Tidak diizinkan", { status: 401 });
+    }
+
+    let body: Record<string, unknown>;
+    try {
+      body = (await request.json()) as Record<string, unknown>;
+    } catch {
+      return new Response("Body harus berupa JSON", { status: 400 });
+    }
+
+    const text = (key: string): string | undefined =>
+      typeof body[key] === "string" ? (body[key] as string) : undefined;
+
+    await ctx.runMutation(internal.security.ingestFromEdge, {
+      kind: text("kind") ?? "honeypot_path",
+      target: text("target") ?? "(tidak diketahui)",
+      severity: text("severity"),
+      detail: text("detail"),
+      method: text("method"),
+      ip: text("ip"),
+      country: text("country"),
+      city: text("city"),
+      region: text("region"),
+      userAgent: text("userAgent"),
+      referer: text("referer"),
+      userId: text("userId"),
+    });
+
+    return new Response("OK", { status: 200 });
+  }),
+});
+
 export default http;

@@ -32,6 +32,11 @@ export default defineSchema({
     // tanpa batas, sesuai janji "gratis selamanya" di landing page.
     legacyFree: v.boolean(),
 
+    // Pemblokiran akun oleh admin. Ditulis sebagai stempel waktu, bukan boolean,
+    // supaya "sejak kapan" ikut tercatat tanpa tabel riwayat terpisah.
+    blockedAt: v.optional(v.number()),
+    blockReason: v.optional(v.string()),
+
     createdAt: v.number(),
     lastSeenAt: v.optional(v.number()),
   })
@@ -302,6 +307,69 @@ export default defineSchema({
     windowStart: v.number(),
     count: v.number(),
   }).index("by_key", ["key"]),
+
+  /**
+   * CATATAN KEAMANAN: siapa mencoba apa, dari mana.
+   *
+   * Isinya dua macam kejadian yang sengaja disimpan di satu tempat:
+   *   1. Umpan (honeypot) — pintu yang memang dipasang untuk dicoba. Tidak ada
+   *      alasan sah untuk menyentuhnya, jadi satu ketukan saja sudah berarti.
+   *   2. Penjaga yang berbunyi — sandi tautan yang salah berkali-kali, fungsi
+   *      admin yang dipanggil non-admin, tautan terblokir yang tetap diminta.
+   *
+   * Baris TIDAK ditambah untuk setiap ketukan. Pelaku+jenis+sasaran yang sama
+   * dalam satu jam digabung ke satu baris dan `hits`-nya yang naik: tanpa itu
+   * satu skrip bisa menenggelamkan halaman admin dengan ribuan baris kembar,
+   * dan justru kejadian penting yang jadi tak terlihat.
+   */
+  security_events: defineTable({
+    /** Jenis kejadian, lihat EVENT_KINDS di convex/security.ts. */
+    kind: v.string(),
+    /** "info" | "suspicious" | "malicious" */
+    severity: v.string(),
+
+    /**
+     * Pengenal pelaku untuk pengelompokan: "user:<clerkId>" bila ia login,
+     * "ip:<alamat>" bila tidak. Identitas akun jauh lebih berarti daripada IP —
+     * IP berganti sendiri, akun tidak.
+     */
+    actorKey: v.string(),
+    /** Gabungan kind+actorKey+target, dipakai menggabungkan ketukan berulang. */
+    dedupeKey: v.string(),
+
+    // --- Identitas (hanya terisi bila pelakunya sedang login) ---
+    userId: v.optional(v.string()),
+    email: v.optional(v.string()),
+    name: v.optional(v.string()),
+    plan: v.optional(v.string()),
+
+    // --- Lokasi & perangkat (hanya terisi lewat jalur HTTP) ---
+    // Fungsi Convex dipanggil dari browser lewat websocket dan tidak pernah
+    // melihat header permintaan, jadi kolom ini kosong untuk umpan tingkat
+    // fungsi. Yang mengisinya adalah jebakan tingkat URL di app/_trap.
+    ip: v.optional(v.string()),
+    country: v.optional(v.string()),
+    city: v.optional(v.string()),
+    region: v.optional(v.string()),
+    userAgent: v.optional(v.string()),
+    referer: v.optional(v.string()),
+
+    // --- Apa yang dicoba ---
+    /** Path URL atau nama fungsi yang disentuh. */
+    target: v.string(),
+    method: v.optional(v.string()),
+    detail: v.optional(v.string()),
+
+    // --- Penanganan ---
+    hits: v.number(),
+    firstTs: v.number(),
+    lastTs: v.number(),
+    handledAt: v.optional(v.number()),
+  })
+    .index("by_dedupeKey", ["dedupeKey"])
+    .index("by_lastTs", ["lastTs"])
+    .index("by_actorKey", ["actorKey"])
+    .index("by_severity", ["severity"]),
 
   // ---------------------------------------------------------
   // 2. KATEGORI & TAGS (Opsional/Fitur Tambahan)
