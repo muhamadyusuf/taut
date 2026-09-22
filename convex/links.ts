@@ -449,22 +449,7 @@ export const unlockAndIncrement = mutation({
       return { ok: false as const };
     }
 
-    const now = Date.now();
     await ctx.db.patch(link._id, { clicks: link.clicks + 1 });
-
-    await ctx.db.insert("click_events", {
-      linkId: link._id,
-      userId: link.userId,
-      ts: now,
-      country: args.country,
-      city: args.city,
-      device: args.device,
-      os: args.os,
-      browser: args.browser,
-      referrerHost: args.referrerHost,
-    });
-
-    await bumpDailyRollup(ctx, link, now, args);
 
     return { ok: true as const, originalUrl: link.originalUrl };
   },
@@ -768,20 +753,6 @@ export const getLinkAndIncrement = mutation({
     // sudah ada membacanya, dan angkanya tidak boleh mundur gara-gara fitur baru.
     await ctx.db.patch(link._id, { clicks: link.clicks + 1 });
 
-    await ctx.db.insert("click_events", {
-      linkId: link._id,
-      userId: link.userId,
-      ts: now,
-      country: args.country,
-      city: args.city,
-      device: args.device,
-      os: args.os,
-      browser: args.browser,
-      referrerHost: args.referrerHost,
-    });
-
-    await bumpDailyRollup(ctx, link, now, args);
-
     await ctx.scheduler.runAfter(0, internal.webhookActions.dispatch, {
       userId: link.userId,
       event: "link.clicked",
@@ -798,67 +769,6 @@ export const getLinkAndIncrement = mutation({
     return link.originalUrl;
   },
 });
-
-/** Tanggal "YYYY-MM-DD" menurut WIB. */
-function jakartaDate(ts: number): string {
-  const d = new Date(ts + 7 * 60 * 60 * 1000);
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return `${d.getUTCFullYear()}-${month}-${day}`;
-}
-
-function increment(
-  bucket: Record<string, number>,
-  key: string | undefined
-): Record<string, number> {
-  const k = key && key.trim() !== "" ? key : "Tidak diketahui";
-  return { ...bucket, [k]: (bucket[k] ?? 0) + 1 };
-}
-
-/**
- * Menambah ringkasan harian yang dibaca grafik.
- *
- * Ditulis bersamaan dengan peristiwanya, bukan lewat pekerjaan terjadwal:
- * ringkasan yang dihitung belakangan berarti dasbor selalu tertinggal, dan
- * pengguna yang baru menyebarkan tautannya justru menatap angka nol.
- */
-async function bumpDailyRollup(
-  ctx: MutationCtx,
-  link: Doc<"links">,
-  ts: number,
-  args: {
-    country?: string;
-    device?: string;
-    referrerHost?: string;
-  }
-) {
-  const date = jakartaDate(ts);
-
-  const existing = await ctx.db
-    .query("click_daily")
-    .withIndex("by_linkId_date", (q) => q.eq("linkId", link._id).eq("date", date))
-    .first();
-
-  if (existing) {
-    await ctx.db.patch(existing._id, {
-      count: existing.count + 1,
-      byCountry: increment(existing.byCountry, args.country),
-      byDevice: increment(existing.byDevice, args.device),
-      byReferrer: increment(existing.byReferrer, args.referrerHost),
-    });
-    return;
-  }
-
-  await ctx.db.insert("click_daily", {
-    userId: link.userId,
-    linkId: link._id,
-    date,
-    count: 1,
-    byCountry: increment({}, args.country),
-    byDevice: increment({}, args.device),
-    byReferrer: increment({}, args.referrerHost),
-  });
-}
 
 export const getLinksByCategory = query({
   args: { categoryId: v.id("categories") },

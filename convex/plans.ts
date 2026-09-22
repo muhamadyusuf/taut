@@ -36,7 +36,6 @@ export type LimitKey =
   | "certificatesPerMonth"
   | "subdomains"
   | "customDomains"
-  | "analyticsRetentionDays"
   | "teamSeats";
 
 export type Limits = Record<LimitKey, number>;
@@ -57,7 +56,6 @@ export type FeatureKey =
   | "vector_qr"
   | "bulk_qr"
   // Analitik
-  | "detailed_analytics"
   | "export_report"
   | "scheduled_report"
   | "public_dashboard"
@@ -123,7 +121,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       certificatesPerMonth: 25,
       subdomains: 0,
       customDomains: 0,
-      analyticsRetentionDays: 7,
       teamSeats: 1,
     },
     features: [
@@ -147,7 +144,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       certificatesPerMonth: 500,
       subdomains: 1,
       customDomains: 0,
-      analyticsRetentionDays: 365,
       teamSeats: 1,
     },
     features: [
@@ -156,7 +152,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "skip_interstitial",
       "branded_qr",
       "vector_qr",
-      "detailed_analytics",
       "subdomain",
       "remove_branding",
       "certificate_generator",
@@ -179,7 +174,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       certificatesPerMonth: UNLIMITED,
       subdomains: 3,
       customDomains: 3,
-      analyticsRetentionDays: UNLIMITED,
       // Tetap 1 sampai workspace tim benar-benar ada; kartu harga membaca
       // angka ini, jadi menaikkannya lebih dulu berarti menjanjikan yang belum ada.
       teamSeats: 1,
@@ -193,7 +187,6 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
       "whitelabel_interstitial",
       "branded_qr",
       "vector_qr",
-      "detailed_analytics",
       "subdomain",
       "custom_domain",
       "remove_branding",
@@ -357,7 +350,6 @@ const FEATURE_LABELS_BY_LOCALE: Record<PlanLocale, Record<FeatureKey, string>> =
     branded_qr: "QR berlogo & berwarna",
     vector_qr: "Unduh QR vektor (SVG/PDF)",
     bulk_qr: "QR massal",
-    detailed_analytics: "Analitik lengkap",
     export_report: "Ekspor laporan",
     scheduled_report: "Laporan terjadwal",
     public_dashboard: "Dasbor publik",
@@ -384,7 +376,6 @@ const FEATURE_LABELS_BY_LOCALE: Record<PlanLocale, Record<FeatureKey, string>> =
     branded_qr: "Branded & colored QR",
     vector_qr: "Vector QR download (SVG/PDF)",
     bulk_qr: "Bulk QR",
-    detailed_analytics: "Full analytics",
     export_report: "Report export",
     scheduled_report: "Scheduled reports",
     public_dashboard: "Public dashboard",
@@ -411,7 +402,6 @@ const LIMIT_LABELS_BY_LOCALE: Record<PlanLocale, Record<LimitKey, string>> = {
     certificatesPerMonth: "sertifikat bulan ini",
     subdomains: "subdomain",
     customDomains: "domain sendiri",
-    analyticsRetentionDays: "hari retensi analitik",
     teamSeats: "anggota tim",
   },
   en: {
@@ -423,7 +413,6 @@ const LIMIT_LABELS_BY_LOCALE: Record<PlanLocale, Record<LimitKey, string>> = {
     certificatesPerMonth: "certificates this month",
     subdomains: "subdomains",
     customDomains: "custom domains",
-    analyticsRetentionDays: "days of analytics retention",
     teamSeats: "team members",
   },
 };
@@ -475,11 +464,6 @@ export function planHighlights(planId: PlanId, locale: PlanLocale = "id"): strin
       ? t.unlimitedCertificates
       : t.certificates(num(limits.certificatesPerMonth))
   );
-  out.push(
-    isUnlimited(limits.analyticsRetentionDays)
-      ? t.unlimitedRetention
-      : t.retention(limits.analyticsRetentionDays)
-  );
 
   if (limits.subdomains > 0) {
     out.push(t.subdomains(limits.subdomains));
@@ -495,7 +479,6 @@ export function planHighlights(planId: PlanId, locale: PlanLocale = "id"): strin
   const HIGHLIGHTED: FeatureKey[] = [
     "skip_interstitial",
     "whitelabel_interstitial",
-    "detailed_analytics",
     "branded_qr",
     "link_password",
     "link_expiry",
@@ -522,8 +505,6 @@ const HIGHLIGHT_COPY: Record<
     responses: (n: string) => string;
     unlimitedCertificates: string;
     certificates: (n: string) => string;
-    unlimitedRetention: string;
-    retention: (days: number) => string;
     subdomains: (n: number) => string;
     customDomains: (n: number) => string;
     teamSeats: (n: number) => string;
@@ -537,8 +518,6 @@ const HIGHLIGHT_COPY: Record<
     responses: (n) => `${n} respons per formulir`,
     unlimitedCertificates: "Sertifikat tanpa batas",
     certificates: (n) => `${n} sertifikat per bulan`,
-    unlimitedRetention: "Riwayat statistik tanpa batas",
-    retention: (days) => `Riwayat statistik ${days} hari`,
     subdomains: (n) => `${n} subdomain nama.singkat.in`,
     customDomains: (n) => `${n} domain sendiri`,
     teamSeats: (n) => `${n} anggota tim`,
@@ -551,8 +530,6 @@ const HIGHLIGHT_COPY: Record<
     responses: (n) => `${n} responses per form`,
     unlimitedCertificates: "Unlimited certificates",
     certificates: (n) => `${n} certificates per month`,
-    unlimitedRetention: "Unlimited analytics history",
-    retention: (days) => `${days}-day analytics history`,
     subdomains: (n) => `${n} name.singkat.in subdomain`,
     customDomains: (n) => `${n} custom domain`,
     teamSeats: (n) => `${n} team members`,

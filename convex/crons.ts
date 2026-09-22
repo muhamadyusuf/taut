@@ -19,25 +19,6 @@ crons.daily(
 );
 
 /**
- * Membebaskan penyimpanan dari peristiwa klik yang sudah lewat masa retensi.
- *
- * Sama seperti cron di atas, ini bukan penjaga hak akses: query statistik
- * sudah memotong sendiri rentang yang boleh dibaca tiap paket. Yang dikerjakan
- * di sini murni membuang data mentah yang tidak akan pernah ditampilkan lagi.
- *
- * Ringkasan harian sengaja TIDAK ikut dihapus. Ukurannya hanya satu baris per
- * tautan per hari, dan menyimpannya berarti akun yang naik paket langsung
- * melihat kembali riwayat agregatnya — rincian per peristiwa memang hilang,
- * tapi bentuk grafiknya utuh.
- */
-crons.daily(
-  "buang peristiwa klik kedaluwarsa",
-  { hourUTC: 19, minuteUTC: 30 }, // 02:30 WIB
-  internal.analytics.purgeExpiredEvents,
-  {}
-);
-
-/**
  * Membuang catatan keamanan yang sudah lewat masa simpan (90 hari).
  *
  * Catatan itu memuat alamat IP dan identitas orang. Menyimpannya selamanya
