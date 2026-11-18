@@ -34,10 +34,13 @@ function decodeHeader(value: string | null): string | undefined {
  * Alamat endpoint HTTP Convex.
  *
  * Fungsi HTTP dilayani di domain *.convex.site, sedangkan klien biasa memakai
- * *.convex.cloud. Diturunkan dari satu variabel yang sudah ada supaya tidak ada
- * alamat kedua yang harus diingat saat berpindah deployment.
+ * *.convex.cloud. Untuk Convex self-hosted, alamat HTTP Actions berbeda
+ * (port/domain sendiri) sehingga wajib diisi lewat CONVEX_SITE_URL. Bila tidak
+ * diisi, diturunkan dari NEXT_PUBLIC_CONVEX_URL (hanya berlaku di Convex Cloud).
  */
 function convexSiteUrl(): string | null {
+  const explicit = process.env.CONVEX_SITE_URL;
+  if (explicit) return explicit.replace(/\/$/, "");
   const cloud = process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!cloud) return null;
   return cloud.replace(/\.convex\.cloud\/?$/, ".convex.site");
